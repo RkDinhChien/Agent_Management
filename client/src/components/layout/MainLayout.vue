@@ -56,7 +56,7 @@ const sidebarCollapsed = ref(false);
 
 .primary-viewport {
   flex: 1;
-  margin-top: 20px;
+  margin-top: 5px;
   animation: slideUp 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 

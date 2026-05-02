@@ -34,7 +34,7 @@
   --trans-master: 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
   
   /* CRITICAL LAYOUT VARS FOR THE ACRU CLONE */
-  --sidebar-width: 280px;
+  --sidebar-width: 260px;
   --sidebar-collapsed: 90px;
   --radius-xl: 24px;
   --transition-base: 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);

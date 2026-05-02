@@ -29,7 +29,7 @@ import { Search, Moon, Bell, ChevronDown } from 'lucide-vue-next';
 
 <style scoped>
 .master-header {
-  height: 80px;
+  height: 60px;
   display: flex;
   align-items: center;
   justify-content: space-between;

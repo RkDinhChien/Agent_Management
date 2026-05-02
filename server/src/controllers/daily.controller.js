@@ -1,4 +1,5 @@
-const { DaiLy, LoaiDaiLy, Quan, ThamSo } = require('../models');
+const { DaiLy, LoaiDaiLy, Quan, ThamSo, PhieuXuatHang, PhieuThuTien, CT_PXH, MatHang } = require('../models');
+const { Op } = require('sequelize');
 
 /**
  * GET /api/dai-ly
@@ -177,4 +178,60 @@ const checkQuan = async (req, res) => {
   }
 };
 
-module.exports = { getAll, getById, create, update, remove, checkQuan };
+/**
+ * GET /api/dai-ly/:id/lich-su
+ * Lấy lịch sử giao dịch (phiếu xuất + phiếu thu) của đại lý
+ */
+const getLichSu = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const daiLy = await DaiLy.findByPk(id, {
+      include: [
+        { model: LoaiDaiLy, as: 'loaiDaiLy' },
+        { model: Quan, as: 'quan' },
+      ],
+    });
+
+    if (!daiLy) {
+      return res.status(404).json({ status: 'error', message: 'Không tìm thấy đại lý.' });
+    }
+
+    // Lấy phiếu xuất hàng
+    const phieuXuats = await PhieuXuatHang.findAll({
+      where: { MaDaiLy: id },
+      order: [['NgayXuat', 'DESC']],
+    });
+
+    // Lấy phiếu thu tiền
+    const phieuThus = await PhieuThuTien.findAll({
+      where: { MaDaiLy: id },
+      order: [['NgayThu', 'DESC']],
+    });
+
+    // Thống kê
+    const tongDoanhThu = phieuXuats.reduce((s, p) => s + parseFloat(p.TongTien || 0), 0);
+    const tongDaThu = phieuThus.reduce((s, p) => s + parseFloat(p.SoTienThu || 0), 0);
+
+    res.json({
+      status: 'success',
+      data: {
+        daiLy,
+        phieuXuats,
+        phieuThus,
+        thongKe: {
+          tongPhieuXuat: phieuXuats.length,
+          tongDoanhThu,
+          tongPhieuThu: phieuThus.length,
+          tongDaThu,
+          conNo: parseFloat(daiLy.TienNo || 0),
+        },
+      },
+    });
+  } catch (error) {
+    console.error('DaiLy getLichSu error:', error);
+    res.status(500).json({ status: 'error', message: 'Lỗi server.' });
+  }
+};
+
+module.exports = { getAll, getById, create, update, remove, checkQuan, getLichSu };

@@ -153,7 +153,8 @@ const handleLogout = () => { authStore.logout(); router.push('/login'); };
   position: relative;
 }
 
-.l-aura { width: 38px; height: 38px; display: flex; align-items: center; justify-content: center; border-radius: 8px; flex-shrink: 0; }
+.l-aura { width: 34px; height: 34px; display: flex; align-items: center; justify-content: center; border-radius: 8px; flex-shrink: 0; }
+.l-aura :deep(svg) { stroke-width: 1.75; }
 .atmos-link:hover { background: rgba(0,0,0,0.02); color: #0f172a; }
 
 .atmos-link.active { background: rgba(16, 185, 129, 0.1); color: #059669; }

@@ -27,6 +27,11 @@ const routes = [
         component: () => import('../views/DaiLyView.vue'),
       },
       {
+        path: 'dai-ly/:id',
+        name: 'HoSoDaiLy',
+        component: () => import('../views/HoSoDaiLyView.vue'),
+      },
+      {
         path: 'mat-hang',
         name: 'MatHang',
         component: () => import('../views/MatHangView.vue'),
