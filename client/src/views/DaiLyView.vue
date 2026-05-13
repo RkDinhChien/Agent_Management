@@ -1,207 +1,275 @@
 <template>
-  <div class="dai-ly-page-master">
-    <!-- Clean Page Header -->
-    <div class="master-view-title">
-      <div class="v-left">
-        <h1>Danh sách Đại lý</h1>
-        <p>Quản lý và theo dõi thông tin đối tác trên toàn hệ thống (BM1)</p>
+  <div class="daily-management-page">
+    <!-- Notification Toast -->
+    <Transition name="toast">
+      <div v-if="notification.show" class="toast-notification" :class="notification.type">
+        {{ notification.message }}
       </div>
-      <div class="v-right">
-        <button class="btn-tool-ghost" @click="fetchData"><RefreshCcw :size="18" /></button>
-        <button class="btn-master btn-emerald" @click="showAddModal = true">
-          <UserPlus :size="18" /> Tiếp nhận đại lý mới
+    </Transition>
+
+    <!-- Page Header -->
+    <div class="page-header">
+      <div class="header-left">
+        <h1>Quản Lý Đại Lý</h1>
+        <p>Danh sách các đối tác và nhà phân phối trên hệ thống</p>
+      </div>
+      <div class="header-right">
+        <button class="btn-icon" @click="fetchData" :disabled="loading" title="Làm mới">
+          <RefreshCcw :size="18" :class="{ 'spin': loading }" />
+        </button>
+        <button class="btn-icon" @click="exportToExcel" title="Xuất Excel" :disabled="loading">
+          <Download :size="18" />
+        </button>
+        <button class="btn-primary" @click="showAddModal = true" :disabled="loading">
+          <Plus :size="18" />
+          <span>Thêm Đại Lý</span>
         </button>
       </div>
     </div>
 
-    <!-- Stats Row (Aetheric Master Style) -->
-    <div class="stats-master-row">
-      <div class="card stat-card-master-lite">
-        <div class="sl-icon indigo"><Users :size="20" /></div>
-        <div class="sl-content">
-          <span class="sl-label">TỔNG ĐẠI LÝ</span>
-          <h2 class="sl-val">{{ daiLys.length }} <span>Đối tác</span></h2>
+    <!-- Stats Row -->
+    <div class="stats-grid">
+      <div class="stat-card card-box shadow-sm">
+        <div class="stat-icon" style="background: #ecfdf5; color: #10b981;">
+          <Users :size="24" />
+        </div>
+        <div class="stat-content">
+          <span class="stat-label">Tổng Đại Lý</span>
+          <h3 class="stat-value">{{ daiLys.length }}</h3>
         </div>
       </div>
-      <div class="card stat-card-master-lite">
-        <div class="sl-icon emerald"><MapPin :size="20" /></div>
-        <div class="sl-content">
-          <span class="sl-label">KHU VỰC PHỦ</span>
-          <h2 class="sl-val">{{ quans.length }} <span>Quận/Huyện</span></h2>
+      <div class="stat-card card-box shadow-sm">
+        <div class="stat-icon" style="background: #eff6ff; color: #2563eb;">
+          <MapPin :size="24" />
+        </div>
+        <div class="stat-content">
+          <span class="stat-label">Khu Vực Phủ Sóng</span>
+          <h3 class="stat-value">{{ quans.length }}</h3>
         </div>
       </div>
-      <div class="card stat-card-master-lite">
-        <div class="sl-icon orange"><Wallet :size="20" /></div>
-        <div class="sl-content">
-          <span class="sl-label">CÔNG NỢ TRUNG BÌNH</span>
-          <h2 class="sl-val">{{ Math.round(avgDebt / 1000000) }} <span>Tr VND</span></h2>
+      <div class="stat-card card-box shadow-sm">
+        <div class="stat-icon" style="background: #fff7ed; color: #f97316;">
+          <Wallet :size="24" />
+        </div>
+        <div class="stat-content">
+          <span class="stat-label">Dư Nợ TB/Đại Lý</span>
+          <h3 class="stat-value">{{ (avgDebt / 1000000).toFixed(1) }}Tr</h3>
+        </div>
+      </div>
+      <div class="stat-card card-box shadow-sm">
+        <div class="stat-icon" style="background: #fef3c7; color: #ca8a04;">
+          <AlertCircle :size="24" />
+        </div>
+        <div class="stat-content">
+          <span class="stat-label">Nợ Lớn (>40Tr)</span>
+          <h3 class="stat-value">{{ daiLys.filter(d => d.TienNo > 40000000).length }}</h3>
         </div>
       </div>
     </div>
 
-    <!-- Main Data Section -->
-    <div class="card master-data-card">
-      <div class="data-header">
-        <div class="search-box-pill-master">
+    <!-- Table Card -->
+    <div class="table-card card-box shadow-sm p-0">
+      <!-- Table Header with Filters -->
+      <div class="table-header">
+        <div class="search-box">
           <Search :size="18" />
-          <input v-model="searchText" type="text" placeholder="Tìm tên hoặc số điện thoại..." />
+          <input 
+            v-model="searchText" 
+            type="text" 
+            placeholder="Tìm tên, SĐT hoặc email..."
+          />
         </div>
         
-        <div class="data-filters">
-          <div class="filter-item">
-            <Filter :size="14" />
-            <select v-model="filterQuan">
-              <option value="">Tất cả khu vực</option>
-              <option v-for="q in quans" :key="q.MaQuan" :value="q.MaQuan">{{ q.TenQuan }}</option>
-            </select>
-          </div>
+        <div class="filter-group">
+          <select v-model="filterQuan" class="filter-select">
+            <option value="">Tất cả khu vực</option>
+            <option v-for="q in quans" :key="q.MaQuan" :value="q.MaQuan">
+              {{ q.TenQuan }}
+            </option>
+          </select>
+          <select v-model="filterLoai" class="filter-select">
+            <option value="">Loại đại lý</option>
+            <option v-for="l in loaiDaiLys" :key="l.MaLoai" :value="l.MaLoai">
+              {{ l.TenLoai }}
+            </option>
+          </select>
+          <select v-model="filterDebt" class="filter-select">
+            <option value="">Trạng thái nợ</option>
+            <option value="no">Có nợ</option>
+            <option value="no-high">Nợ lớn (>40tr)</option>
+          </select>
         </div>
       </div>
 
-      <div class="table-container-airy">
-        <table>
+      <!-- Table -->
+      <div class="table-wrapper">
+        <table class="data-table">
           <thead>
             <tr>
-              <th width="100">MÃ SỐ</th>
-              <th width="300">THÔNG TIN ĐẠI LÝ</th>
-              <th>LOẠI</th>
-              <th>KHU VỰC</th>
-              <th>DƯ NỢ HIỆN TẠI</th>
-              <th width="120" style="text-align: right;">HÀNH ĐỘNG</th>
+              <th>Mã</th>
+              <th>Thông Tin</th>
+              <th>Loại</th>
+              <th>Khu Vực</th>
+              <th>Điện Thoại</th>
+              <th>Dư Nợ</th>
+              <th style="text-align: right;">Hành Động</th>
             </tr>
           </thead>
           <tbody>
-            <tr v-for="dl in filteredDaiLys" :key="dl.MaDaiLy">
-              <td>
-                <span class="agent-id-badge">#{{ String(dl.MaDaiLy).padStart(3, '0') }}</span>
-              </td>
-              <td>
-                <div class="agent-meta">
-                  <div class="avatar-letter" :style="{ background: getAvatarColor(dl.TenDaiLy) }">
+            <tr v-for="dl in paginatedDaiLys" :key="dl.MaDaiLy" class="table-row">
+              <td class="cell-code">#{{ String(dl.MaDaiLy).padStart(3, '0') }}</td>
+              <td class="cell-info">
+                <div class="info-group">
+                  <div class="avatar" :style="{ background: getAvatarColor(dl.TenDaiLy) }">
                     {{ dl.TenDaiLy.charAt(0).toUpperCase() }}
                   </div>
-                  <div class="meta-text">
+                  <div class="info-text">
                     <strong>{{ dl.TenDaiLy }}</strong>
-                    <span>{{ dl.DienThoai }}</span>
+                    <span>{{ dl.DiaChi || 'N/A' }}</span>
                   </div>
                 </div>
               </td>
-              <td>
-                <span class="type-pill-master" :class="dl.loaiDaiLy?.TenLoai === 'Loại 1' ? 't1' : 't2'">
-                  {{ dl.loaiDaiLy?.TenLoai }}
+              <td class="cell-type">
+                <span class="badge" :class="dl.loaiDaiLy?.TenLoai === 'Loại 1' ? 'badge-primary' : 'badge-secondary'">
+                  {{ dl.loaiDaiLy?.TenLoai || 'N/A' }}
                 </span>
               </td>
-              <td>
-                <div class="location-chip">
-                  <MapPin :size="12" /> {{ dl.quan?.TenQuan }}
-                </div>
+              <td class="cell-location">{{ dl.quan?.TenQuan || 'N/A' }}</td>
+              <td class="cell-phone">{{ dl.DienThoai }}</td>
+              <td class="cell-debt" :class="{ 'debt-high': dl.TienNo > 40000000 }">
+                {{ fmtCurrency(dl.TienNo) }}
               </td>
-              <td>
-                <span class="debt-amount" :class="{ warning: dl.TienNo > 40000000 }">
-                  {{ fmtCurrency(dl.TienNo) }}
-                </span>
-              </td>
-              <td>
-                <div class="actions-stack-mini">
-                  <button class="btn-act profile" @click="$router.push('/dai-ly/' + dl.MaDaiLy)" title="Xem hồ sơ"><Eye :size="14" /></button>
-                  <button class="btn-act edit" @click="editDaiLy(dl)" title="Chỉnh sửa"><Pencil :size="14" /></button>
-                  <button class="btn-act delete" @click="deleteDaiLy(dl)" title="Xóa"><Trash2 :size="14" /></button>
-                </div>
+              <td class="cell-actions">
+                <button class="btn-action btn-view" @click="viewDaiLy(dl)" title="Xem">
+                  <Eye :size="16" />
+                </button>
+                <button class="btn-action btn-edit" @click="editDaiLy(dl)" title="Chỉnh sửa">
+                  <Pencil :size="16" />
+                </button>
+                <button class="btn-action btn-delete" @click="deleteDaiLy(dl)" title="Xóa">
+                  <span v-if="deleteLoading === dl.MaDaiLy" class="spinner-mini"></span>
+                  <Trash2 v-else :size="16" />
+                </button>
               </td>
             </tr>
           </tbody>
         </table>
-        
+
         <div v-if="filteredDaiLys.length === 0" class="empty-state">
-          <Search :size="48" class="icon-muted" />
-          <p>Không tìm thấy đại lý nào phù hợp.</p>
+          <Search :size="48" />
+          <p>Không tìm thấy đại lý nào</p>
         </div>
+      </div>
+
+      <!-- Pagination -->
+      <div v-if="totalPages > 1" class="pagination">
+        <button class="btn-page" :disabled="currentPage === 1" @click="currentPage--">
+          ← Trước
+        </button>
+        <span class="page-info">{{ currentPage }} / {{ totalPages }}</span>
+        <button class="btn-page" :disabled="currentPage === totalPages" @click="currentPage++">
+          Sau →
+        </button>
       </div>
     </div>
 
-    <!-- Aetheric Hub Modal (AgencyHub Style) -->
-    <div v-if="showAddModal" class="modal-overlay-glass" @click.self="closeModal">
-      <div class="modal-hub-card">
-        <div class="modal-hub-header">
-          <div class="header-icon-box" :class="{ edit: editingId }">
-            <UserPlus v-if="!editingId" :size="24" />
-            <Pencil v-else :size="24" />
-          </div>
-          <div class="header-text">
-            <h3>{{ editingId ? 'Cập nhật thông tin' : 'Tiếp nhận đại lý mới' }}</h3>
-            <p>Vui lòng nhập đầy đủ thông tin theo mẫu BM1 hệ thống.</p>
+    <!-- Modal -->
+    <div v-if="showAddModal" class="modal-overlay" @click.self="closeModal">
+      <div class="modal-content card-box">
+        <div class="modal-header">
+          <div class="modal-title-group">
+            <div class="modal-icon" :class="{ 'edit': editingId }">
+              <UserPlus v-if="!editingId" :size="24" />
+              <Pencil v-else :size="24" />
+            </div>
+            <div>
+              <h3>{{ editingId ? 'Cập Nhật Đại Lý' : 'Thêm Đại Lý Mới' }}</h3>
+              <p>Vui lòng nhập thông tin đầy đủ</p>
+            </div>
           </div>
           <button class="btn-close" @click="closeModal"><X :size="20" /></button>
         </div>
 
-        <div class="modal-hub-body">
-          <form @submit.prevent="saveDaiLy" class="hub-form">
-            <div class="form-grid">
-              <div class="input-entry full">
-                <label>TÊN ĐẠI LÝ <span class="req">*</span></label>
-                <div class="input-wrap">
-                  <input v-model="form.TenDaiLy" type="text" placeholder="Ví dụ: Đại lý Kim Quang..." required />
-                </div>
-              </div>
-
-              <div class="input-entry">
-                <label>LOẠI ĐẠI LÝ</label>
-                <div class="input-wrap">
-                  <select v-model="form.MaLoai" required>
-                    <option v-for="l in loaiDaiLys" :key="l.MaLoai" :value="l.MaLoai">{{ l.TenLoai }}</option>
-                  </select>
-                </div>
-              </div>
-
-              <div class="input-entry">
-                <label>KHU VỰC (QUẬN/HUYỆN)</label>
-                <div class="input-wrap">
-                  <select v-model="form.MaQuan" required>
-                    <option v-for="q in quans" :key="q.MaQuan" :value="q.MaQuan">{{ q.TenQuan }}</option>
-                  </select>
-                </div>
-              </div>
-
-              <div class="input-entry">
-                <label>SỐ ĐIỆN THOẠI</label>
-                <div class="input-wrap">
-                  <input v-model="form.DienThoai" type="text" placeholder="03XXXXXXXX" required />
-                </div>
-              </div>
-
-              <div class="input-entry">
-                <label>EMAIL</label>
-                <div class="input-wrap">
-                  <input v-model="form.Email" type="email" placeholder="agent@example.com" />
-                </div>
-              </div>
-
-              <div class="input-entry full">
-                <label>ĐỊA CHỈ TRỤ SỞ</label>
-                <div class="input-wrap">
-                  <input v-model="form.DiaChi" type="text" placeholder="Số nhà, tên đường, phường..." required />
-                </div>
-              </div>
-
-              <div class="input-entry">
-                <label>NGÀY TIẾP NHẬN</label>
-                <div class="input-wrap">
-                  <input v-model="form.NgayTiepNhan" type="date" required />
-                </div>
-              </div>
+        <form @submit.prevent="saveDaiLy" class="modal-form">
+          <div class="form-grid">
+            <div class="form-group full">
+              <label>Tên Đại Lý *</label>
+              <input 
+                v-model="form.TenDaiLy" 
+                type="text" 
+                placeholder="Nhập tên đại lý" 
+                required 
+              />
             </div>
 
-            <div v-if="formError" class="alert-error-mini">{{ formError }}</div>
-
-            <div class="form-footer-hub">
-              <button type="button" class="btn-master btn-ghost" @click="closeModal">Hủy bỏ</button>
-              <button type="submit" class="btn-master btn-emerald" :disabled="submitting">
-                <Check v-if="!submitting" :size="18" />
-                {{ submitting ? 'Đang lưu...' : (editingId ? 'Cập nhật thay đổi' : 'Hoàn tất tiếp nhận') }}
-              </button>
+            <div class="form-group">
+              <label>Loại Đại Lý</label>
+              <select v-model="form.MaLoai" required>
+                <option value="">Chọn loại</option>
+                <option v-for="l in loaiDaiLys" :key="l.MaLoai" :value="l.MaLoai">
+                  {{ l.TenLoai }}
+                </option>
+              </select>
             </div>
-          </form>
-        </div>
+
+            <div class="form-group">
+              <label>Khu Vực</label>
+              <select v-model="form.MaQuan" required>
+                <option value="">Chọn khu vực</option>
+                <option v-for="q in quans" :key="q.MaQuan" :value="q.MaQuan">
+                  {{ q.TenQuan }}
+                </option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label>Điện Thoại *</label>
+              <input 
+                v-model="form.DienThoai" 
+                type="text" 
+                placeholder="03XXXXXXXX" 
+                required 
+              />
+            </div>
+
+            <div class="form-group">
+              <label>Email</label>
+              <input 
+                v-model="form.Email" 
+                type="email" 
+                placeholder="agent@example.com" 
+              />
+            </div>
+
+            <div class="form-group">
+              <label>Ngày Tiếp Nhận</label>
+              <input 
+                v-model="form.NgayTiepNhan" 
+                type="date" 
+                required 
+              />
+            </div>
+
+            <div class="form-group full">
+              <label>Địa Chỉ *</label>
+              <input 
+                v-model="form.DiaChi" 
+                type="text" 
+                placeholder="Số nhà, tên đường, phường..." 
+                required 
+              />
+            </div>
+          </div>
+
+          <div v-if="formError" class="form-error">{{ formError }}</div>
+
+          <div class="form-footer">
+            <button type="button" class="btn-secondary" @click="closeModal">Hủy</button>
+            <button type="submit" class="btn-primary" :disabled="submitting">
+              {{ submitting ? 'Đang lưu...' : (editingId ? 'Cập nhật' : 'Thêm mới') }}
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   </div>
@@ -211,82 +279,178 @@
 import { ref, reactive, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import api from '../services/api';
-import { 
+import XLSX from 'xlsx';
+import {
   Plus, Search, RefreshCcw, Pencil, Trash2, X, Eye,
-  Users, MapPin, Wallet, UserPlus, Filter, Check 
+  Users, MapPin, Wallet, UserPlus, Download, AlertCircle
 } from 'lucide-vue-next';
 
 const router = useRouter();
 
 // State
-const daiLys = ref([]); const quans = ref([]); const loaiDaiLys = ref([]);
-const searchText = ref(''); const filterQuan = ref('');
-const showAddModal = ref(false); const editingId = ref(null);
-const submitting = ref(false); const formError = ref('');
+const daiLys = ref([]);
+const quans = ref([]);
+const loaiDaiLys = ref([]);
+const searchText = ref('');
+const filterQuan = ref('');
+const filterLoai = ref('');
+const filterDebt = ref('');
+const showAddModal = ref(false);
+const editingId = ref(null);
+const submitting = ref(false);
+const formError = ref('');
+const currentPage = ref(1);
+const itemsPerPage = ref(10);
+const loading = ref(false);
+const deleteLoading = ref(null);
+const notification = ref({ show: false, message: '', type: '' });
 
-const form = reactive({ 
-  TenDaiLy: '', MaLoai: '', MaQuan: '', DiaChi: '', 
-  DienThoai: '', Email: '', NgayTiepNhan: new Date().toISOString().split('T')[0] 
+const form = reactive({
+  TenDaiLy: '',
+  MaLoai: '',
+  MaQuan: '',
+  DiaChi: '',
+  DienThoai: '',
+  Email: '',
+  NgayTiepNhan: new Date().toISOString().split('T')[0]
 });
 
 // Computed
-const avgDebt = computed(() => { 
-  if (daiLys.value.length === 0) return 0; 
-  return daiLys.value.reduce((s, dl) => s + parseFloat(dl.TienNo), 0) / daiLys.value.length; 
+const avgDebt = computed(() => {
+  if (daiLys.value.length === 0) return 0;
+  return daiLys.value.reduce((s, dl) => s + parseFloat(dl.TienNo || 0), 0) / daiLys.value.length;
 });
 
 const filteredDaiLys = computed(() => {
   return daiLys.value.filter(dl => {
     const s = searchText.value.toLowerCase();
-    const matchesSearch = !s || dl.TenDaiLy.toLowerCase().includes(s) || dl.DienThoai.includes(s);
+    const matchesSearch = !s || 
+      dl.TenDaiLy.toLowerCase().includes(s) || 
+      dl.DienThoai.includes(s) ||
+      (dl.Email && dl.Email.toLowerCase().includes(s));
     const matchesQuan = !filterQuan.value || dl.MaQuan == filterQuan.value;
-    return matchesSearch && matchesQuan;
+    const matchesLoai = !filterLoai.value || dl.MaLoai == filterLoai.value;
+    const matchesDebt = !filterDebt.value || (
+      filterDebt.value === 'no' ? dl.TienNo > 0 : 
+      filterDebt.value === 'no-high' ? dl.TienNo > 40000000 : true
+    );
+    return matchesSearch && matchesQuan && matchesLoai && matchesDebt;
   });
 });
 
+const paginatedDaiLys = computed(() => {
+  const start = (currentPage.value - 1) * itemsPerPage.value;
+  return filteredDaiLys.value.slice(start, start + itemsPerPage.value);
+});
+
+const totalPages = computed(() => Math.ceil(filteredDaiLys.value.length / itemsPerPage.value));
+
 // Methods
 const fetchData = async () => {
+  loading.value = true;
   try {
     const [dl, q, l] = await Promise.all([
-      api.get('/dai-ly'), api.get('/quan'), api.get('/loai-dai-ly')
+      api.get('/dai-ly'),
+      api.get('/quan'),
+      api.get('/loai-dai-ly')
     ]);
-    daiLys.value = dl.data.data; 
-    quans.value = q.data.data; 
+    daiLys.value = dl.data.data;
+    quans.value = q.data.data;
     loaiDaiLys.value = l.data.data;
-  } catch (e) { console.error(e); }
+    currentPage.value = 1;
+  } catch (e) {
+    console.error(e);
+    showNotification('Không thể tải dữ liệu', 'error');
+  } finally {
+    loading.value = false;
+  }
 };
 
-const editDaiLy = (dl) => { 
-  editingId.value = dl.MaDaiLy; 
-  Object.assign(form, { ...dl, NgayTiepNhan: dl.NgayTiepNhan.split('T')[0] }); 
-  showAddModal.value = true; 
+const showNotification = (message, type = 'success') => {
+  notification.value = { show: true, message, type };
+  setTimeout(() => { notification.value.show = false; }, 3000);
+};
+
+const viewDaiLy = (dl) => {
+  router.push('/dai-ly/' + dl.MaDaiLy);
+};
+
+const editDaiLy = (dl) => {
+  editingId.value = dl.MaDaiLy;
+  Object.assign(form, {
+    ...dl,
+    NgayTiepNhan: dl.NgayTiepNhan.split('T')[0]
+  });
+  showAddModal.value = true;
 };
 
 const closeModal = () => {
-  showAddModal.value = false; editingId.value = null; formError.value = '';
-  Object.assign(form, { 
-    TenDaiLy: '', MaLoai: '', MaQuan: '', DiaChi: '', 
-    DienThoai: '', Email: '', NgayTiepNhan: new Date().toISOString().split('T')[0] 
+  showAddModal.value = false;
+  editingId.value = null;
+  formError.value = '';
+  Object.assign(form, {
+    TenDaiLy: '',
+    MaLoai: '',
+    MaQuan: '',
+    DiaChi: '',
+    DienThoai: '',
+    Email: '',
+    NgayTiepNhan: new Date().toISOString().split('T')[0]
   });
 };
 
 const saveDaiLy = async () => {
   submitting.value = true;
   try {
-    if (editingId.value) await api.put(`/dai-ly/${editingId.value}`, form); 
-    else await api.post('/dai-ly', form);
-    await fetchData(); closeModal();
-  } catch (e) { 
-    formError.value = e.response?.data?.message || 'Có lỗi xảy ra, vui lòng thử lại.'; 
-  } finally { submitting.value = false; }
+    if (editingId.value) {
+      await api.put(`/dai-ly/${editingId.value}`, form);
+    } else {
+      await api.post('/dai-ly', form);
+    }
+    await fetchData();
+    closeModal();
+    showNotification(
+      editingId.value ? 'Cập nhật thành công' : 'Thêm đại lý thành công',
+      'success'
+    );
+  } catch (e) {
+    formError.value = e.response?.data?.message || 'Có lỗi xảy ra';
+    showNotification(formError.value, 'error');
+  } finally {
+    submitting.value = false;
+  }
 };
 
 const deleteDaiLy = async (dl) => {
-  if (!confirm(`Bạn có chắc chắn muốn xóa đại lý ${dl.TenDaiLy}?`)) return;
-  try { 
-    await api.delete(`/dai-ly/${dl.MaDaiLy}`); 
-    await fetchData(); 
-  } catch (e) { alert('Không thể xóa đại lý này (có thể do đang có phiếu nợ hoặc đơn hàng).'); }
+  if (!confirm(`Xóa đại lý "${dl.TenDaiLy}"?\n\nHành động này không thể hoàn tác.`)) return;
+  deleteLoading.value = dl.MaDaiLy;
+  try {
+    await api.delete(`/dai-ly/${dl.MaDaiLy}`);
+    await fetchData();
+    showNotification('Xóa thành công', 'success');
+  } catch (e) {
+    showNotification('Không thể xóa (có phiếu liên quan)', 'error');
+  } finally {
+    deleteLoading.value = null;
+  }
+};
+
+const exportToExcel = () => {
+  const data = filteredDaiLys.value.map(dl => ({
+    'Mã': `#${String(dl.MaDaiLy).padStart(3, '0')}`,
+    'Tên Đại Lý': dl.TenDaiLy,
+    'Loại': dl.loaiDaiLy?.TenLoai || '',
+    'Khu Vực': dl.quan?.TenQuan || '',
+    'Địa Chỉ': dl.DiaChi || '',
+    'Điện Thoại': dl.DienThoai,
+    'Email': dl.Email || '',
+    'Dư Nợ': dl.TienNo || 0
+  }));
+  
+  const ws = XLSX.utils.json_to_sheet(data);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Danh sách đại lý');
+  XLSX.writeFile(wb, `danh-sach-dai-ly-${new Date().toISOString().split('T')[0]}.xlsx`);
 };
 
 const getAvatarColor = (name) => {
@@ -294,160 +458,759 @@ const getAvatarColor = (name) => {
   return colors[name.length % colors.length];
 };
 
-const fmtCurrency = (n) => (parseFloat(n) || 0).toLocaleString('vi-VN') + 'đ';
+const fmtCurrency = (n) => {
+  const num = parseFloat(n) || 0;
+  return (num / 1000000).toFixed(1) + 'Tr';
+};
 
 onMounted(fetchData);
 </script>
 
 <style scoped>
-.dai-ly-page-master { padding: 10px 0; }
-
-/* ===== HEADER ===== */
-.master-view-title { display: flex; justify-content: space-between; align-items: center; margin-bottom: 32px; }
-.v-left h1 { font-size: 1.8rem; font-weight: 800; color: #0f172a; letter-spacing: -1px; margin: 0; }
-.v-left p { color: #64748b; font-size: 0.9rem; margin-top: 4px; font-weight: 500; }
-.v-right { display: flex; gap: 12px; align-items: center; }
-
-.btn-tool-ghost {
-  background: #ffffff; border: 1px solid rgba(255,255,255,0.8); width: 44px; height: 44px; border-radius: 12px;
-  display: flex; align-items: center; justify-content: center; color: #94a3b8; cursor: pointer;
-  box-shadow: -3px -3px 8px rgba(255,255,255,1), 3px 3px 8px rgba(15,23,42,0.04);
-  transition: 0.3s cubic-bezier(0.4,0,0.2,1);
+/* Base */
+.daily-management-page {
+  min-height: 100vh;
+  padding: 0;
+  color: #1f2937;
 }
-.btn-tool-ghost:hover { color: #10b981; transform: translateY(-2px); box-shadow: -5px -5px 15px rgba(255,255,255,1), 5px 5px 15px rgba(15,23,42,0.06); }
 
-.btn-master { padding: 10px 24px; border-radius: 99px; font-weight: 800; font-size: 0.82rem; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: 0.3s cubic-bezier(0.4,0,0.2,1); border: none; }
-.btn-master.btn-emerald { background: #0c4a35; color: white; box-shadow: 0 10px 15px rgba(12,74,53,0.15); }
-.btn-master.btn-emerald:hover { transform: translateY(-2px); background: #093425; box-shadow: 0 15px 25px rgba(12,74,53,0.25); }
-
-/* ===== STAT CARDS (Neumorphic) ===== */
-.stats-master-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; margin-bottom: 28px; }
-.card.stat-card-master-lite {
-  padding: 22px 25px; border-radius: 20px; display: flex; align-items: center; gap: 18px;
-  background: #ffffff; border: 1px solid rgba(255,255,255,0.8);
-  box-shadow: -5px -5px 15px rgba(255,255,255,1), 5px 5px 15px rgba(15,23,42,0.05), -1px -1px 2px rgba(255,255,255,0.3) inset;
-  transition: 0.3s cubic-bezier(0.4,0,0.2,1); cursor: default;
+.card-box {
+  background: #ffffff;
+  border-radius: 20px;
+  padding: 25px;
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  box-shadow: -5px -5px 15px rgba(255, 255, 255, 1), 5px 5px 15px rgba(15, 23, 42, 0.05), -1px -1px 2px rgba(255, 255, 255, 0.3) inset;
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s;
 }
-.card.stat-card-master-lite:hover {
+
+.shadow-sm {
+  /* Uses card-box shadow */
+}
+
+.p-0 {
+  padding: 0 !important;
+}
+
+/* Page Header */
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 32px;
+}
+
+.header-left h1 {
+  font-size: 2rem;
+  font-weight: 800;
+  margin: 0;
+  letter-spacing: -1px;
+  color: #0f172a;
+}
+
+.header-left p {
+  font-size: 0.9rem;
+  color: #64748b;
+  margin-top: 4px;
+  font-weight: 500;
+}
+
+.header-right {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.btn-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  background: #ffffff;
+  color: #94a3b8;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: -3px -3px 8px rgba(255, 255, 255, 1), 3px 3px 8px rgba(15, 23, 42, 0.04);
+  transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.btn-icon:hover:not(:disabled) {
+  color: #10b981;
+  transform: translateY(-2px);
+  box-shadow: -5px -5px 15px rgba(255, 255, 255, 1), 5px 5px 15px rgba(15, 23, 42, 0.06);
+}
+
+.btn-icon:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-icon.spin svg {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.btn-primary {
+  padding: 10px 24px;
+  border-radius: 12px;
+  border: none;
+  background: #0c4a35;
+  color: white;
+  font-weight: 800;
+  font-size: 0.85rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 10px 15px rgba(12, 74, 53, 0.15);
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: #093425;
+  transform: translateY(-2px);
+  box-shadow: 0 15px 25px rgba(12, 74, 53, 0.25);
+}
+
+.btn-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Stats Grid */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.stat-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.stat-card:hover {
   transform: translateY(-4px);
-  box-shadow: -8px -8px 25px rgba(255,255,255,1), 8px 8px 25px rgba(15,23,42,0.08), -1px -1px 2px rgba(255,255,255,0.3) inset;
+  box-shadow: -8px -8px 25px rgba(255, 255, 255, 1), 8px 8px 25px rgba(15, 23, 42, 0.08), -1px -1px 2px rgba(255, 255, 255, 0.3) inset;
 }
-.sl-icon { width: 48px; height: 48px; border-radius: 14px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: 0.3s; }
-.sl-icon.indigo { background: #eef2ff; color: #6366f1; box-shadow: inset 0 2px 5px rgba(255,255,255,0.6), 0 2px 5px rgba(99,102,241,0.12); }
-.sl-icon.emerald { background: #ecfdf5; color: #10b981; box-shadow: inset 0 2px 5px rgba(255,255,255,0.6), 0 2px 5px rgba(16,185,129,0.12); }
-.sl-icon.orange { background: #fff7ed; color: #f97316; box-shadow: inset 0 2px 5px rgba(255,255,255,0.6), 0 2px 5px rgba(249,115,22,0.12); }
-.card.stat-card-master-lite:hover .sl-icon { transform: scale(1.05); }
-.sl-label { font-size: 0.68rem; font-weight: 800; color: #94a3b8; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px; display: block; }
-.sl-val { font-size: 1.4rem; font-weight: 800; color: #0f172a; letter-spacing: -0.5px; }
-.sl-val span { font-size: 0.8rem; color: #94a3b8; font-weight: 600; margin-left: 4px; }
 
-/* ===== DATA TABLE CARD (Neumorphic) ===== */
-.card.master-data-card {
-  padding: 0; min-height: 500px; display: flex; flex-direction: column;
-  background: #ffffff; border-radius: 20px; border: 1px solid rgba(255,255,255,0.8);
-  box-shadow: -5px -5px 15px rgba(255,255,255,1), 5px 5px 15px rgba(15,23,42,0.05), -1px -1px 2px rgba(255,255,255,0.3) inset;
+.stat-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.stat-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  display: block;
+  margin-bottom: 4px;
+}
+
+.stat-value {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0;
+  letter-spacing: -0.5px;
+}
+
+/* Table Card */
+.table-card {
+  display: flex;
+  flex-direction: column;
+  min-height: 600px;
+}
+
+.table-header {
+  padding: 20px 25px;
+  border-bottom: 1px solid #f1f5f9;
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.search-box {
+  flex: 1;
+  max-width: 400px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: #f8fafc;
+  border: 1.5px solid #f1f5f9;
+  padding: 0 14px;
+  border-radius: 12px;
+  height: 44px;
+  color: #94a3b8;
+  transition: 0.2s;
+}
+
+.search-box:focus-within {
+  border-color: #10b981;
+  background: white;
+  color: #0f172a;
+  box-shadow: 0 4px 15px rgba(16, 185, 129, 0.08);
+}
+
+.search-box input {
+  border: none;
+  background: transparent;
+  outline: none;
+  flex: 1;
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: #0f172a;
+}
+
+.search-box input::placeholder {
+  color: #cbd5e1;
+}
+
+.filter-group {
+  display: flex;
+  gap: 12px;
+}
+
+.filter-select {
+  padding: 0 12px;
+  height: 44px;
+  border: 1.5px solid #f1f5f9;
+  border-radius: 12px;
+  background: #f8fafc;
+  color: #64748b;
+  font-weight: 700;
+  font-size: 0.85rem;
+  cursor: pointer;
+  outline: none;
+  transition: 0.2s;
+}
+
+.filter-select:hover {
+  border-color: #e2e8f0;
+}
+
+.filter-select:focus {
+  border-color: #10b981;
+  background: white;
+}
+
+/* Table */
+.table-wrapper {
+  flex: 1;
+  overflow-x: auto;
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.data-table thead {
+  background: #fafbfc;
+}
+
+.data-table th {
+  padding: 16px;
+  text-align: left;
+  font-size: 0.7rem;
+  font-weight: 800;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.data-table td {
+  padding: 16px;
+  border-bottom: 1px solid #f8fafc;
+  vertical-align: middle;
+  font-size: 0.9rem;
+}
+
+.table-row:hover {
+  background: #fafbfc;
+}
+
+.cell-code {
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 800;
+  color: #475569;
+  font-size: 0.8rem;
+}
+
+.cell-info {
+  font-weight: 600;
+}
+
+.info-group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: 800;
+  font-size: 0.9rem;
+}
+
+.info-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.info-text strong {
+  color: #0f172a;
+}
+
+.info-text span {
+  font-size: 0.8rem;
+  color: #94a3b8;
+  font-weight: 500;
+}
+
+.cell-type {
+  font-size: 0.85rem;
+}
+
+.badge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 6px;
+  font-weight: 700;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.badge-primary {
+  background: #ecfdf5;
+  color: #059669;
+}
+
+.badge-secondary {
+  background: #eff6ff;
+  color: #2563eb;
+}
+
+.cell-debt {
+  font-weight: 800;
+  color: #0f172a;
+  font-variant-numeric: tabular-nums;
+}
+
+.cell-debt.debt-high {
+  color: #e11d48;
+}
+
+.cell-actions {
+  text-align: right;
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+.btn-action {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  border: 1px solid #f1f5f9;
+  background: white;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: 0.2s;
+}
+
+.btn-action:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-view:hover {
+  background: #f0fdf4;
+  color: #059669;
+  border-color: #bbf7d0;
+  transform: translateY(-1px);
+}
+
+.btn-edit:hover {
+  background: #f0f9ff;
+  color: #2563eb;
+  border-color: #bfdbfe;
+  transform: translateY(-1px);
+}
+
+.btn-delete:hover {
+  background: #fff1f2;
+  color: #e11d48;
+  border-color: #fecdd3;
+  transform: translateY(-1px);
+}
+
+.spinner-mini {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border: 2px solid #94a3b8;
+  border-top-color: #0f172a;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 80px 20px;
+  color: #94a3b8;
+}
+
+.empty-state svg {
+  color: #e2e8f0;
+  margin-bottom: 16px;
+}
+
+.empty-state p {
+  font-weight: 600;
+  font-size: 1rem;
+}
+
+/* Pagination */
+.pagination {
+  padding: 18px 25px;
+  border-top: 1px solid #f1f5f9;
+  background: #fafbfc;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+}
+
+.btn-page {
+  padding: 8px 16px;
+  border-radius: 8px;
+  border: 1.5px solid #f1f5f9;
+  background: white;
+  color: #64748b;
+  font-weight: 700;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.btn-page:hover:not(:disabled) {
+  background: #ecfdf5;
+  border-color: #10b981;
+  color: #10b981;
+}
+
+.btn-page:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.page-info {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #64748b;
+  padding: 0 20px;
+  min-width: 100px;
+  text-align: center;
+}
+
+/* Modal */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.35);
+  backdrop-filter: blur(12px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+}
+
+.modal-content {
+  width: 100%;
+  max-width: 600px;
   overflow: hidden;
+  animation: popIn 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
-.data-header { padding: 22px 28px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #f1f5f9; }
 
-.search-box-pill-master {
-  background: #f8fafc; border: 1.5px solid #f1f5f9; padding: 10px 18px; border-radius: 12px;
-  display: flex; align-items: center; gap: 12px; width: 340px; transition: 0.2s;
+@keyframes popIn {
+  from {
+    opacity: 0;
+    transform: scale(0.92) translateY(15px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
 }
-.search-box-pill-master:focus-within { border-color: #10b981; background: white; box-shadow: 0 4px 15px rgba(16,185,129,0.08); }
-.search-box-pill-master input { border: none; background: transparent; outline: none; flex: 1; font-weight: 600; font-size: 0.88rem; color: #0f172a; }
-.search-box-pill-master input::placeholder { color: #cbd5e1; }
 
-.data-filters { display: flex; gap: 10px; }
-.filter-item { display: flex; align-items: center; gap: 8px; background: #f8fafc; border: 1.5px solid #f1f5f9; padding: 0 14px; border-radius: 12px; height: 42px; transition: 0.2s; }
-.filter-item:hover { border-color: #e2e8f0; }
-.filter-item select { border: none; outline: none; font-weight: 700; font-size: 0.82rem; color: #1e293b; background: transparent; cursor: pointer; }
-
-/* ===== TABLE ===== */
-.table-container-airy { flex: 1; overflow-x: auto; }
-.table-container-airy table { width: 100%; border-collapse: collapse; }
-.table-container-airy th {
-  background: #fafbfc; text-align: left; padding: 16px 28px;
-  font-size: 0.7rem; font-weight: 800; color: #94a3b8;
-  text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid #f1f5f9;
+.modal-header {
+  padding: 28px 30px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid #f1f5f9;
 }
-.table-container-airy td { padding: 16px 28px; border-bottom: 1px solid #f8fafc; vertical-align: middle; }
-.table-container-airy tbody tr { transition: 0.2s; cursor: default; }
-.table-container-airy tbody tr:hover { background: #fafbfc; }
 
-.agent-id-badge { background: #f1f5f9; color: #475569; font-weight: 800; font-size: 0.72rem; padding: 4px 10px; border-radius: 6px; font-family: 'JetBrains Mono', monospace; }
-
-.agent-meta { display: flex; align-items: center; gap: 14px; }
-.avatar-letter {
-  width: 38px; height: 38px; border-radius: 12px; display: flex; align-items: center; justify-content: center;
-  color: white; font-weight: 800; font-size: 0.85rem;
-  box-shadow: inset 0 2px 5px rgba(255,255,255,0.3), 0 4px 10px rgba(0,0,0,0.1);
+.modal-title-group {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex: 1;
 }
-.meta-text { display: flex; flex-direction: column; gap: 2px; }
-.meta-text strong { font-size: 0.9rem; color: #0f172a; }
-.meta-text span { font-size: 0.78rem; color: #94a3b8; font-weight: 500; }
 
-.type-pill-master { font-size: 0.68rem; font-weight: 800; padding: 4px 12px; border-radius: 99px; letter-spacing: 0.3px; }
-.type-pill-master.t1 { background: #ecfdf5; color: #059669; }
-.type-pill-master.t2 { background: #eff6ff; color: #2563eb; }
-
-.location-chip { display: flex; align-items: center; gap: 6px; font-weight: 600; font-size: 0.82rem; color: #64748b; }
-
-.debt-amount { font-weight: 800; color: #0f172a; font-size: 0.9rem; font-variant-numeric: tabular-nums; }
-.debt-amount.warning { color: #ef4444; }
-
-.actions-stack-mini { display: flex; justify-content: flex-end; gap: 6px; }
-.btn-act {
-  border-radius: 8px; border: 1px solid #f1f5f9; width: 32px; height: 32px;
-  display: flex; align-items: center; justify-content: center;
-  cursor: pointer; background: white; color: #94a3b8; transition: 0.2s;
+.modal-icon {
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+  background: #ecfdf5;
+  color: #10b981;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
 }
-.btn-act.profile:hover { background: #f0fdf4; color: #059669; border-color: #bbf7d0; transform: translateY(-1px); }
-.btn-act.edit:hover { background: #f0f9ff; color: #0284c7; border-color: #bfdbfe; transform: translateY(-1px); }
-.btn-act.delete:hover { background: #fff1f2; color: #e11d48; border-color: #fecdd3; transform: translateY(-1px); }
 
-.empty-state { padding: 80px 0; text-align: center; color: #94a3b8; }
-.empty-state .icon-muted { color: #e2e8f0; }
-.empty-state p { margin-top: 15px; font-weight: 600; font-size: 0.9rem; }
-
-/* ===== MODAL (Glass Neumorphic) ===== */
-.modal-overlay-glass { position: fixed; inset: 0; background: rgba(15,23,42,0.35); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); display: flex; align-items: center; justify-content: center; z-index: 2000; }
-.modal-hub-card {
-  background: white; width: 100%; max-width: 600px; border-radius: 24px;
-  box-shadow: 0 30px 60px rgba(0,0,0,0.15), 0 0 0 1px rgba(255,255,255,0.8);
-  overflow: hidden; animation: popIn 0.35s cubic-bezier(0.34,1.56,0.64,1);
+.modal-icon.edit {
+  background: #eff6ff;
+  color: #2563eb;
 }
-@keyframes popIn { from { opacity: 0; transform: scale(0.92) translateY(15px); } to { opacity: 1; transform: scale(1) translateY(0); } }
 
-.modal-hub-header { padding: 28px 30px; display: flex; align-items: center; gap: 18px; border-bottom: 1px solid #f1f5f9; position: relative; }
-.header-icon-box {
-  width: 52px; height: 52px; border-radius: 16px; background: #ecfdf5; color: #10b981;
-  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
-  box-shadow: inset 0 2px 5px rgba(255,255,255,0.6), 0 2px 8px rgba(16,185,129,0.12);
+.modal-header h3 {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0 0 4px 0;
+  letter-spacing: -0.3px;
 }
-.header-icon-box.edit { background: #eff6ff; color: #2563eb; box-shadow: inset 0 2px 5px rgba(255,255,255,0.6), 0 2px 8px rgba(37,99,235,0.12); }
-.header-text h3 { font-size: 1.25rem; font-weight: 800; color: #0f172a; margin: 0 0 4px 0; letter-spacing: -0.3px; }
-.header-text p { font-size: 0.82rem; color: #94a3b8; font-weight: 500; margin: 0; }
-.btn-close { position: absolute; top: 28px; right: 28px; background: #f8fafc; border: none; cursor: pointer; color: #94a3b8; width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; transition: 0.2s; }
-.btn-close:hover { background: #fee2e2; color: #ef4444; }
 
-.modal-hub-body { padding: 28px 30px; }
-.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
-.input-entry { display: flex; flex-direction: column; gap: 8px; }
-.input-entry.full { grid-column: span 2; }
-.input-entry label { font-size: 0.68rem; font-weight: 800; color: #94a3b8; letter-spacing: 0.5px; text-transform: uppercase; }
-.input-entry label .req { color: #ef4444; }
-
-.input-wrap input, .input-wrap select {
-  width: 100%; height: 48px; background: #f8fafc; border: 1.5px solid #f1f5f9;
-  padding: 0 16px; border-radius: 12px; font-weight: 700; font-size: 0.9rem;
-  color: #0f172a; outline: none; transition: 0.2s; box-sizing: border-box;
+.modal-header p {
+  font-size: 0.85rem;
+  color: #94a3b8;
+  margin: 0;
+  font-weight: 500;
 }
-.input-wrap input:focus, .input-wrap select:focus { background: white; border-color: #10b981; box-shadow: 0 4px 15px rgba(16,185,129,0.1); }
-.input-wrap input::placeholder { color: #cbd5e1; font-weight: 500; }
 
-.alert-error-mini { background: #fff1f2; color: #e11d48; padding: 12px 16px; border-radius: 10px; font-size: 0.82rem; font-weight: 700; margin-top: 18px; display: flex; align-items: center; gap: 8px; }
-.form-footer-hub { margin-top: 28px; display: flex; justify-content: flex-end; gap: 12px; }
-.btn-master.btn-ghost { background: transparent; color: #64748b; border: 1.5px solid #f1f5f9; }
-.btn-master.btn-ghost:hover { background: #f8fafc; border-color: #e2e8f0; box-shadow: none; transform: none; }
+.btn-close {
+  background: #f8fafc;
+  border: none;
+  cursor: pointer;
+  color: #94a3b8;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: 0.2s;
+}
+
+.btn-close:hover {
+  background: #fee2e2;
+  color: #e11d48;
+}
+
+.modal-form {
+  padding: 28px 30px;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.form-group.full {
+  grid-column: span 2;
+}
+
+.form-group label {
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.form-group input,
+.form-group select {
+  height: 44px;
+  padding: 0 14px;
+  border: 1.5px solid #f1f5f9;
+  border-radius: 10px;
+  background: #f8fafc;
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: #0f172a;
+  outline: none;
+  transition: 0.2s;
+  box-sizing: border-box;
+}
+
+.form-group input:focus,
+.form-group select:focus {
+  background: white;
+  border-color: #10b981;
+  box-shadow: 0 4px 15px rgba(16, 185, 129, 0.1);
+}
+
+.form-group input::placeholder {
+  color: #cbd5e1;
+  font-weight: 500;
+}
+
+.form-error {
+  background: #fff1f2;
+  color: #e11d48;
+  padding: 12px 16px;
+  border-radius: 10px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  margin-top: 18px;
+}
+
+.form-footer {
+  margin-top: 28px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.btn-secondary {
+  padding: 10px 24px;
+  border-radius: 10px;
+  border: 1.5px solid #f1f5f9;
+  background: transparent;
+  color: #64748b;
+  font-weight: 800;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.btn-secondary:hover {
+  background: #f8fafc;
+  border-color: #e2e8f0;
+}
+
+/* Toast Notification */
+.toast-notification {
+  position: fixed;
+  top: 24px;
+  right: 24px;
+  padding: 14px 20px;
+  border-radius: 12px;
+  font-weight: 700;
+  font-size: 0.9rem;
+  z-index: 3000;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+}
+
+.toast-notification.success {
+  background: #ecfdf5;
+  color: #059669;
+  border: 1px solid #d1fae5;
+}
+
+.toast-notification.error {
+  background: #fff1f2;
+  color: #e11d48;
+  border: 1px solid #fecdd3;
+}
+
+.toast-enter-active,
+.toast-leave-active {
+  transition: all 0.3s ease;
+}
+
+.toast-enter-from {
+  opacity: 0;
+  transform: translateX(30px);
+}
+
+.toast-leave-to {
+  opacity: 0;
+  transform: translateX(30px);
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .table-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .filter-group {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+}
+
+@media (max-width: 768px) {
+  .page-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+  }
+
+  .header-left h1 {
+    font-size: 1.5rem;
+  }
+
+  .header-right {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .form-group.full {
+    grid-column: span 1;
+  }
+}
 </style>

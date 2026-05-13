@@ -26,7 +26,7 @@
         <div class="active-indicator" v-if="isActive('/dashboard') && !isCollapsed"></div>
       </router-link>
 
-      <router-link to="/dai-ly" class="atmos-link" :class="{ active: isActive('/dai-ly') }">
+      <router-link to="/dai-ly-list" class="atmos-link" :class="{ active: isActive('/dai-ly-list') }">
         <div class="l-aura"><Users :size="20" /></div>
         <span class="l-text" v-if="!isCollapsed">Hồ Sơ Đại Lý</span>
       </router-link>
@@ -88,7 +88,12 @@ const route = useRoute();
 const router = useRouter();
 const authStore = useAuthStore();
 
-const isActive = (path) => route.path === path;
+const isActive = (path) => {
+  if (path === '/dashboard') return route.path === '/dashboard';
+  if (path === '/dai-ly-list') return route.path === '/dai-ly-list';
+  if (path === '/dai-ly') return route.path === '/dai-ly';
+  return route.path === path;
+};
 const handleLogout = () => { authStore.logout(); router.push('/login'); };
 </script>
 

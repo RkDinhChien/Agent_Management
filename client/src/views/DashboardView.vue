@@ -317,7 +317,7 @@ import {
 <style scoped>
 /* BASE & RESETS */
 .acru-replica-dashboard { min-height: 100vh; padding: 0; color: #1f2937; }
-.card-box { background: #ffffff; border-radius: 20px; padding: 25px; border: 1px solid rgba(255, 255, 255, 0.8); box-shadow: -5px -5px 15px rgba(255, 255, 255, 1), 5px 5px 15px rgba(15, 23, 42, 0.05), -1px -1px 2px rgba(255, 255, 255, 0.3) inset; transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s;}
+.card-box { background: #ffffff; border-radius: 12px; padding: 25px; border: 1px solid #e2e8f0; box-shadow: none; transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.3s;}
 .shadow-sm { /* Replaced by card-box 3D effect */ }
 .mt-15 { margin-top: 15px;} .mt-20 { margin-top: 20px;} .mt-2 { margin-top: 2px;} .d-block { display: block;} .p-0 { padding: 0 !important;}
 
@@ -333,7 +333,7 @@ import {
 .ac-jumbo-chart { display: flex; flex-direction: column; }
 .ac-vert-stats { display: flex; flex-direction: column; gap: 12px; justify-content: space-between;}
 .vcard { flex: 1; display: flex; flex-direction: column; justify-content: center; padding: 16px 20px; cursor: pointer;}
-.vcard:hover { transform: translateY(-4px); box-shadow: -8px -8px 25px rgba(255, 255, 255, 1), 8px 8px 25px rgba(15, 23, 42, 0.08), -1px -1px 2px rgba(255, 255, 255, 0.3) inset !important;}
+.vcard:hover { transform: translateY(-2px); border-color: #cbd5e1;}
 .v-title { font-size: 0.75rem; font-weight: 600; color: #64748b; margin-bottom: 2px;}
 .v-val { font-size: 1.35rem; font-weight: 800; color: #0f172a; margin: 2px 0 8px 0; letter-spacing: -0.5px;}
 .v-trend { font-size: 0.75rem; font-weight: 600; display: flex; align-items: center; gap: 4px; transition: 0.2s;}
@@ -342,9 +342,9 @@ import {
 
 /* UX Enhancements for Interactive Elements */
 .bot-card.card-box { cursor: pointer; transition: 0.3s;}
-.bot-card.card-box:hover { transform: translateY(-4px); box-shadow: -8px -8px 25px rgba(255, 255, 255, 1), 8px 8px 25px rgba(15, 23, 42, 0.08), -1px -1px 2px rgba(255, 255, 255, 0.3) inset;}
+.bot-card.card-box:hover { transform: translateY(-2px); border-color: #cbd5e1;}
 .tips-card.card-box { cursor: pointer; transition: 0.3s;}
-.tips-card.card-box:hover { transform: translateY(-4px); box-shadow: -8px -8px 25px rgba(255, 255, 255, 1), 8px 8px 25px rgba(15, 23, 42, 0.08), -1px -1px 2px rgba(255, 255, 255, 0.3) inset;}
+.tips-card.card-box:hover { transform: translateY(-2px); border-color: #cbd5e1;}
 
 
 /* JUMBO CHART */
@@ -509,7 +509,7 @@ import {
 .cca-muted:hover .cca-icon { background: #94a3b8; color: white; border-color: #94a3b8; transform: translateY(-4px); box-shadow: 0 10px 20px rgba(148,163,184,0.2); }
 .cca-muted:hover span { color: #64748b; }
 
-.rc-quick-pay { background: white; border-radius: 20px; padding: 25px; box-shadow: var(--shadow-sm); }
+.rc-quick-pay { background: white; border-radius: 12px; padding: 25px; box-shadow: var(--shadow-sm); }
 .lb-list { display: flex; flex-direction: column; }
 .lb-item { display: flex; align-items: center; gap: 10px; padding: 6px 8px; border-radius: 10px; transition: background 0.2s; cursor: pointer; border: 1px solid transparent; }
 .lb-compact .lb-item + .lb-item { margin-top: 4px; }

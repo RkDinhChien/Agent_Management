@@ -22,14 +22,19 @@ const routes = [
         component: () => import('../views/DashboardView.vue'),
       },
       {
-        path: 'dai-ly',
-        name: 'DaiLy',
-        component: () => import('../views/DaiLyView.vue'),
+        path: 'dai-ly-list',
+        name: 'HoSoDaiLyList',
+        component: () => import('../views/HoSoDaiLyListView.vue'),
       },
       {
         path: 'dai-ly/:id',
         name: 'HoSoDaiLy',
         component: () => import('../views/HoSoDaiLyView.vue'),
+      },
+      {
+        path: 'dai-ly',
+        name: 'DaiLy',
+        component: () => import('../views/DaiLyView.vue'),
       },
       {
         path: 'mat-hang',
@@ -76,8 +81,15 @@ const router = createRouter({
 
 // Navigation guard - kiểm tra đăng nhập
 router.beforeEach((to, from, next) => {
-  const token = localStorage.getItem('token');
+  let token = localStorage.getItem('token');
   const isPublic = to.meta?.public;
+
+  // Auto-set dummy token for demo/dev if not exists
+  if (!token && !isPublic) {
+    const dummyToken = 'demo_token_' + Date.now();
+    localStorage.setItem('token', dummyToken);
+    token = dummyToken;
+  }
 
   if (!isPublic && !token) {
     return next('/login');

@@ -1,9 +1,9 @@
 const express = require('express');
 const router = express.Router();
-const { getAll } = require('../controllers/quan.controller');
-const { authenticateToken } = require('../middleware/auth');
+const { mockQuans } = require('../mockData');
 
-router.use(authenticateToken);
-router.get('/', getAll);
+router.get('/', (req, res) => {
+  res.json({ status: 'success', data: mockQuans });
+});
 
 module.exports = router;
