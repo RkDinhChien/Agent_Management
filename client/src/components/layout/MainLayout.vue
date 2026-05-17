@@ -12,6 +12,9 @@
         </main>
       </div>
     </div>
+
+    <!-- Global floating chat -->
+    <ChatBox />
   </div>
 </template>
 
@@ -19,6 +22,7 @@
 import { ref } from 'vue';
 import Sidebar from './Sidebar.vue';
 import Header from './Header.vue';
+import ChatBox from '../ChatBox.vue';
 
 const sidebarCollapsed = ref(false);
 </script>

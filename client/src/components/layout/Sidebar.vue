@@ -23,38 +23,50 @@
 
     <!-- Master Nav -->
     <nav class="master-links">
-      <div class="link-category" v-if="!isCollapsed">QUẢN LÝ CHUNG</div>
-      
+      <div class="link-category" v-if="!isCollapsed">TỔNG QUAN</div>
+
       <router-link to="/dashboard" class="atmos-link" :class="{ active: isActive('/dashboard') }">
         <div class="l-aura"><LayoutGrid :size="20" /></div>
-        <span class="l-text" v-if="!isCollapsed">Tổng Quan</span>
+        <span class="l-text" v-if="!isCollapsed">Dashboard</span>
         <div class="active-indicator" v-if="isActive('/dashboard') && !isCollapsed"></div>
       </router-link>
 
+      <div class="link-category mt-12" v-if="!isCollapsed">NGHIỆP VỤ</div>
+
       <router-link to="/dai-ly-list" class="atmos-link" :class="{ active: isActive('/dai-ly-list') }">
         <div class="l-aura"><Users :size="20" /></div>
-        <span class="l-text" v-if="!isCollapsed">Hồ Sơ Đại Lý</span>
+        <span class="l-text" v-if="!isCollapsed">Đại lý</span>
+        <div class="active-indicator" v-if="isActive('/dai-ly-list') && !isCollapsed"></div>
       </router-link>
 
       <router-link to="/phieu-nhap" class="atmos-link" :class="{ active: isActive('/phieu-nhap') }">
+        <div class="l-aura"><PackagePlus :size="20" /></div>
+        <span class="l-text" v-if="!isCollapsed">Phiếu nhập hàng</span>
+        <div class="active-indicator" v-if="isActive('/phieu-nhap') && !isCollapsed"></div>
+      </router-link>
+
+      <router-link to="/phieu-xuat" class="atmos-link" :class="{ active: isActive('/phieu-xuat') }">
+        <div class="l-aura"><PackageMinus :size="20" /></div>
+        <span class="l-text" v-if="!isCollapsed">Phiếu xuất hàng</span>
+        <div class="active-indicator" v-if="isActive('/phieu-xuat') && !isCollapsed"></div>
+      </router-link>
+
+      <router-link to="/thu-tien" class="atmos-link" :class="{ active: isActive('/thu-tien') }">
+        <div class="l-aura"><Wallet :size="20" /></div>
+        <span class="l-text" v-if="!isCollapsed">Phiếu thu tiền</span>
+        <div class="active-indicator" v-if="isActive('/thu-tien') && !isCollapsed"></div>
+      </router-link>
+
+      <router-link to="/mat-hang" class="atmos-link" :class="{ active: isActive('/mat-hang') }">
         <div class="l-aura"><Package :size="20" /></div>
-        <span class="l-text" v-if="!isCollapsed">Nhập Xuất Hàng</span>
+        <span class="l-text" v-if="!isCollapsed">Mặt hàng</span>
+        <div class="active-indicator" v-if="isActive('/mat-hang') && !isCollapsed"></div>
       </router-link>
 
-      <router-link to="/tra-cuu" class="atmos-link" :class="{ active: isActive('/tra-cuu') }">
-        <div class="l-aura"><Search :size="20" /></div>
-        <span class="l-text" v-if="!isCollapsed">Tra Cứu</span>
-      </router-link>
-
-      <div class="link-category mt-30" v-if="!isCollapsed">NÂNG CAO</div>
       <router-link to="/bao-cao" class="atmos-link" :class="{ active: isActive('/bao-cao') }">
         <div class="l-aura"><PieChart :size="20" /></div>
-        <span class="l-text" v-if="!isCollapsed">Báo Cáo Tháng</span>
-      </router-link>
-      
-      <router-link to="/cai-dat" class="atmos-link" :class="{ active: isActive('/cai-dat') }">
-        <div class="l-aura"><Settings :size="20" /></div>
-        <span class="l-text" v-if="!isCollapsed">Quy Định</span>
+        <span class="l-text" v-if="!isCollapsed">Báo cáo</span>
+        <div class="active-indicator" v-if="isActive('/bao-cao') && !isCollapsed"></div>
       </router-link>
     </nav>
 
@@ -78,8 +90,8 @@
 import { useRoute, useRouter } from 'vue-router';
 import { useAuthStore } from '../../stores/auth';
 import {
-  LayoutGrid, Users, Package, Search,
-  PieChart, Settings, Power,
+  LayoutGrid, Users, Package, PackagePlus, PackageMinus,
+  Wallet, PieChart, Power,
   ChevronLeft, ChevronRight
 } from 'lucide-vue-next';
 
@@ -97,7 +109,7 @@ const isActive = (path) => {
   if (path === '/dashboard') return route.path === '/dashboard';
   if (path === '/dai-ly-list') return route.path === '/dai-ly-list';
   if (path === '/dai-ly') return route.path === '/dai-ly';
-  return route.path === path;
+  return route.path.startsWith(path);
 };
 const handleLogout = () => { authStore.logout(); router.push('/login'); };
 </script>
@@ -178,7 +190,8 @@ const handleLogout = () => { authStore.logout(); router.push('/login'); };
   background: #10b981; border-radius: 99px; box-shadow: 0 0 10px #10b981;
 }
 
-.mt-30 { margin-top: 16px; }
+.mt-12  { margin-top: 12px; }
+.mt-30  { margin-top: 16px; }
 
 /* Light Footer Tray */
 .sidebar-tray-footer {

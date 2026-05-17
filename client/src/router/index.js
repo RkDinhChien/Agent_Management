@@ -58,7 +58,13 @@ const routes = [
       },
       {
         path: 'thu-tien',
-        redirect: '/tra-cuu',
+        name: 'ThuTien',
+        component: () => import('../views/ThuTienView.vue'),
+      },
+      {
+        path: 'phan-quyen',
+        name: 'PhanQuyen',
+        component: () => import('../views/CaiDatView.vue'),
       },
       {
         path: 'bao-cao',

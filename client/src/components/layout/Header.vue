@@ -9,12 +9,17 @@
     </div>
 
     <div class="header-tools">
-      <button class="tool-btn"><Moon :size="20" /></button>
+      <router-link to="/phan-quyen" class="tool-btn tool-link" title="Phân quyền">
+        <ShieldCheck :size="19" />
+      </router-link>
+      <router-link to="/cai-dat" class="tool-btn tool-link" title="Cài đặt">
+        <Settings :size="19" />
+      </router-link>
+      <div class="tool-divider"></div>
       <button class="tool-btn">
         <Bell :size="20" />
         <span class="active-dot"></span>
       </button>
-      
       <div class="header-location">
         <span>Vietnam HQ</span>
         <ChevronDown :size="14" />
@@ -24,7 +29,7 @@
 </template>
 
 <script setup>
-import { Search, Moon, Bell, ChevronDown } from 'lucide-vue-next';
+import { Search, Bell, ChevronDown, ShieldCheck, Settings } from 'lucide-vue-next';
 </script>
 
 <style scoped>
@@ -57,5 +62,7 @@ import { Search, Moon, Bell, ChevronDown } from 'lucide-vue-next';
 .tool-btn { background: white; border: 1px solid #f1f5f9; width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: var(--text-dim); cursor: pointer; position: relative; }
 .active-dot { position: absolute; top: 12px; right: 12px; width: 8px; height: 8px; background: #f43f5e; border-radius: 50%; border: 2px solid white; }
 
+.tool-link { text-decoration: none; color: inherit; }
+.tool-divider { width: 1px; height: 22px; background: #e2e8f0; }
 .header-location { display: flex; align-items: center; gap: 8px; font-weight: 700; color: var(--navy-800); font-size: 0.85rem; cursor: pointer; }
 </style>
