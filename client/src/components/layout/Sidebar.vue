@@ -7,12 +7,17 @@
     </button>
 
     <div class="brand-unit">
-      <div class="brand-aura">
-        <Layers :size="24" stroke-width="2.5" />
-      </div>
+      <!-- Custom geometric A mark — two legs + emerald crossbar -->
+      <svg class="brand-mark" viewBox="0 0 26 30" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M13 2 L24 28" stroke="#0f172a" stroke-width="2.4" stroke-linecap="round"/>
+        <path d="M13 2 L2 28" stroke="#0f172a" stroke-width="2.4" stroke-linecap="round"/>
+        <line x1="6.5" y1="19" x2="19.5" y2="19" stroke="#059669" stroke-width="2.4" stroke-linecap="round"/>
+        <circle cx="13" cy="2" r="2.2" fill="#059669"/>
+      </svg>
+
       <div class="brand-meta" v-if="!isCollapsed">
-        <span class="b-head">SE104</span>
-        <span class="b-sub">Hệ Thống</span>
+        <span class="b-head">gentix</span>
+        <span class="b-sub">Agent Management</span>
       </div>
     </div>
 
@@ -72,10 +77,10 @@
 <script setup>
 import { useRoute, useRouter } from 'vue-router';
 import { useAuthStore } from '../../stores/auth';
-import { 
-  LayoutGrid, Users, Package, Search, 
-  PieChart, Settings, Layers, Power,
-  ChevronLeft, ChevronRight 
+import {
+  LayoutGrid, Users, Package, Search,
+  PieChart, Settings, Power,
+  ChevronLeft, ChevronRight
 } from 'lucide-vue-next';
 
 const props = defineProps({
@@ -124,17 +129,19 @@ const handleLogout = () => { authStore.logout(); router.push('/login'); };
   padding: 40px 10px;
 }
 
-/* Light Brand Styling */
-.brand-unit { display: flex; align-items: center; gap: 12px; margin-bottom: 24px; padding-left: 8px; transition: 0.3s; }
-.brand-aura {
-  width: 38px; height: 38px; background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-  border-radius: 10px; display: flex; align-items: center; justify-content: center; color: white;
-  box-shadow: 0 10px 20px rgba(16, 185, 129, 0.2);
-  flex-shrink: 0;
-}
+/* Brand */
+.brand-unit { display: flex; align-items: center; gap: 10px; margin-bottom: 24px; padding-left: 6px; transition: 0.3s; }
+.brand-mark  { flex-shrink: 0; width: 26px; height: 30px; }
 
-.b-head { font-size: 1.4rem; font-weight: 850; color: #0f172a; display: block; letter-spacing: -1px; }
-.b-sub { font-size: 0.7rem; color: #94a3b8; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; }
+.b-head {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: #0f172a;
+  display: block;
+  letter-spacing: -0.6px;
+  line-height: 1.15;
+}
+.b-sub { font-size: 0.62rem; color: #94a3b8; font-weight: 700; text-transform: uppercase; letter-spacing: 1.2px; }
 
 /* Toggle Trigger Button */
 .toggle-trigger-btn {
