@@ -2,10 +2,11 @@ const { Op } = require('sequelize');
 const {
   sequelize,
   BaoCaoDoanhSo,
+  ChiTiet_BaoCaoDoanhSo,
   BaoCaoCongNo,
   DaiLy,
   PhieuXuatHang,
-  CT_PXH,
+  ChiTiet_PhieuXuat,
   PhieuThuTien,
   LoaiDaiLy,
   Quan,
@@ -26,9 +27,59 @@ const getDoanhSo = async (req, res) => {
       });
     }
 
-    // Tính doanh số từ phiếu xuất
-    const startDate = new Date(nam, thang - 1, 1);
-    const endDate = new Date(nam, thang, 0);
+    const month = parseInt(thang, 10);
+    const year = parseInt(nam, 10);
+    if (Number.isNaN(month) || Number.isNaN(year)) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'Tháng hoặc năm không hợp lệ.',
+      });
+    }
+
+    const existingReport = await BaoCaoDoanhSo.findOne({
+      where: { Thang: month, Nam: year },
+      include: [
+        {
+          model: ChiTiet_BaoCaoDoanhSo,
+          as: 'chiTietBaoCaoDoanhSos',
+          include: [
+            {
+              model: DaiLy,
+              as: 'daiLy',
+              include: [
+                { model: LoaiDaiLy, as: 'loaiDaiLy' },
+                { model: Quan, as: 'quan' },
+              ],
+            },
+          ],
+        },
+      ],
+    });
+
+    if (existingReport) {
+      const chiTiet = existingReport.chiTietBaoCaoDoanhSos.map((item) => ({
+        MaDaiLy: item.MaDaiLy,
+        TenDaiLy: item.daiLy?.TenDaiLy,
+        LoaiDaiLy: item.daiLy?.loaiDaiLy?.TenLoai,
+        Quan: item.daiLy?.quan?.TenQuan,
+        SoPhieuXuat: item.SoLuongPhieuXuat,
+        TongTriGia: parseFloat(item.TongTriGia) || 0,
+        TiLe: parseFloat(item.TiLe) || 0,
+      }));
+
+      return res.json({
+        status: 'success',
+        data: {
+          Thang: month,
+          Nam: year,
+          TongDoanhSo: parseFloat(existingReport.TongDoanhSo) || 0,
+          chiTiet,
+        },
+      });
+    }
+
+    const startDate = new Date(year, month - 1, 1);
+    const endDate = new Date(year, month, 0);
 
     const daiLys = await DaiLy.findAll({
       include: [
@@ -38,14 +89,13 @@ const getDoanhSo = async (req, res) => {
           model: PhieuXuatHang,
           as: 'phieuXuats',
           where: {
-            NgayXuat: { [Op.between]: [startDate, endDate] },
+            NgayLapPhieu: { [Op.between]: [startDate, endDate] },
           },
           required: false,
         },
       ],
     });
 
-    // Tính tổng doanh số tất cả đại lý
     let tongDoanhSo = 0;
     const baoCaoData = daiLys.map((dl) => {
       const soPhieuXuat = dl.phieuXuats ? dl.phieuXuats.length : 0;
@@ -61,23 +111,39 @@ const getDoanhSo = async (req, res) => {
         Quan: dl.quan?.TenQuan,
         SoPhieuXuat: soPhieuXuat,
         TongTriGia: tongTriGia,
-        TyLe: 0, // Sẽ tính sau
+        TiLe: 0,
       };
     });
 
-    // Tính tỷ lệ
     baoCaoData.forEach((item) => {
-      item.TyLe = tongDoanhSo > 0 ? Math.round((item.TongTriGia / tongDoanhSo) * 10000) / 100 : 0;
+      item.TiLe = tongDoanhSo > 0 ? Math.round((item.TongTriGia / tongDoanhSo) * 10000) / 100 : 0;
     });
 
-    // Lọc chỉ đại lý có phiếu xuất
     const filtered = baoCaoData.filter((item) => item.SoPhieuXuat > 0);
+
+    const summary = await BaoCaoDoanhSo.create({
+      Thang: month,
+      Nam: year,
+      TongDoanhSo: tongDoanhSo,
+    });
+
+    const detailPayload = filtered.map((item) => ({
+      MaBCDS: summary.MaBCDS,
+      MaDaiLy: item.MaDaiLy,
+      SoLuongPhieuXuat: item.SoPhieuXuat,
+      TongTriGia: item.TongTriGia,
+      TiLe: item.TiLe,
+    }));
+
+    if (detailPayload.length > 0) {
+      await ChiTiet_BaoCaoDoanhSo.bulkCreate(detailPayload);
+    }
 
     res.json({
       status: 'success',
       data: {
-        Thang: parseInt(thang),
-        Nam: parseInt(nam),
+        Thang: month,
+        Nam: year,
         TongDoanhSo: tongDoanhSo,
         chiTiet: filtered,
       },
@@ -113,7 +179,7 @@ const getCongNo = async (req, res) => {
         {
           model: PhieuXuatHang,
           as: 'phieuXuats',
-          where: { NgayXuat: { [Op.between]: [startDate, endDate] } },
+          where: { NgayLapPhieu: { [Op.between]: [startDate, endDate] } },
           required: false,
         },
         {

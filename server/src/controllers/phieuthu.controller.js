@@ -37,8 +37,8 @@ const create = async (req, res) => {
     }
 
     // QĐ4: Kiểm tra số tiền thu <= tiền nợ
-    const kiemTraThamSo = await ThamSo.findOne({ where: { TenThamSo: 'KiemTraSoTienThu' } });
-    const kiemTra = kiemTraThamSo ? kiemTraThamSo.GiaTri === '1' : true;
+    const thamSo = await ThamSo.findOne();
+    const kiemTra = (thamSo && typeof thamSo.ApDungQDKiemTraSoTienThu !== 'undefined') ? thamSo.ApDungQDKiemTraSoTienThu : true;
 
     const tienNo = parseFloat(daiLy.TienNo) || 0;
 

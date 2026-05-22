@@ -3,38 +3,24 @@ const sequelize = require('../config/database');
 const bcrypt = require('bcryptjs');
 
 const NguoiDung = sequelize.define('NguoiDung', {
-  MaNguoiDung: {
-    type: DataTypes.INTEGER,
+  TenNguoiDung: {
+    type: DataTypes.STRING(30),
     primaryKey: true,
-    autoIncrement: true,
-  },
-  TenDangNhap: {
-    type: DataTypes.STRING(50),
-    allowNull: false,
-    unique: true,
+    field: 'TenNguoiDung',
   },
   MatKhau: {
-    type: DataTypes.STRING(255),
-    allowNull: false,
-  },
-  HoTen: {
     type: DataTypes.STRING(100),
     allowNull: false,
-  },
-  Email: {
-    type: DataTypes.STRING(100),
+    field: 'MatKhau',
   },
   MaNhom: {
     type: DataTypes.INTEGER,
     allowNull: false,
-  },
-  TrangThai: {
-    type: DataTypes.BOOLEAN,
-    defaultValue: true,
+    field: 'MaNhom',
   },
 }, {
   tableName: 'NGUOIDUNG',
-  timestamps: true,
+  timestamps: false,
   hooks: {
     beforeCreate: async (user) => {
       if (user.MatKhau) {

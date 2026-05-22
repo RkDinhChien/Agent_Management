@@ -8,15 +8,16 @@ const PhanQuyen = require('./PhanQuyen');
 const LoaiDaiLy = require('./LoaiDaiLy');
 const Quan = require('./Quan');
 const DaiLy = require('./DaiLy');
-const DVT = require('./DVT');
+const DVT = require('./DonViTinh');
 const MatHang = require('./MatHang');
 const PhieuNhapHang = require('./PhieuNhapHang');
-const CT_PNH = require('./CT_PNH');
+const CT_PNH = require('./ChiTiet_PhieuNhap');
 const PhieuXuatHang = require('./PhieuXuatHang');
-const CT_PXH = require('./CT_PXH');
+const CT_PXH = require('./ChiTiet_PhieuXuat');
 const PhieuThuTien = require('./PhieuThuTien');
 const ThamSo = require('./ThamSo');
 const BaoCaoDoanhSo = require('./BaoCaoDoanhSo');
+const ChiTiet_BaoCaoDoanhSo = require('./ChiTiet_BaoCaoDoanhSo');
 const BaoCaoCongNo = require('./BaoCaoCongNo');
 
 // =============================================
@@ -78,8 +79,23 @@ DaiLy.hasMany(PhieuThuTien, { foreignKey: 'MaDaiLy', as: 'phieuThus' });
 PhieuThuTien.belongsTo(DaiLy, { foreignKey: 'MaDaiLy', as: 'daiLy' });
 
 // Báo cáo doanh số <-> Đại lý
-DaiLy.hasMany(BaoCaoDoanhSo, { foreignKey: 'MaDaiLy', as: 'baoCaoDoanhSos' });
-BaoCaoDoanhSo.belongsTo(DaiLy, { foreignKey: 'MaDaiLy', as: 'daiLy' });
+BaoCaoDoanhSo.hasMany(ChiTiet_BaoCaoDoanhSo, {
+  foreignKey: 'MaBCDS',
+  as: 'chiTietBaoCaoDoanhSos',
+});
+ChiTiet_BaoCaoDoanhSo.belongsTo(BaoCaoDoanhSo, {
+  foreignKey: 'MaBCDS',
+  as: 'baoCaoDoanhSo',
+});
+
+DaiLy.hasMany(ChiTiet_BaoCaoDoanhSo, {
+  foreignKey: 'MaDaiLy',
+  as: 'chiTietBaoCaoDoanhSos',
+});
+ChiTiet_BaoCaoDoanhSo.belongsTo(DaiLy, {
+  foreignKey: 'MaDaiLy',
+  as: 'daiLy',
+});
 
 // Báo cáo công nợ <-> Đại lý
 DaiLy.hasMany(BaoCaoCongNo, { foreignKey: 'MaDaiLy', as: 'baoCaoCongNos' });
@@ -103,5 +119,6 @@ module.exports = {
   PhieuThuTien,
   ThamSo,
   BaoCaoDoanhSo,
+  ChiTiet_BaoCaoDoanhSo,
   BaoCaoCongNo,
 };

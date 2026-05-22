@@ -13,6 +13,7 @@ const ChucNang = sequelize.define('ChucNang', {
   },
   TenManHinh: {
     type: DataTypes.STRING(100),
+    field: 'TenManHinhDuocLoad',
   },
 }, {
   tableName: 'CHUCNANG',

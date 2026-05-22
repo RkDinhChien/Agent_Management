@@ -96,14 +96,10 @@ const create = async (req, res) => {
     }
 
     // Lấy tham số
-    const tyLeThamSo = await ThamSo.findOne({ where: { TenThamSo: 'TyLeDonGiaXuat' } });
-    const tyLe = tyLeThamSo ? parseFloat(tyLeThamSo.GiaTri) : 1.02;
-
-    const kiemTraNoThamSo = await ThamSo.findOne({ where: { TenThamSo: 'KiemTraTienNo' } });
-    const kiemTraNo = kiemTraNoThamSo ? kiemTraNoThamSo.GiaTri === '1' : true;
-
-    const kiemTraTonThamSo = await ThamSo.findOne({ where: { TenThamSo: 'KiemTraSoLuongTon' } });
-    const kiemTraTon = kiemTraTonThamSo ? kiemTraTonThamSo.GiaTri === '1' : true;
+    const thamSo = await ThamSo.findOne();
+    const tyLe = (thamSo && thamSo.TiLeTinhDonGiaXuat) ? parseFloat(thamSo.TiLeTinhDonGiaXuat) : 1.02;
+    const kiemTraNo = (thamSo && typeof thamSo.ApDungQDKiemTraSoTienThu !== 'undefined') ? thamSo.ApDungQDKiemTraSoTienThu : true;
+    const kiemTraTon = true; // migration không có cột tương ứng, giữ mặc định true
 
     // Xử lý chi tiết + tính giá
     let tongTien = 0;

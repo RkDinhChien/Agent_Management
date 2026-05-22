@@ -18,7 +18,7 @@ const login = async (req, res) => {
 
     // Tìm user
     const user = await NguoiDung.findOne({
-      where: { TenDangNhap: tenDangNhap },
+      where: { TenNguoiDung: tenDangNhap },
       include: [
         {
           model: NhomNguoiDung,
@@ -35,8 +35,8 @@ const login = async (req, res) => {
       });
     }
 
-    // Kiểm tra trạng thái
-    if (!user.TrangThai) {
+    // Kiểm tra trạng thái (nếu trường tồn tại trong schema)
+    if (typeof user.TrangThai !== 'undefined' && !user.TrangThai) {
       return res.status(403).json({
         status: 'error',
         message: 'Tài khoản đã bị vô hiệu hóa.',
@@ -55,8 +55,7 @@ const login = async (req, res) => {
     // Tạo JWT token
     const token = jwt.sign(
       {
-        MaNguoiDung: user.MaNguoiDung,
-        TenDangNhap: user.TenDangNhap,
+        TenNguoiDung: user.TenNguoiDung,
         MaNhom: user.MaNhom,
         role: user.nhomNguoiDung.TenNhom,
       },
@@ -68,7 +67,7 @@ const login = async (req, res) => {
     const permissions = user.nhomNguoiDung.chucNangs.map((cn) => ({
       MaChucNang: cn.MaChucNang,
       TenChucNang: cn.TenChucNang,
-      TenManHinh: cn.TenManHinh,
+      TenManHinhDuocLoad: cn.TenManHinhDuocLoad,
     }));
 
     res.json({
@@ -76,10 +75,7 @@ const login = async (req, res) => {
       message: 'Đăng nhập thành công',
       token,
       user: {
-        MaNguoiDung: user.MaNguoiDung,
-        TenDangNhap: user.TenDangNhap,
-        HoTen: user.HoTen,
-        Email: user.Email,
+        TenNguoiDung: user.TenNguoiDung,
         role: user.nhomNguoiDung.TenNhom,
         permissions,
       },
@@ -99,7 +95,7 @@ const login = async (req, res) => {
  */
 const getMe = async (req, res) => {
   try {
-    const user = await NguoiDung.findByPk(req.user.MaNguoiDung, {
+    const user = await NguoiDung.findByPk(req.user.TenNguoiDung, {
       attributes: { exclude: ['MatKhau'] },
       include: [
         {

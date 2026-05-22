@@ -6,30 +6,22 @@ const BaoCaoDoanhSo = sequelize.define('BaoCaoDoanhSo', {
     type: DataTypes.INTEGER,
     primaryKey: true,
     autoIncrement: true,
+    field: 'MaBCDS',
   },
   Thang: {
     type: DataTypes.INTEGER,
     allowNull: false,
+    field: 'Thang',
   },
   Nam: {
     type: DataTypes.INTEGER,
     allowNull: false,
+    field: 'Nam',
   },
-  MaDaiLy: {
-    type: DataTypes.INTEGER,
-    allowNull: false,
-  },
-  SoPhieuXuat: {
-    type: DataTypes.INTEGER,
-    defaultValue: 0,
-  },
-  TongTriGia: {
+  TongDoanhSo: {
     type: DataTypes.DECIMAL(15, 2),
     defaultValue: 0,
-  },
-  TyLe: {
-    type: DataTypes.DECIMAL(5, 2),
-    defaultValue: 0,
+    field: 'TongDoanhSo',
   },
 }, {
   tableName: 'BAOCAODOANHSO',

@@ -2,21 +2,19 @@ const { DataTypes } = require('sequelize');
 const sequelize = require('../config/database');
 
 const BaoCaoCongNo = sequelize.define('BaoCaoCongNo', {
-  MaBC: {
-    type: DataTypes.INTEGER,
-    primaryKey: true,
-    autoIncrement: true,
-  },
   Thang: {
     type: DataTypes.INTEGER,
+    primaryKey: true,
     allowNull: false,
   },
   Nam: {
     type: DataTypes.INTEGER,
+    primaryKey: true,
     allowNull: false,
   },
   MaDaiLy: {
     type: DataTypes.INTEGER,
+    primaryKey: true,
     allowNull: false,
   },
   NoDau: {

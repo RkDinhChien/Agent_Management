@@ -84,8 +84,9 @@ router.beforeEach((to, from, next) => {
   let token = localStorage.getItem('token');
   const isPublic = to.meta?.public;
 
-  // Auto-set dummy token for demo/dev if not exists
-  if (!token && !isPublic) {
+  // Dev helper: only auto-set a dummy token when explicitly enabled
+  // Set VITE_DISABLE_AUTH=true in .env to bypass login during development
+  if (!token && !isPublic && import.meta.env.VITE_DISABLE_AUTH === 'true') {
     const dummyToken = 'demo_token_' + Date.now();
     localStorage.setItem('token', dummyToken);
     token = dummyToken;
