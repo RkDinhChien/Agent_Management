@@ -1,170 +1,1189 @@
 <template>
-  <div class="page-phieu">
-    <div class="page-header-actions">
-      <button class="btn btn-primary" @click="showForm = true">
-        <Plus :size="16" />
-        Lập phiếu xuất
-      </button>
+  <div class="px">
+
+    <!-- ══ CONTEXT BANNER ══ -->
+    <div class="ctx-card">
+
+      <!-- Hexagon decoration -->
+      <svg class="ctx-deco" viewBox="0 0 300 155" fill="none" aria-hidden="true">
+        <defs>
+          <polygon id="pxhx" points="0,-24 20.8,-12 20.8,12 0,24 -20.8,12 -20.8,-12"/>
+        </defs>
+        <g stroke="#93c5fd" stroke-width=".9" opacity=".12">
+          <use href="#pxhx" transform="translate(21,24)"/>  <use href="#pxhx" transform="translate(62,24)"/>
+          <use href="#pxhx" transform="translate(103,24)"/> <use href="#pxhx" transform="translate(144,24)"/>
+          <use href="#pxhx" transform="translate(185,24)"/> <use href="#pxhx" transform="translate(226,24)"/>
+          <use href="#pxhx" transform="translate(267,24)"/>
+          <use href="#pxhx" transform="translate(0,60)"/>   <use href="#pxhx" transform="translate(41,60)"/>
+          <use href="#pxhx" transform="translate(82,60)"/>  <use href="#pxhx" transform="translate(123,60)"/>
+          <use href="#pxhx" transform="translate(164,60)"/> <use href="#pxhx" transform="translate(205,60)"/>
+          <use href="#pxhx" transform="translate(246,60)"/> <use href="#pxhx" transform="translate(287,60)"/>
+          <use href="#pxhx" transform="translate(21,96)"/>  <use href="#pxhx" transform="translate(62,96)"/>
+          <use href="#pxhx" transform="translate(103,96)"/> <use href="#pxhx" transform="translate(144,96)"/>
+          <use href="#pxhx" transform="translate(185,96)"/> <use href="#pxhx" transform="translate(226,96)"/>
+          <use href="#pxhx" transform="translate(267,96)"/>
+          <use href="#pxhx" transform="translate(0,132)"/>  <use href="#pxhx" transform="translate(41,132)"/>
+          <use href="#pxhx" transform="translate(82,132)"/> <use href="#pxhx" transform="translate(123,132)"/>
+          <use href="#pxhx" transform="translate(164,132)"/><use href="#pxhx" transform="translate(205,132)"/>
+          <use href="#pxhx" transform="translate(246,132)"/><use href="#pxhx" transform="translate(287,132)"/>
+        </g>
+        <g stroke="#93c5fd" stroke-width="1.2" opacity=".26">
+          <use href="#pxhx" transform="translate(144,60)"/>
+          <use href="#pxhx" transform="translate(185,24)"/>
+          <use href="#pxhx" transform="translate(226,96)"/>
+        </g>
+        <polygon points="144,36 164.8,48 164.8,72 144,84 123.2,72 123.2,48" fill="#93c5fd" opacity=".06"/>
+        <polygon points="185,0 205.8,12 205.8,36 185,48 164.2,36 164.2,12" fill="#7c3aed" opacity=".05"/>
+        <g fill="#93c5fd" opacity=".45">
+          <circle cx="144" cy="60" r="3.5"/><circle cx="185" cy="24" r="3"/><circle cx="226" cy="96" r="3"/>
+        </g>
+        <g stroke="#93c5fd" stroke-width=".8" stroke-dasharray="3 4" opacity=".18">
+          <line x1="144" y1="60" x2="185" y2="24"/>
+          <line x1="144" y1="60" x2="226" y2="96"/>
+        </g>
+        <g fill="#7c3aed" opacity=".28">
+          <circle cx="62" cy="24" r="2"/><circle cx="267" cy="60" r="2"/><circle cx="103" cy="132" r="2"/>
+        </g>
+      </svg>
+
+      <svg class="ctx-wm" viewBox="0 0 110 80" fill="none" stroke="currentColor" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <rect x="5" y="18" width="62" height="42" rx="5"/>
+        <path d="M67 32h18l16 18v18H67V32z"/>
+        <circle cx="24" cy="70" r="9"/>
+        <circle cx="85" cy="70" r="9"/>
+        <line x1="33" y1="70" x2="76" y2="70"/>
+        <line x1="5" y1="70" x2="15" y2="70"/>
+        <line x1="25" y1="35" x2="55" y2="35" stroke-width="3"/>
+        <line x1="25" y1="45" x2="45" y2="45" stroke-width="3"/>
+      </svg>
+
+      <div class="ctx-top">
+        <div>
+          <h1 class="ctx-title">Xuất Hàng</h1>
+          <p class="ctx-sub">Giao đúng hàng, đúng đại lý, đúng giá — không bỏ sót · {{ monthName }}/{{ _now.getFullYear() }}</p>
+        </div>
+        <div class="ctx-actions">
+          <button class="btn-csv" @click="exportCSV"><Download :size="13"/> Xuất CSV</button>
+          <button class="btn-p" @click="openCreate"><Plus :size="14"/> Lập phiếu xuất</button>
+        </div>
+      </div>
+
+      <div class="ctx-divider"></div>
+
+      <div class="ctx-stats">
+
+        <!-- KPI 1: Tổng phiếu -->
+        <div class="cs-col">
+          <strong class="cs-num">{{ receipts.length }}</strong>
+          <span class="cs-delta cs-up">↑ 3 so tháng 4</span>
+          <span class="cs-lbl">Tổng phiếu tháng này</span>
+        </div>
+        <div class="cs-sep"></div>
+
+        <!-- KPI 2: Doanh thu + sparkline -->
+        <div class="cs-col">
+          <strong class="cs-num">{{ totalRevenue }} <span style="font-size:14px;font-weight:600;color:#94a3b8">Tr</span></strong>
+          <span class="cs-delta cs-up">↑ 22% so tháng 4</span>
+          <div class="spark-wrap">
+            <div v-for="(h, i) in spark" :key="i"
+                 class="spark-bar" :class="{ 'spark-active': i === spark.length - 1 }"
+                 :style="{ height: (h / maxSpark * 100) + '%' }"
+                 :title="sparkLabels[i] + ': ' + h + ' Tr'">
+            </div>
+          </div>
+          <span class="cs-lbl">Doanh thu đã giao</span>
+        </div>
+        <div class="cs-sep"></div>
+
+        <!-- KPI 3: Chờ giao + donut -->
+        <div class="cs-col cs-warn">
+          <div class="cs-pending-row">
+            <div class="donut-wrap">
+              <div class="donut-ring" :style="{ background: donutGradient }"></div>
+            </div>
+            <div>
+              <strong class="cs-num cs-amber" style="display:block;margin-bottom:2px">
+                {{ pendingCount }}
+                <span class="cs-tag" v-if="pendingCount > 0">chờ giao</span>
+              </strong>
+              <span class="cs-delta cs-ok">↓ 2 so tháng 4</span>
+            </div>
+          </div>
+          <div class="donut-legend">
+            <span class="dl-dot" style="background:#10b981"></span> Giao xong {{ deliveredCount }}
+            <span class="dl-dot" style="background:#f59e0b;margin-left:6px"></span> Chờ {{ pendingCount }}
+            <span class="dl-dot" style="background:#cbd5e1;margin-left:6px"></span> Hủy {{ cancelledCount }}
+          </div>
+          <span class="cs-lbl" style="margin-top:4px">Chờ giao hàng</span>
+        </div>
+        <div class="cs-sep"></div>
+
+        <!-- KPI 4: Đại lý nợ -->
+        <div class="cs-col">
+          <strong class="cs-num">
+            {{ overDebtCount }}
+            <span class="cs-tag cs-tag-red" v-if="overDebtCount > 0">vượt hạn mức</span>
+          </strong>
+          <span class="cs-delta cs-down" v-if="overDebtCount">↑ 1 so tháng 4</span>
+          <span class="cs-delta cs-up" v-else>↓ 1 so tháng 4</span>
+          <span class="cs-lbl">Đại lý quá hạn mức nợ</span>
+        </div>
+      </div>
+
+      <!-- Month progress bar -->
+      <div class="ctx-timeline">
+        <div class="ctl-row">
+          <span class="ctl-label">{{ monthName }} · Ngày {{ dayOfMonth }}/{{ daysInMonth }}</span>
+          <span class="ctl-pct">{{ monthProgressPct }}% tiến độ tháng</span>
+        </div>
+        <div class="ctl-track">
+          <div class="ctl-fill" :style="{ width: monthProgressPct + '%' }"></div>
+        </div>
+      </div>
     </div>
 
-    <div class="card">
-      <div class="card-body">
-        <div class="table-wrapper">
-          <table>
-            <thead><tr><th>Mã PX</th><th>Đại lý</th><th>Ngày xuất</th><th>Số mặt hàng</th><th>Tổng tiền</th><th>Thao tác</th></tr></thead>
-            <tbody>
-              <tr v-for="p in phieuXuats" :key="p.MaPX">
-                <td><strong>PX{{ String(p.MaPX).padStart(3,'0') }}</strong></td>
-                <td>{{ p.daiLy?.TenDaiLy }}</td>
-                <td>{{ formatDate(p.NgayXuat) }}</td>
-                <td>{{ p.chiTiets?.length || 0 }}</td>
-                <td class="text-primary">{{ formatCurrency(p.TongTien) }}</td>
-                <td><button class="btn btn-sm btn-secondary" @click="selectedPhieu = p">Chi tiết</button></td>
+    <!-- ══ MAIN LAYOUT ══ -->
+    <div class="dl-flex">
+
+      <!-- ════ LIST CARD ════ -->
+      <div class="dl-card list-card">
+
+        <!-- Toolbar -->
+        <div class="lc-hd">
+          <div class="lc-title-row">
+            <h3 class="lc-title">Danh sách phiếu xuất</h3>
+            <span class="count-badge">{{ filteredList.length }} / {{ receipts.length }}</span>
+            <button v-if="hasFilter" class="clear-btn" @click="clearFilters">
+              <X :size="11"/> Xóa lọc
+            </button>
+            <div class="stab-group">
+              <button class="stab" :class="{ active: !filterStatus }" @click="filterStatus = ''">Tất cả</button>
+              <button class="stab stab-warn" :class="{ active: filterStatus === 'pending' }" @click="filterStatus = 'pending'">
+                Chờ giao <span class="stab-n">{{ pendingCount }}</span>
+              </button>
+              <button class="stab stab-green" :class="{ active: filterStatus === 'delivered' }" @click="filterStatus = 'delivered'">
+                Đã giao <span class="stab-n">{{ deliveredCount }}</span>
+              </button>
+              <button class="stab stab-muted" :class="{ active: filterStatus === 'cancelled' }" @click="filterStatus = 'cancelled'">
+                Đã hủy <span class="stab-n">{{ cancelledCount }}</span>
+              </button>
+            </div>
+          </div>
+          <div class="lc-tools">
+            <div class="search-wrap">
+              <Search :size="14" class="search-ic"/>
+              <input v-model="searchQ" class="search-inp" placeholder="Tìm mã phiếu, tên đại lý…"/>
+            </div>
+            <select v-model="filterAgent" class="psel">
+              <option value="">Tất cả đại lý</option>
+              <option v-for="a in agents" :key="a.id" :value="a.name">{{ a.name }}</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Table -->
+        <div class="table-wrap">
+          <table class="dl-table">
+            <thead>
+              <tr>
+                <th style="width:130px">
+                  <span class="sort-hd" @click="toggleSort('code')">Mã phiếu <SortIcon field="code" :sk="sk" :sd="sd"/></span>
+                </th>
+                <th style="width:110px">
+                  <span class="sort-hd" @click="toggleSort('rawDate')">Ngày xuất <SortIcon field="rawDate" :sk="sk" :sd="sd"/></span>
+                </th>
+                <th>Đại lý</th>
+                <th style="width:110px">Số mặt hàng</th>
+                <th style="width:120px" class="text-right">
+                  <span class="sort-hd" @click="toggleSort('total')">Tổng tiền <SortIcon field="total" :sk="sk" :sd="sd"/></span>
+                </th>
+                <th style="width:115px">Trạng thái</th>
+                <th style="width:90px" class="text-center">Thao tác</th>
               </tr>
-              <tr v-if="phieuXuats.length === 0"><td colspan="6" class="empty-cell">Chưa có phiếu xuất nào.</td></tr>
+            </thead>
+            <tbody>
+              <tr
+                v-for="r in sortedList" :key="r.id"
+                class="px-row" :class="{ selected: selectedId === r.id }"
+                @click="openView(r)">
+                <td><span class="px-code">{{ r.code }}</span></td>
+                <td class="muted col-mono">{{ r.date }}</td>
+                <td>
+                  <div class="agent-cell">
+                    <span class="agent-av"><img :src="`https://i.pravatar.cc/56?img=${(r.agentId % 70) + 1}`" class="av-img" :alt="r.agent" @error="$event.target.style.display='none'"/></span>
+                    <div>
+                      <span class="agent-name">{{ r.agent }}</span>
+                      <span class="agent-debt" :class="debtClass(r.agentId)">
+                        Nợ: {{ fmtMoney(getAgent(r.agentId)?.debt) }}
+                      </span>
+                    </div>
+                  </div>
+                </td>
+                <td>
+                  <span class="item-cnt-chip">{{ r.items.length }} mặt hàng</span>
+                </td>
+                <td class="text-right">
+                  <span class="total-num">{{ fmtTr(r.total) }}</span>
+                </td>
+                <td>
+                  <span class="status-badge" :class="r.status">{{ STATUS[r.status] }}</span>
+                </td>
+                <td class="col-actions">
+                  <button class="act-btn view-btn" title="Xem" @click.stop="openView(r)"><Eye :size="13"/></button>
+                  <template v-if="r.status === 'pending'">
+                    <button class="act-btn edit-btn" title="Sửa" @click.stop="openEdit(r)"><Edit2 :size="13"/></button>
+                    <button class="act-btn ok-btn" title="Xác nhận giao" @click.stop="deliverReceipt(r)"><Truck :size="13"/></button>
+                  </template>
+                  <button v-else class="act-btn del-btn" title="Xóa" @click.stop="askDelete(r)"><Trash2 :size="13"/></button>
+                </td>
+              </tr>
+              <tr v-if="!sortedList.length">
+                <td colspan="7" class="empty-row">
+                  <PackageOpen :size="30" class="empty-ic"/><p>Không tìm thấy phiếu xuất phù hợp</p>
+                </td>
+              </tr>
             </tbody>
           </table>
         </div>
-      </div>
-    </div>
 
-    <!-- Create Form -->
-    <div v-if="showForm" class="modal-overlay" @click.self="showForm = false">
-      <div class="modal-content" style="max-width: 720px;">
-        <div class="modal-header"><h3>Lập phiếu xuất hàng</h3><button class="modal-close" @click="showForm = false">✕</button></div>
-        <div class="modal-body">
-          <div class="form-row">
-            <div class="form-group flex-1">
-              <label class="form-label">Đại lý *</label>
-              <select v-model="form.MaDaiLy" class="form-select" @change="onSelectDaiLy">
-                <option value="">Chọn đại lý</option>
-                <option v-for="dl in daiLys" :key="dl.MaDaiLy" :value="dl.MaDaiLy">{{ dl.TenDaiLy }} (Nợ: {{ formatCurrency(dl.TienNo) }})</option>
+        <div class="lc-foot" v-if="sortedList.length">
+          Hiển thị {{ sortedList.length }} phiếu xuất
+          <span v-if="hasFilter"> (đã lọc từ {{ receipts.length }})</span>
+        </div>
+      </div>
+
+      <!-- ════ SIDE PANEL ════ -->
+      <Transition name="panel">
+      <div class="dl-card side-panel" v-if="panelVisible">
+
+        <!-- ─ VIEW MODE ─ -->
+        <template v-if="panelMode === 'view' && selectedReceipt">
+          <div class="ap-hd">
+            <div class="ap-avatar">
+              <img :src="`https://i.pravatar.cc/80?img=${(selectedReceipt.agentId % 70) + 1}`" class="av-img" :alt="selectedReceipt.agent" @error="$event.target.style.display='none'"/>
+            </div>
+            <div class="ap-title-block">
+              <h3 class="ap-name">{{ selectedReceipt.code }}</h3>
+              <div class="ap-badges">
+                <span class="status-badge" :class="selectedReceipt.status">{{ STATUS[selectedReceipt.status] }}</span>
+                <span class="dist-chip">{{ selectedReceipt.items.length }} mặt hàng</span>
+              </div>
+            </div>
+            <div style="display:flex;gap:5px">
+              <button v-if="selectedReceipt.status === 'pending'" class="act-btn edit-btn" title="Sửa phiếu" @click="openEdit(selectedReceipt)"><Edit2 :size="14"/></button>
+              <button class="act-btn" style="background:rgba(15,23,42,.04);color:var(--c-txt-3)" title="Đóng" @click="closePanel"><X :size="14"/></button>
+            </div>
+          </div>
+
+          <!-- Revenue summary -->
+          <div class="gauge-section">
+            <div class="val-summary">
+              <div class="vs-main">
+                <span class="vs-label">Tổng tiền phiếu xuất</span>
+                <span class="vs-val">{{ fmtTr(selectedReceipt.total) }}</span>
+              </div>
+              <div class="vs-bar-wrap">
+                <div class="vs-bar">
+                  <div class="vs-fill" :style="{ width: revBarPct(selectedReceipt) + '%', background: revBarColor(selectedReceipt) }"></div>
+                </div>
+                <span class="vs-pct">{{ Math.round(revBarPct(selectedReceipt)) }}% tháng</span>
+              </div>
+            </div>
+
+            <!-- Agent debt bar -->
+            <div class="debt-section">
+              <div class="debt-hd">
+                <span class="debt-lbl">Nợ đại lý</span>
+                <span class="debt-val" :class="debtClass(selectedReceipt.agentId)">
+                  {{ fmtMoney(getAgent(selectedReceipt.agentId)?.debt) }}
+                  / {{ fmtMoney(getAgent(selectedReceipt.agentId)?.limit) }}
+                </span>
+              </div>
+              <div class="debt-bar-wrap">
+                <div class="debt-bar">
+                  <div class="debt-fill" :style="{ width: agentDebtPct(selectedReceipt.agentId) + '%', background: debtBarColor(selectedReceipt.agentId) }"></div>
+                </div>
+                <span class="debt-pct-lbl" :class="debtClass(selectedReceipt.agentId)">{{ Math.round(agentDebtPct(selectedReceipt.agentId)) }}%</span>
+              </div>
+            </div>
+
+            <div class="debt-status-bar" :class="selectedReceipt.status">
+              <Truck       v-if="selectedReceipt.status === 'delivered'" :size="12"/>
+              <Clock       v-else-if="selectedReceipt.status === 'pending'" :size="12"/>
+              <XCircle     v-else :size="12"/>
+              {{ STATUS_DESC[selectedReceipt.status] }}
+            </div>
+          </div>
+
+          <!-- Info grid -->
+          <div class="info-grid">
+            <div class="ig-row">
+              <Store :size="13" class="ig-ic"/>
+              <span class="ig-lbl">Đại lý</span>
+              <span class="ig-val">{{ selectedReceipt.agent }}</span>
+            </div>
+            <div class="ig-row">
+              <CalendarDays :size="13" class="ig-ic"/>
+              <span class="ig-lbl">Ngày xuất</span>
+              <span class="ig-val col-mono">{{ selectedReceipt.date }}</span>
+            </div>
+            <div class="ig-row">
+              <UserRound :size="13" class="ig-ic"/>
+              <span class="ig-lbl">Người lập</span>
+              <span class="ig-val">{{ selectedReceipt.createdBy }}</span>
+            </div>
+            <div class="ig-row" v-if="selectedReceipt.note">
+              <FileText :size="13" class="ig-ic"/>
+              <span class="ig-lbl">Ghi chú</span>
+              <span class="ig-val" style="font-style:italic;color:#64748b">{{ selectedReceipt.note }}</span>
+            </div>
+          </div>
+
+          <!-- Items list -->
+          <div class="items-section">
+            <p class="recent-title">Danh sách mặt hàng</p>
+            <div class="items-hd">
+              <span style="flex:2">Mặt hàng</span>
+              <span style="flex:.7;text-align:center">SL</span>
+              <span style="flex:1;text-align:right">Thành tiền</span>
+            </div>
+            <div class="item-row" v-for="item in selectedReceipt.items" :key="item.name">
+              <span class="item-name" style="flex:2">{{ item.name }}</span>
+              <span style="flex:.7;text-align:center;color:#64748b;font-size:12px">{{ item.qty.toLocaleString('vi-VN') }}</span>
+              <span style="flex:1;text-align:right;font-weight:700;font-size:12px;font-variant-numeric:tabular-nums">{{ fmtTr(item.qty * item.price) }}</span>
+            </div>
+            <div class="items-total">
+              <span>Tổng cộng</span>
+              <strong>{{ fmtTr(selectedReceipt.total) }}</strong>
+            </div>
+          </div>
+
+          <!-- Quick actions -->
+          <div class="quick-links" v-if="selectedReceipt.status === 'pending'">
+            <button class="btn-p" style="flex:1;justify-content:center" @click="deliverReceipt(selectedReceipt)">
+              <Truck :size="14"/>Xác nhận giao hàng
+            </button>
+            <button class="btn-danger-o" @click="cancelReceipt(selectedReceipt)">
+              <XCircle :size="14"/>Hủy
+            </button>
+          </div>
+          <div class="status-note" v-else-if="selectedReceipt.status === 'delivered'">
+            <Truck :size="13"/> Đã giao hàng thành công
+          </div>
+          <div class="status-note cancelled" v-else>
+            <XCircle :size="13"/> Phiếu xuất đã bị hủy
+          </div>
+        </template>
+
+        <!-- ─ EDIT MODE ─ -->
+        <template v-else-if="panelMode === 'edit'">
+          <div class="fc-hd">
+            <div>
+              <h3 class="fc-title">Chỉnh sửa phiếu xuất</h3>
+              <span class="fc-sub">{{ selectedReceipt?.code ?? '' }}</span>
+            </div>
+            <div style="display:flex;gap:5px;align-items:center">
+              <span class="mode-chip edit-chip">Sửa</span>
+              <button class="act-btn" style="background:rgba(15,23,42,.04);color:var(--c-txt-3)" @click="panelMode = 'view'"><X :size="14"/></button>
+            </div>
+          </div>
+          <div class="fc-body">
+            <div class="field full">
+              <label class="flabel">Đại lý <span class="req">*</span></label>
+              <select v-model="form.agentId" class="finp" :class="{ 'finp-err': errors.agent }" @change="onAgentChange">
+                <option value="">— Chọn đại lý —</option>
+                <option v-for="a in agents" :key="a.id" :value="a.id">{{ a.name }}</option>
               </select>
+              <span class="err-msg" v-if="errors.agent">{{ errors.agent }}</span>
             </div>
-            <div class="form-group" style="flex: 0.6;">
-              <label class="form-label">Ngày xuất</label>
-              <input v-model="form.NgayXuat" type="date" class="form-input" />
+            <div class="debt-hint" v-if="formAgent">
+              <div class="dh-row">
+                <span>Nợ hiện tại</span>
+                <strong :class="debtClass(formAgent.id)">{{ fmtMoney(formAgent.debt) }} / {{ fmtMoney(formAgent.limit) }}</strong>
+              </div>
+              <div class="dh-bar"><div class="dh-fill" :style="{ width: agentDebtPct(formAgent.id)+'%', background: debtBarColor(formAgent.id) }"></div></div>
+            </div>
+            <div class="field-row">
+              <div class="field">
+                <label class="flabel">Ngày xuất</label>
+                <input v-model="form.date" type="date" class="finp" :max="today"/>
+              </div>
+              <div class="field">
+                <label class="flabel">Người lập</label>
+                <input v-model="form.createdBy" class="finp" placeholder="Tên người lập"/>
+              </div>
+            </div>
+            <div class="field full">
+              <label class="flabel">Ghi chú</label>
+              <textarea v-model="form.note" class="finp ftarea" rows="2" placeholder="Ghi chú thêm…"></textarea>
+            </div>
+            <div class="field full">
+              <label class="flabel">Danh sách mặt hàng <span class="req">*</span></label>
+              <div class="items-form-list">
+                <div class="items-form-hd">
+                  <span style="flex:2">Mặt hàng</span>
+                  <span style="flex:.75;text-align:center">SL</span>
+                  <span style="flex:1">Giá (Tr)</span>
+                  <span style="width:26px"></span>
+                </div>
+                <div v-for="(item, idx) in form.items" :key="idx" class="item-form-row">
+                  <select v-model="item.name" class="finp finp-sm" style="flex:2" @change="onProductChange(item)">
+                    <option value="">Chọn mặt hàng</option>
+                    <option v-for="p in products" :key="p.name" :value="p.name">{{ p.name }}</option>
+                  </select>
+                  <input v-model.number="item.qty" type="number" min="1" class="finp finp-sm finp-num" style="flex:.75" placeholder="SL"/>
+                  <input v-model.number="item.price" type="number" min="0" step="0.001" class="finp finp-sm finp-num" style="flex:1" placeholder="0.00" readonly/>
+                  <button type="button" class="act-btn del-btn" style="flex-shrink:0" @click="removeItem(idx)" :disabled="form.items.length <= 1"><Trash2 :size="11"/></button>
+                </div>
+                <button type="button" class="add-item-btn" @click="addItem"><Plus :size="13"/> Thêm mặt hàng</button>
+              </div>
+              <span class="err-msg" v-if="errors.items">{{ errors.items }}</span>
+            </div>
+            <div class="limit-row">
+              <Package :size="11"/>
+              Tổng cộng (ước tính): <strong>{{ fmtTr(formTotal) }}</strong>
             </div>
           </div>
-
-          <!-- Debt Warning -->
-          <div v-if="debtInfo" class="debt-info" :class="{ 'debt-danger': debtInfo.nearLimit }">
-            💰 Nợ hiện tại: <strong>{{ formatCurrency(debtInfo.tienNo) }}</strong> / Hạn mức: <strong>{{ formatCurrency(debtInfo.hanMuc) }}</strong>
+          <div class="fc-footer">
+            <button class="btn-ghost" @click="panelMode = 'view'"><X :size="12"/> Hủy</button>
+            <button class="btn-p" @click="submitEdit"><Edit2 :size="13"/> Cập nhật</button>
           </div>
+        </template>
 
-          <h4 style="margin: 16px 0 12px; color: var(--gray-700);">Chi tiết mặt hàng (giá tự động = 102% giá nhập)</h4>
-
-          <div v-for="(ct, i) in form.chiTiets" :key="i" class="detail-row">
-            <select v-model="ct.MaMatHang" class="form-select" style="flex: 2;">
-              <option value="">Chọn mặt hàng</option>
-              <option v-for="mh in matHangs" :key="mh.MaMatHang" :value="mh.MaMatHang">{{ mh.TenMatHang }} (Tồn: {{ mh.SoLuongTon }})</option>
-            </select>
-            <input v-model.number="ct.SoLuong" type="number" class="form-input" placeholder="SL" min="1" style="flex: 0.6;" />
-            <button v-if="form.chiTiets.length > 1" class="btn btn-sm btn-danger" @click="form.chiTiets.splice(i, 1)">✕</button>
+        <!-- ─ CREATE MODE ─ -->
+        <template v-else-if="panelMode === 'create'">
+          <div class="fc-hd">
+            <div>
+              <h3 class="fc-title">Lập phiếu xuất hàng</h3>
+              <span class="fc-sub">Điền thông tin và danh sách mặt hàng</span>
+            </div>
+            <span class="mode-chip add">Mới</span>
           </div>
-          <button class="btn btn-sm btn-secondary" @click="form.chiTiets.push({ MaMatHang: '', SoLuong: 1 })" style="margin-top: 8px;">+ Thêm dòng</button>
+          <div class="fc-body">
+            <div class="field full">
+              <label class="flabel">Đại lý <span class="req">*</span></label>
+              <select v-model="form.agentId" class="finp" :class="{ 'finp-err': errors.agent }" @change="onAgentChange">
+                <option value="">— Chọn đại lý —</option>
+                <option v-for="a in agents" :key="a.id" :value="a.id">{{ a.name }}</option>
+              </select>
+              <span class="err-msg" v-if="errors.agent">{{ errors.agent }}</span>
+            </div>
+            <!-- Debt hint when agent selected -->
+            <div class="debt-hint" v-if="formAgent">
+              <div class="dh-row">
+                <span>Nợ hiện tại</span>
+                <strong :class="debtClass(formAgent.id)">{{ fmtMoney(formAgent.debt) }} / {{ fmtMoney(formAgent.limit) }}</strong>
+              </div>
+              <div class="dh-bar"><div class="dh-fill" :style="{ width: agentDebtPct(formAgent.id)+'%', background: debtBarColor(formAgent.id) }"></div></div>
+              <span class="dh-warn" v-if="agentDebtPct(formAgent.id) >= 80">
+                ⚠ Đại lý gần đạt hạn mức nợ
+              </span>
+            </div>
+            <div class="field-row">
+              <div class="field">
+                <label class="flabel">Ngày xuất <span class="req">*</span></label>
+                <input v-model="form.date" type="date" class="finp" :max="today"/>
+              </div>
+              <div class="field">
+                <label class="flabel">Người lập</label>
+                <input v-model="form.createdBy" class="finp" placeholder="Tên người lập"/>
+              </div>
+            </div>
+            <div class="field full">
+              <label class="flabel">Ghi chú</label>
+              <textarea v-model="form.note" class="finp ftarea" rows="2" placeholder="Ghi chú thêm…"></textarea>
+            </div>
+            <div class="field full">
+              <label class="flabel">Danh sách mặt hàng <span class="req">*</span></label>
+              <div class="items-form-list">
+                <div class="items-form-hd">
+                  <span style="flex:2">Mặt hàng</span>
+                  <span style="flex:.75;text-align:center">SL</span>
+                  <span style="flex:1">Giá xuất (Tr)</span>
+                  <span style="width:26px"></span>
+                </div>
+                <div v-for="(item, idx) in form.items" :key="idx" class="item-form-row">
+                  <select v-model="item.name" class="finp finp-sm" style="flex:2" @change="onProductChange(item)">
+                    <option value="">Chọn mặt hàng</option>
+                    <option v-for="p in products" :key="p.name" :value="p.name">{{ p.name }}</option>
+                  </select>
+                  <input v-model.number="item.qty" type="number" min="1" class="finp finp-sm finp-num" style="flex:.75" placeholder="SL"/>
+                  <input v-model.number="item.price" type="number" step="0.001" class="finp finp-sm finp-num" style="flex:1" placeholder="0.00" readonly/>
+                  <button type="button" class="act-btn del-btn" style="flex-shrink:0" @click="removeItem(idx)" :disabled="form.items.length <= 1"><Trash2 :size="11"/></button>
+                </div>
+                <button type="button" class="add-item-btn" @click="addItem"><Plus :size="13"/> Thêm mặt hàng</button>
+              </div>
+              <span class="err-msg" v-if="errors.items">{{ errors.items }}</span>
+            </div>
+            <div class="limit-row">
+              <Package :size="11"/>
+              Tổng cộng (ước tính): <strong>{{ fmtTr(formTotal) }}</strong>
+            </div>
+          </div>
+          <div class="fc-footer">
+            <button class="btn-ghost" @click="closePanel"><X :size="12"/> Hủy</button>
+            <button class="btn-p" @click="submitCreate">Lập phiếu xuất</button>
+          </div>
+        </template>
 
-          <div v-if="formError" class="error-msg">{{ formError }}</div>
+      </div>
+      </Transition>
+    </div>
 
-          <div class="form-actions">
-            <button class="btn btn-secondary" @click="showForm = false">Hủy</button>
-            <button class="btn btn-primary" @click="submitForm" :disabled="submitting">{{ submitting ? 'Đang lưu...' : 'Lập phiếu' }}</button>
+    <!-- ══ TOAST ══ -->
+    <Teleport to="body">
+      <Transition name="toast">
+        <div v-if="toast.show" class="toast-snack" :class="toast.type">
+          <Truck       v-if="toast.type === 'success'" :size="15"/>
+          <XCircle     v-else-if="toast.type === 'danger'" :size="15"/>
+          <Clock       v-else :size="15"/>
+          {{ toast.msg }}
+        </div>
+      </Transition>
+    </Teleport>
+
+    <!-- ══ DELETE MODAL ══ -->
+    <Teleport to="body">
+      <div v-if="deleteTarget" class="modal-bg" @click="deleteTarget = null">
+        <div class="modal-box" @click.stop>
+          <div class="del-icon-wrap"><Trash2 :size="24"/></div>
+          <h4 class="modal-title">Xác nhận xóa phiếu xuất</h4>
+          <p class="modal-desc">
+            Bạn có chắc muốn xóa <strong>{{ deleteTarget.code }}</strong>?<br/>
+            Hành động này không thể hoàn tác.
+          </p>
+          <div class="modal-actions">
+            <button class="btn-o" @click="deleteTarget = null">Hủy</button>
+            <button class="btn-danger" @click="confirmDelete">Xóa</button>
           </div>
         </div>
       </div>
-    </div>
+    </Teleport>
 
-    <!-- Detail Modal -->
-    <div v-if="selectedPhieu" class="modal-overlay" @click.self="selectedPhieu = null">
-      <div class="modal-content" style="max-width: 640px;">
-        <div class="modal-header"><h3>Phiếu PX{{ String(selectedPhieu.MaPX).padStart(3,'0') }}</h3><button class="modal-close" @click="selectedPhieu = null">✕</button></div>
-        <div class="modal-body">
-          <p style="color: var(--gray-500); margin-bottom: 16px;">Đại lý: <strong>{{ selectedPhieu.daiLy?.TenDaiLy }}</strong> | Ngày: {{ formatDate(selectedPhieu.NgayXuat) }}</p>
-          <div class="table-wrapper">
-            <table>
-              <thead><tr><th>Mặt hàng</th><th>SL</th><th>Đơn giá xuất</th><th>Thành tiền</th></tr></thead>
-              <tbody>
-                <tr v-for="ct in selectedPhieu.chiTiets" :key="ct.MaMatHang">
-                  <td>{{ ct.matHang?.TenMatHang }}</td><td>{{ ct.SoLuong }}</td>
-                  <td>{{ formatCurrency(ct.DonGiaXuat) }}</td><td class="text-primary">{{ formatCurrency(ct.ThanhTien) }}</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-          <div class="total-line"><strong>Tổng: {{ formatCurrency(selectedPhieu.TongTien) }}</strong></div>
-        </div>
-      </div>
-    </div>
   </div>
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted } from 'vue';
-import api from '../services/api';
-import { Plus } from 'lucide-vue-next';
+import { ref, computed, reactive } from 'vue';
+import {
+  Search, Plus, Download, X, Eye, XCircle,
+  Trash2, PackageOpen, Package, CalendarDays,
+  UserRound, FileText, Clock, Edit2, Truck, Store,
+} from 'lucide-vue-next';
 
-const phieuXuats = ref([]);
-const daiLys = ref([]);
-const matHangs = ref([]);
-const showForm = ref(false);
-const submitting = ref(false);
-const formError = ref('');
-const selectedPhieu = ref(null);
-const debtInfo = ref(null);
+/* ── Sort icon ── */
+const SortIcon = {
+  props: ['field', 'sk', 'sd'],
+  template: `<span class="sort-arrow"><svg width="8" height="10" viewBox="0 0 8 10" fill="none">
+    <path d="M4 0L7 3.5H1L4 0Z" :fill="sk===field && sd==='asc' ? '#5b9dfa' : '#cbd5e1'"/>
+    <path d="M4 10L1 6.5H7L4 10Z" :fill="sk===field && sd==='desc' ? '#5b9dfa' : '#cbd5e1'"/>
+  </svg></span>`,
+};
 
-const form = reactive({
-  MaDaiLy: '', NgayXuat: new Date().toISOString().split('T')[0],
-  chiTiets: [{ MaMatHang: '', SoLuong: 1 }],
+/* ── Constants ── */
+const STATUS      = { pending: 'Chờ giao', delivered: 'Đã giao', cancelled: 'Đã hủy' };
+const STATUS_DESC = {
+  pending:   'Phiếu đang chờ giao hàng',
+  delivered: 'Đã giao hàng thành công',
+  cancelled: 'Phiếu xuất đã bị hủy',
+};
+
+const AGENT_CLR = [
+  'linear-gradient(135deg,#059669,#34d399)',
+  'linear-gradient(135deg,#0d9488,#2dd4bf)',
+  'linear-gradient(135deg,#0284c7,#38bdf8)',
+  'linear-gradient(135deg,#4f46e5,#818cf8)',
+  'linear-gradient(135deg,#0891b2,#22d3ee)',
+  'linear-gradient(135deg,#7c3aed,#a78bfa)',
+];
+const agentColor = (id) => AGENT_CLR[id % AGENT_CLR.length];
+
+const agents = [
+  { id:1, name:'Đại lý Tuấn Phát',   debt:8_500_000,  limit:10_000_000 },
+  { id:2, name:'Đại lý Lan Anh',      debt:3_200_000,  limit:5_000_000  },
+  { id:3, name:'Đại lý Quốc Khánh',   debt:6_700_000,  limit:10_000_000 },
+  { id:4, name:'Đại lý Minh Châu',    debt:1_800_000,  limit:5_000_000  },
+  { id:5, name:'Đại lý Hoa Phượng',   debt:9_100_000,  limit:10_000_000 },
+  { id:6, name:'Đại lý Thanh Bình',   debt:5_800_000,  limit:10_000_000 },
+  { id:7, name:'Đại lý Phú Quý',      debt:2_300_000,  limit:5_000_000  },
+  { id:8, name:'Đại lý Bảo Châu',     debt:4_900_000,  limit:5_000_000  },
+];
+
+const products = [
+  { name:'Bóng đèn LED 9W',    sellPrice:0.1224 },
+  { name:'Đèn LED panel 12W',  sellPrice:0.2856 },
+  { name:'Đèn huỳnh quang T8', sellPrice:0.0969 },
+  { name:'Công tắc điện Sino', sellPrice:0.0816 },
+  { name:'Ổ cắm 3 chấu',       sellPrice:0.0663 },
+  { name:'Cầu dao MCB 20A',    sellPrice:0.459  },
+  { name:'Dây điện CVV 1.5mm', sellPrice:0.0224 },
+  { name:'Relay nhiệt LS 10A', sellPrice:0.3876 },
+];
+
+/* ── Mock data ── */
+const receipts = ref([
+  { id:1, code:'PX-2026-001', date:'05/05/2026', rawDate:'2026-05-05', agent:'Đại lý Tuấn Phát',   agentId:1, createdBy:'Nguyễn Admin',  items:[{name:'Bóng đèn LED 9W',qty:200,price:.1224},{name:'Đèn LED panel 12W',qty:80,price:.2856}],      total:51.3, status:'delivered', note:'' },
+  { id:2, code:'PX-2026-002', date:'08/05/2026', rawDate:'2026-05-08', agent:'Đại lý Lan Anh',      agentId:2, createdBy:'Trần Kế Toán', items:[{name:'Công tắc điện Sino',qty:150,price:.0816},{name:'Ổ cắm 3 chấu',qty:200,price:.0663}],           total:25.5, status:'pending',   note:'Giao buổi sáng' },
+  { id:3, code:'PX-2026-003', date:'10/05/2026', rawDate:'2026-05-10', agent:'Đại lý Quốc Khánh',   agentId:3, createdBy:'Nguyễn Admin',  items:[{name:'Cầu dao MCB 20A',qty:60,price:.459}],                                                          total:27.5, status:'delivered', note:'' },
+  { id:4, code:'PX-2026-004', date:'13/05/2026', rawDate:'2026-05-13', agent:'Đại lý Minh Châu',    agentId:4, createdBy:'Lê Kho Vận',   items:[{name:'Đèn huỳnh quang T8',qty:300,price:.0969},{name:'Dây điện CVV 1.5mm',qty:500,price:.0224}],        total:40.3, status:'pending',   note:'Giao theo lô' },
+  { id:5, code:'PX-2026-005', date:'15/05/2026', rawDate:'2026-05-15', agent:'Đại lý Hoa Phượng',   agentId:5, createdBy:'Nguyễn Admin',  items:[{name:'Bóng đèn LED 9W',qty:100,price:.1224}],                                                         total:12.2, status:'cancelled', note:'Khách hủy đơn' },
+  { id:6, code:'PX-2026-006', date:'18/05/2026', rawDate:'2026-05-18', agent:'Đại lý Tuấn Phát',    agentId:1, createdBy:'Trần Kế Toán', items:[{name:'Relay nhiệt LS 10A',qty:30,price:.3876},{name:'Cầu dao MCB 20A',qty:25,price:.459}],               total:23.1, status:'pending',   note:'Ưu tiên giao sáng' },
+]);
+
+/* ── State ── */
+const searchQ      = ref('');
+const filterAgent  = ref('');
+const filterStatus = ref('');
+const sk           = ref('rawDate');
+const sd           = ref('desc');
+const selectedId   = ref(null);
+const panelMode    = ref('view');
+const deleteTarget = ref(null);
+
+/* ── Computed ── */
+const hasFilter = computed(() => searchQ.value || filterAgent.value || filterStatus.value);
+const clearFilters = () => { searchQ.value = ''; filterAgent.value = ''; filterStatus.value = ''; };
+const toggleSort = (key) => {
+  if (sk.value === key) sd.value = sd.value === 'asc' ? 'desc' : 'asc';
+  else { sk.value = key; sd.value = 'asc'; }
+};
+
+const filteredList = computed(() => {
+  const q = searchQ.value.toLowerCase();
+  return receipts.value.filter(r => {
+    const matchQ = !q || r.code.toLowerCase().includes(q) || r.agent.toLowerCase().includes(q);
+    const matchA = !filterAgent.value  || r.agent  === filterAgent.value;
+    const matchS = !filterStatus.value || r.status === filterStatus.value;
+    return matchQ && matchA && matchS;
+  });
 });
 
-const onSelectDaiLy = () => {
-  const dl = daiLys.value.find(d => d.MaDaiLy === form.MaDaiLy);
-  if (dl) {
-    const hanMuc = parseFloat(dl.loaiDaiLy?.SoNoToiDa) || 0;
-    const tienNo = parseFloat(dl.TienNo) || 0;
-    debtInfo.value = { tienNo, hanMuc, nearLimit: tienNo >= hanMuc * 0.8 };
-  } else { debtInfo.value = null; }
+const sortedList = computed(() => {
+  const list = [...filteredList.value];
+  list.sort((a, b) => {
+    let va = a[sk.value], vb = b[sk.value];
+    if (typeof va === 'string') { va = va.toLowerCase(); vb = vb.toLowerCase(); }
+    if (va < vb) return sd.value === 'asc' ? -1 : 1;
+    if (va > vb) return sd.value === 'asc' ?  1 : -1;
+    return 0;
+  });
+  return list;
+});
+
+const selectedReceipt = computed(() => receipts.value.find(r => r.id === selectedId.value) ?? null);
+const panelVisible    = computed(() => selectedReceipt.value !== null || panelMode.value === 'create');
+
+const pendingCount   = computed(() => receipts.value.filter(r => r.status === 'pending').length);
+const deliveredCount = computed(() => receipts.value.filter(r => r.status === 'delivered').length);
+const cancelledCount = computed(() => receipts.value.filter(r => r.status === 'cancelled').length);
+const totalRevenue   = computed(() => receipts.value.filter(r => r.status === 'delivered').reduce((s, r) => s + r.total, 0).toFixed(1));
+const monthMax       = computed(() => Math.max(...receipts.value.map(r => r.total), 1));
+const overDebtCount  = computed(() => agents.filter(a => a.debt >= a.limit).length);
+
+/* ── Donut ── */
+const donutGradient = computed(() => {
+  const total = receipts.value.length || 1;
+  const d = Math.round(deliveredCount.value / total * 100);
+  const p = Math.round(pendingCount.value   / total * 100);
+  return `conic-gradient(#10b981 0% ${d}%, #f59e0b ${d}% ${d + p}%, #e2e8f0 ${d + p}% 100%)`;
+});
+
+/* ── Sparkline ── */
+const spark       = [65, 78, 58, 110, 95, 79];
+const maxSpark    = Math.max(...spark);
+const sparkLabels = ['Th.12', 'Th.1', 'Th.2', 'Th.3', 'Th.4', 'Th.5'];
+
+/* ── Month progress ── */
+const _now           = new Date();
+const daysInMonth    = new Date(_now.getFullYear(), _now.getMonth() + 1, 0).getDate();
+const dayOfMonth     = _now.getDate();
+const monthProgressPct = Math.round(dayOfMonth / daysInMonth * 100);
+const monthName      = ['Tháng 1','Tháng 2','Tháng 3','Tháng 4','Tháng 5','Tháng 6',
+                        'Tháng 7','Tháng 8','Tháng 9','Tháng 10','Tháng 11','Tháng 12'][_now.getMonth()];
+
+/* ── Helpers ── */
+const getAgent       = (id) => agents.find(a => a.id === id);
+const fmtTr          = (v) => v >= 1 ? `${Number(v).toFixed(1)} Tr` : `${(Number(v) * 1000).toFixed(0)} K`;
+const fmtMoney       = (v) => ((v || 0) / 1_000_000).toFixed(1) + ' Tr';
+const revBarPct      = (r) => Math.min((r.total / monthMax.value) * 100, 100);
+const revBarColor    = (r) => {
+  const p = revBarPct(r);
+  return p >= 80 ? '#5b9dfa' : p >= 50 ? '#93c5fd' : '#bfdbfe';
+};
+const agentDebtPct   = (id) => {
+  const a = getAgent(id); if (!a) return 0;
+  return Math.min((a.debt / a.limit) * 100, 100);
+};
+const debtBarColor   = (id) => {
+  const p = agentDebtPct(id);
+  return p >= 100 ? '#ef4444' : p >= 80 ? '#f59e0b' : '#10b981';
+};
+const debtClass      = (id) => {
+  const p = agentDebtPct(id);
+  return p >= 100 ? 'debt-over' : p >= 80 ? 'debt-warn' : 'debt-ok';
 };
 
-const fetchData = async () => {
-  try {
-    const [pxRes, dlRes, mhRes] = await Promise.all([api.get('/phieu-xuat'), api.get('/dai-ly'), api.get('/mat-hang')]);
-    phieuXuats.value = pxRes.data.data;
-    daiLys.value = dlRes.data.data;
-    matHangs.value = mhRes.data.data;
-  } catch (error) { console.error(error); }
+/* ── Form ── */
+const today     = new Date().toISOString().split('T')[0];
+const emptyForm = () => ({ agentId: '', date: today, createdBy: 'Nguyễn Admin', note: '', items: [{ name: '', qty: 1, price: 0 }] });
+const form      = ref(emptyForm());
+const errors    = reactive({ agent: '', items: '' });
+const formAgent = computed(() => form.value.agentId ? getAgent(Number(form.value.agentId)) : null);
+const formTotal = computed(() => form.value.items.reduce((s, i) => s + (i.qty || 0) * (i.price || 0), 0));
+
+const addItem    = () => form.value.items.push({ name: '', qty: 1, price: 0 });
+const removeItem = (i) => { if (form.value.items.length > 1) form.value.items.splice(i, 1); };
+const onAgentChange = () => {};
+const onProductChange = (item) => {
+  const p = products.find(p => p.name === item.name);
+  if (p) item.price = p.sellPrice;
 };
 
-const submitForm = async () => {
-  if (!form.MaDaiLy) { formError.value = 'Vui lòng chọn đại lý.'; return; }
-  const validDetails = form.chiTiets.filter(ct => ct.MaMatHang && ct.SoLuong > 0);
-  if (validDetails.length === 0) { formError.value = 'Vui lòng chọn ít nhất 1 mặt hàng.'; return; }
-  submitting.value = true; formError.value = '';
-  try {
-    await api.post('/phieu-xuat', { MaDaiLy: form.MaDaiLy, NgayXuat: form.NgayXuat, chiTiets: validDetails });
-    showForm.value = false;
-    form.chiTiets = [{ MaMatHang: '', SoLuong: 1 }]; form.MaDaiLy = ''; debtInfo.value = null;
-    await fetchData();
-  } catch (error) {
-    formError.value = error.response?.data?.message || 'Lỗi khi lập phiếu xuất.';
-  } finally { submitting.value = false; }
+/* ── Toast ── */
+const toast = ref({ show: false, msg: '', type: 'success' });
+let _toastTimer = null;
+const showToast = (msg, type = 'success') => {
+  toast.value = { show: true, msg, type };
+  clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(() => { toast.value.show = false; }, 2800);
 };
 
-const formatCurrency = (n) => (parseFloat(n) || 0).toLocaleString('vi-VN') + 'đ';
-const formatDate = (d) => d ? new Date(d).toLocaleDateString('vi-VN') : '';
-onMounted(fetchData);
+/* ── Actions ── */
+const openView = (r) => { selectedId.value = r.id; panelMode.value = 'view'; };
+
+const openCreate = () => {
+  selectedId.value = null;
+  panelMode.value  = 'create';
+  form.value       = emptyForm();
+  errors.agent = ''; errors.items = '';
+};
+
+const openEdit = (r) => {
+  selectedId.value = r.id;
+  panelMode.value  = 'edit';
+  form.value = { agentId: r.agentId, date: r.rawDate, createdBy: r.createdBy, note: r.note, items: r.items.map(i => ({ ...i })) };
+  errors.agent = ''; errors.items = '';
+};
+
+const closePanel = () => { selectedId.value = null; panelMode.value = 'view'; };
+
+const deliverReceipt = (r) => {
+  const found = receipts.value.find(x => x.id === r.id);
+  if (found) { found.status = 'delivered'; showToast(`Phiếu ${found.code} đã giao hàng thành công`); }
+};
+
+const cancelReceipt = (r) => {
+  const found = receipts.value.find(x => x.id === r.id);
+  if (found) { found.status = 'cancelled'; showToast(`Phiếu ${found.code} đã bị hủy`, 'warn'); }
+};
+
+const askDelete     = (r) => { deleteTarget.value = r; };
+const confirmDelete = () => {
+  const code = deleteTarget.value.code;
+  receipts.value = receipts.value.filter(r => r.id !== deleteTarget.value.id);
+  if (selectedId.value === deleteTarget.value.id) closePanel();
+  deleteTarget.value = null;
+  showToast(`Đã xóa phiếu ${code}`, 'danger');
+};
+
+const submitCreate = () => {
+  errors.agent = ''; errors.items = '';
+  if (!form.value.agentId) { errors.agent = 'Vui lòng chọn đại lý'; return; }
+  const validItems = form.value.items.filter(i => i.name && i.qty > 0);
+  if (!validItems.length) { errors.items = 'Thêm ít nhất 1 mặt hàng hợp lệ'; return; }
+  const newId = Math.max(...receipts.value.map(r => r.id)) + 1;
+  const d = new Date(form.value.date);
+  const agnt = getAgent(Number(form.value.agentId));
+  const code = `PX-2026-${String(newId).padStart(3, '0')}`;
+  receipts.value.unshift({
+    id: newId, code,
+    date: d.toLocaleDateString('vi-VN'),
+    rawDate: form.value.date,
+    agent: agnt?.name ?? '',
+    agentId: Number(form.value.agentId),
+    createdBy: form.value.createdBy || 'Nguyễn Admin',
+    items: validItems.map(i => ({ ...i })),
+    total: formTotal.value,
+    status: 'pending',
+    note: form.value.note,
+  });
+  showToast(`Đã lập phiếu xuất ${code}`);
+  closePanel();
+};
+
+const submitEdit = () => {
+  errors.agent = ''; errors.items = '';
+  if (!form.value.agentId) { errors.agent = 'Vui lòng chọn đại lý'; return; }
+  const validItems = form.value.items.filter(i => i.name && i.qty > 0);
+  if (!validItems.length) { errors.items = 'Thêm ít nhất 1 mặt hàng hợp lệ'; return; }
+  const found = receipts.value.find(r => r.id === selectedId.value);
+  if (!found) return;
+  const d = new Date(form.value.date);
+  const agnt = getAgent(Number(form.value.agentId));
+  found.agent     = agnt?.name ?? '';
+  found.agentId   = Number(form.value.agentId);
+  found.date      = d.toLocaleDateString('vi-VN');
+  found.rawDate   = form.value.date;
+  found.createdBy = form.value.createdBy || 'Nguyễn Admin';
+  found.note      = form.value.note;
+  found.items     = validItems.map(i => ({ ...i }));
+  found.total     = formTotal.value;
+  showToast(`Đã cập nhật phiếu ${found.code}`);
+  panelMode.value = 'view';
+};
+
+const exportCSV = () => {
+  const cols = ['Mã phiếu', 'Ngày xuất', 'Đại lý', 'Tổng tiền (Tr)', 'Trạng thái', 'Ghi chú'];
+  const rows = sortedList.value.map(r => [r.code, r.date, r.agent, r.total, STATUS[r.status], r.note]);
+  const csv = [cols, ...rows].map(row => row.map(v => `"${v ?? ''}"`).join(',')).join('\n');
+  const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href = url; a.download = `phieu-xuat-${Date.now()}.csv`; a.click();
+  URL.revokeObjectURL(url);
+};
 </script>
 
 <style scoped>
-.page-header-actions { display: flex; justify-content: flex-end; margin-bottom: 20px; }
-.form-row { display: flex; gap: 16px; }
-.flex-1 { flex: 1; }
-.detail-row { display: flex; gap: 10px; align-items: center; margin-bottom: 10px; }
-.form-actions { display: flex; gap: 12px; justify-content: flex-end; margin-top: 24px; }
-.total-line { text-align: right; margin-top: 16px; padding-top: 16px; border-top: 2px solid var(--gray-100); font-size: 1.1rem; color: var(--primary-700); }
-.text-primary { color: var(--primary-600); font-weight: 600; }
-.empty-cell { text-align: center; padding: 40px !important; color: var(--gray-400); }
-.error-msg { margin-top: 12px; padding: 12px; background: var(--danger-light); border-radius: var(--radius-md); color: var(--danger); font-size: 0.85rem; }
-.debt-info { padding: 12px 16px; border-radius: var(--radius-md); background: var(--info-light); color: var(--gray-700); font-size: 0.875rem; margin-bottom: 12px; }
-.debt-danger { background: var(--danger-light); color: var(--danger); }
+/* ══ TOKENS ══ */
+.px {
+  --c-primary:    #5b9dfa; --c-primary-d: #3b82f6;
+  --c-success:    #3b82f6; --c-success-bg:#eff6ff;
+  --c-danger:     #EF4444; --c-danger-bg: #FEF2F2;
+  --c-info:       #7c3aed;
+  --c-surface:    #ffffff; --c-bg:        #f8fafc;
+  --c-border:     rgba(15,23,42,.07); --c-border-s: rgba(15,23,42,.04);
+  --c-txt:        #0f172a; --c-txt-2:     #475569; --c-txt-3: #94a3b8;
+  --r-card: 12px; --r-md: 8px; --r-sm: 6px; --r-pill: 999px;
+  --sh-card:  0 1px 3px rgba(15,23,42,.05),0 1px 2px rgba(15,23,42,.04);
+  --sh-hover: 0 4px 16px rgba(15,23,42,.08);
+  --sh-modal: 0 20px 60px rgba(15,23,42,.18);
+  --t: .15s ease;
+  padding: 4px 0 32px;
+  font-family: 'Inter','Be Vietnam Pro',ui-sans-serif,system-ui,sans-serif;
+  color: var(--c-txt); font-size: 14px; line-height: 1.5;
+}
+
+/* ══ CONTEXT BANNER ══ */
+.ctx-card {
+  background: linear-gradient(120deg,#ffffff 0%,#eff6ff 45%,#f0f4ff 100%);
+  border: 1px solid rgba(91,157,250,.13);
+  border-radius: var(--r-card);
+  box-shadow: 0 2px 16px rgba(91,157,250,.07),0 1px 3px rgba(15,23,42,.04);
+  margin-bottom: 18px; overflow: hidden; position: relative;
+}
+.ctx-card::before {
+  content:''; position:absolute; inset:0;
+  background-image: radial-gradient(rgba(91,157,250,.08) 1px,transparent 1px);
+  background-size: 22px 22px; pointer-events:none; z-index:0;
+}
+.ctx-card::after {
+  content:''; position:absolute; top:0; left:0; right:0; height:2.5px;
+  background: linear-gradient(90deg,transparent,#bfdbfe 25%,#93c5fd 50%,#bfdbfe 75%,transparent);
+  z-index:1;
+}
+.ctx-deco  { position:absolute; right:0; top:0; width:260px; height:100%; pointer-events:none; z-index:0; }
+.ctx-wm    { position:absolute; right:300px; top:50%; transform:translateY(-50%); width:90px; height:90px; color:var(--c-primary); opacity:.08; pointer-events:none; }
+.ctx-top   { display:flex; justify-content:space-between; align-items:center; padding:20px 26px 18px; gap:16px; position:relative; z-index:2; }
+.ctx-title { font-size:22px; font-weight:800; margin:0; letter-spacing:-.6px; color:var(--c-txt); }
+.ctx-sub   { font-size:12px; color:var(--c-txt-3); margin:4px 0 0; }
+.ctx-actions { display:flex; gap:8px; align-items:center; flex-shrink:0; }
+.ctx-divider { height:1px; background:rgba(91,157,250,.1); position:relative; z-index:2; }
+
+.ctx-stats { display:flex; align-items:stretch; position:relative; z-index:2; }
+.cs-col { flex:1; display:flex; flex-direction:column; gap:6px; padding:18px 26px; transition:background var(--t); }
+.cs-col:hover { background:rgba(91,157,250,.03); }
+.cs-warn { background:rgba(245,158,11,.04); }
+.cs-warn:hover { background:rgba(245,158,11,.09); }
+.cs-sep { width:1px; background:rgba(91,157,250,.1); flex-shrink:0; margin:12px 0; }
+.cs-num { font-size:30px; font-weight:900; letter-spacing:-1.2px; color:var(--c-txt); line-height:1; display:flex; align-items:baseline; gap:7px; font-variant-numeric:tabular-nums; }
+.cs-amber { color:#D97706; }
+.cs-tag { font-size:10px; font-weight:700; padding:2px 7px; border-radius:var(--r-pill); background:#fffbeb; color:#B45309; border:1px solid rgba(245,158,11,.25); }
+.cs-tag-red { background:#fef2f2; color:#991b1b; border-color:rgba(239,68,68,.2); }
+.cs-lbl { font-size:11px; color:var(--c-txt-3); font-weight:600; letter-spacing:.2px; }
+
+/* ── Delta ── */
+.cs-delta { font-size:10.5px; font-weight:600; margin-top:-3px; }
+.cs-up    { color:#10b981; }
+.cs-ok    { color:#10b981; }
+.cs-down  { color:var(--c-danger); }
+
+/* ── Sparkline ── */
+.spark-wrap { display:flex; align-items:flex-end; gap:3px; height:28px; margin:4px 0 2px; }
+.spark-bar  { flex:1; background:#e2e8f0; border-radius:3px 3px 0 0; min-height:3px; transition:height .4s; }
+.spark-bar.spark-active { background:linear-gradient(180deg,#bfdbfe,#93c5fd); }
+
+/* ── Donut ── */
+.cs-pending-row { display:flex; align-items:center; gap:11px; }
+.donut-wrap { flex-shrink:0; }
+.donut-ring {
+  width:46px; height:46px; border-radius:50%;
+  -webkit-mask: radial-gradient(circle,transparent 52%,black 53%);
+  mask: radial-gradient(circle,transparent 52%,black 53%);
+}
+.donut-legend { display:flex; align-items:center; flex-wrap:wrap; gap:3px; margin-top:5px; font-size:10px; color:var(--c-txt-3); font-weight:600; }
+.dl-dot { width:7px; height:7px; border-radius:50%; display:inline-block; flex-shrink:0; }
+
+/* ── Timeline ── */
+.ctx-timeline { padding:10px 26px 14px; position:relative; z-index:2; }
+.ctl-row  { display:flex; justify-content:space-between; align-items:center; margin-bottom:5px; }
+.ctl-label { font-size:11px; font-weight:600; color:var(--c-txt-3); }
+.ctl-pct   { font-size:11px; font-weight:700; color:var(--c-primary); }
+.ctl-track { height:4px; background:rgba(91,157,250,.1); border-radius:99px; overflow:hidden; }
+.ctl-fill  { height:100%; background:linear-gradient(90deg,#bfdbfe,#93c5fd); border-radius:99px; transition:width .8s ease; }
+
+/* ══ MAIN LAYOUT ══ */
+.dl-flex   { display:flex; gap:20px; align-items:flex-start; }
+.list-card { flex:1 1 auto; min-width:0; }
+.dl-card   { background:var(--c-surface); border-radius:var(--r-card); border:1px solid var(--c-border); box-shadow:var(--sh-card); overflow:hidden; }
+
+/* ══ LIST CARD ══ */
+.lc-hd { padding:16px 20px 14px; border-bottom:1px solid var(--c-border); display:flex; flex-direction:column; gap:10px; }
+.lc-title-row { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+.lc-title { font-size:15px; font-weight:700; margin:0; }
+.count-badge { background:var(--c-success-bg); color:var(--c-primary); font-size:11px; font-weight:700; padding:2px 8px; border-radius:var(--r-pill); border:1px solid rgba(91,157,250,.15); }
+.clear-btn { display:inline-flex; align-items:center; gap:4px; font-size:11px; font-weight:600; color:var(--c-danger); background:var(--c-danger-bg); border:1px solid rgba(239,68,68,.15); border-radius:var(--r-pill); padding:2px 8px; cursor:pointer; }
+.lc-tools  { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+.search-wrap { position:relative; flex:1; min-width:160px; }
+.search-ic   { position:absolute; left:10px; top:50%; transform:translateY(-50%); color:var(--c-txt-3); pointer-events:none; }
+.search-inp  { width:100%; padding:7px 10px 7px 32px; border:1px solid var(--c-border); border-radius:var(--r-md); font-size:13px; color:var(--c-txt); background:var(--c-bg); outline:none; box-sizing:border-box; transition:border-color var(--t); }
+.search-inp:focus { border-color:var(--c-primary); background:#fff; }
+.psel { border:1px solid var(--c-border); border-radius:var(--r-sm); padding:7px 10px; font-size:12px; font-weight:500; color:var(--c-txt-2); background:var(--c-bg); outline:none; cursor:pointer; }
+
+/* ── Status tabs ── */
+.stab-group { display:flex; background:var(--c-bg); border:1px solid var(--c-border); border-radius:var(--r-md); padding:3px; gap:2px; margin-left:auto; flex-shrink:0; }
+.stab { padding:4px 10px; border:none; border-radius:var(--r-sm); font-size:11px; font-weight:700; cursor:pointer; background:transparent; color:var(--c-txt-3); transition:all var(--t); font-family:inherit; display:inline-flex; align-items:center; gap:4px; white-space:nowrap; }
+.stab:hover { background:#fff; color:var(--c-txt-2); }
+.stab.active { background:#fff; color:var(--c-txt); box-shadow:0 1px 3px rgba(15,23,42,.08); }
+.stab-warn.active  { background:#fef3c7; color:#b45309; }
+.stab-green.active { background:var(--c-success-bg); color:#2563eb; }
+.stab-muted.active { background:#f8fafc; color:var(--c-txt-2); }
+.stab-n { font-size:10px; background:rgba(15,23,42,.06); padding:0 5px; border-radius:3px; line-height:1.6; }
+
+/* ══ TABLE ══ */
+.table-wrap { overflow-x:auto; }
+.dl-table { width:100%; border-collapse:collapse; font-size:13px; }
+.dl-table thead tr { background:var(--c-bg); border-bottom:1px solid var(--c-border); }
+.dl-table th { padding:10px 14px; text-align:left; font-size:10.5px; font-weight:700; text-transform:uppercase; letter-spacing:.5px; color:var(--c-txt-3); white-space:nowrap; }
+.dl-table td { padding:11px 14px; border-bottom:1px solid var(--c-border-s); vertical-align:middle; }
+.px-row { cursor:pointer; transition:background var(--t); }
+.px-row:hover { background:rgba(15,23,42,.02); }
+.px-row.selected { background:var(--c-success-bg); }
+.px-row:last-child td { border-bottom:none; }
+.sort-hd { display:inline-flex; align-items:center; gap:4px; cursor:pointer; user-select:none; }
+.sort-arrow { display:inline-flex; align-items:center; }
+.text-right  { text-align:right; }
+.text-center { text-align:center; }
+.col-mono { font-variant-numeric:tabular-nums; font-size:12px; }
+.muted    { color:var(--c-txt-3); }
+
+.px-code { font-size:12px; font-weight:700; color:var(--c-primary); background:var(--c-success-bg); padding:3px 8px; border-radius:6px; font-variant-numeric:tabular-nums; }
+.agent-cell { display:flex; align-items:center; gap:9px; }
+.agent-av   { width:30px; height:30px; border-radius:9px; flex-shrink:0; color:#fff; font-size:12px; font-weight:800; display:flex; align-items:center; justify-content:center; }
+.agent-name { display:block; font-size:13px; font-weight:600; }
+.agent-debt { display:block; font-size:10.5px; font-weight:600; margin-top:1px; }
+.debt-ok   { color:#10b981; }
+.debt-warn { color:#f59e0b; }
+.debt-over { color:var(--c-danger); }
+
+.item-cnt-chip { font-size:11.5px; font-weight:600; color:var(--c-txt-3); background:var(--c-bg); border:1px solid var(--c-border); padding:2px 8px; border-radius:var(--r-pill); }
+.total-num { font-weight:700; font-size:13px; font-variant-numeric:tabular-nums; }
+
+.status-badge { display:inline-flex; align-items:center; padding:3px 9px; border-radius:var(--r-pill); font-size:11px; font-weight:700; white-space:nowrap; }
+.status-badge.pending   { background:#fef3c7; color:#92400e; border:1px solid rgba(245,158,11,.2); }
+.status-badge.delivered { background:var(--c-success-bg); color:#2563eb; border:1px solid rgba(91,157,250,.2); }
+.status-badge.cancelled { background:var(--c-bg); color:var(--c-txt-3); border:1px solid var(--c-border); }
+
+.col-actions { text-align:center; white-space:nowrap; }
+.act-btn  { width:28px; height:28px; display:inline-flex; align-items:center; justify-content:center; border:none; border-radius:var(--r-sm); cursor:pointer; transition:background var(--t); }
+.view-btn { background:rgba(91,157,250,.08); color:var(--c-primary); }
+.view-btn:hover { background:rgba(91,157,250,.18); }
+.edit-btn { background:rgba(124,58,237,.08); color:var(--c-info); }
+.edit-btn:hover { background:rgba(124,58,237,.18); }
+.ok-btn   { background:rgba(16,185,129,.1); color:#059669; }
+.ok-btn:hover { background:rgba(16,185,129,.2); }
+.del-btn  { background:rgba(239,68,68,.08); color:var(--c-danger); }
+.del-btn:hover { background:rgba(239,68,68,.18); }
+.del-btn:disabled { opacity:.3; cursor:not-allowed; }
+
+.empty-row { text-align:center; padding:40px 0; color:var(--c-txt-3); }
+.empty-ic  { margin:0 auto 8px; display:block; opacity:.35; }
+.lc-foot   { padding:10px 20px; font-size:11px; color:var(--c-txt-3); border-top:1px solid var(--c-border-s); }
+
+/* ══ SIDE PANEL ══ */
+.side-panel { display:flex; flex-direction:column; min-height:500px; width:360px; flex-shrink:0; max-height:calc(100vh - 200px); position:sticky; top:16px; overflow:hidden; }
+
+.ap-hd { padding:18px 18px 14px; border-bottom:1px solid var(--c-border); display:flex; align-items:flex-start; gap:12px; }
+.ap-avatar { width:44px; height:44px; border-radius:50%; flex-shrink:0; color:#fff; font-size:18px; font-weight:800; display:flex; align-items:center; justify-content:center; overflow:hidden; }
+.av-img { width:100%; height:100%; object-fit:cover; border-radius:inherit; display:block; }
+.ap-title-block { flex:1; min-width:0; }
+.ap-name   { font-size:15px; font-weight:700; margin:0 0 5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.ap-badges { display:flex; gap:5px; flex-wrap:wrap; }
+.dist-chip { font-size:10px; font-weight:600; color:var(--c-txt-3); background:var(--c-bg); border:1px solid var(--c-border); border-radius:var(--r-pill); padding:3px 8px; }
+
+/* Gauge section */
+.gauge-section { padding:14px 18px; border-bottom:1px solid var(--c-border); display:flex; flex-direction:column; gap:10px; }
+.val-summary { display:flex; flex-direction:column; gap:8px; }
+.vs-main  { display:flex; justify-content:space-between; align-items:baseline; }
+.vs-label { font-size:11px; color:var(--c-txt-3); font-weight:600; text-transform:uppercase; letter-spacing:.4px; }
+.vs-val   { font-size:22px; font-weight:900; color:var(--c-primary); letter-spacing:-.5px; font-variant-numeric:tabular-nums; }
+.vs-bar-wrap { display:flex; align-items:center; gap:10px; }
+.vs-bar   { flex:1; height:6px; background:#f1f5f9; border-radius:3px; overflow:hidden; }
+.vs-fill  { height:100%; border-radius:3px; transition:width .5s ease; }
+.vs-pct   { font-size:10px; color:var(--c-txt-3); font-weight:600; white-space:nowrap; }
+
+/* Debt section */
+.debt-section { display:flex; flex-direction:column; gap:5px; padding:10px 12px; background:var(--c-bg); border-radius:var(--r-md); border:1px solid var(--c-border); }
+.debt-hd { display:flex; justify-content:space-between; align-items:center; }
+.debt-lbl { font-size:11px; color:var(--c-txt-3); font-weight:600; text-transform:uppercase; letter-spacing:.3px; }
+.debt-val { font-size:12px; font-weight:700; font-variant-numeric:tabular-nums; }
+.debt-bar-wrap { display:flex; align-items:center; gap:8px; }
+.debt-bar { flex:1; height:5px; background:#e2e8f0; border-radius:3px; overflow:hidden; }
+.debt-fill { height:100%; border-radius:3px; transition:width .5s; }
+.debt-pct-lbl { font-size:10px; font-weight:700; white-space:nowrap; }
+
+.debt-status-bar { display:flex; align-items:center; gap:6px; font-size:11px; font-weight:700; padding:7px 12px; border-radius:var(--r-md); }
+.debt-status-bar.delivered { background:var(--c-success-bg); color:#2563eb; }
+.debt-status-bar.pending   { background:#fef3c7; color:#92400e; }
+.debt-status-bar.cancelled { background:var(--c-bg); color:var(--c-txt-3); }
+
+/* Info grid */
+.info-grid { padding:14px 18px; border-bottom:1px solid var(--c-border); display:flex; flex-direction:column; gap:9px; }
+.ig-row { display:flex; align-items:flex-start; gap:8px; font-size:12px; }
+.ig-ic  { color:var(--c-txt-3); flex-shrink:0; margin-top:1px; }
+.ig-lbl { color:var(--c-txt-3); width:52px; flex-shrink:0; }
+.ig-val { color:var(--c-txt-2); font-weight:500; flex:1; min-width:0; }
+
+/* Items section */
+.items-section { padding:14px 18px; flex:1; overflow-y:auto; border-bottom:1px solid var(--c-border); }
+.recent-title  { font-size:11px; font-weight:700; color:var(--c-txt-3); text-transform:uppercase; letter-spacing:.6px; margin:0 0 10px; }
+.items-hd  { display:flex; gap:8px; font-size:10px; font-weight:700; color:var(--c-txt-3); text-transform:uppercase; padding-bottom:6px; border-bottom:1px solid var(--c-border-s); margin-bottom:4px; }
+.item-row  { display:flex; align-items:center; gap:8px; padding:7px 0; border-bottom:1px solid var(--c-border-s); }
+.item-row:last-of-type { border-bottom:none; }
+.item-name { font-size:12.5px; font-weight:600; color:var(--c-txt); }
+.items-total { display:flex; justify-content:space-between; align-items:center; padding:10px 12px; margin-top:8px; background:var(--c-success-bg); border-radius:var(--r-md); border:1px solid rgba(91,157,250,.12); }
+.items-total span   { font-size:12px; font-weight:600; color:var(--c-primary); }
+.items-total strong { font-size:15px; font-weight:900; color:var(--c-primary); font-variant-numeric:tabular-nums; }
+
+/* Quick actions */
+.quick-links  { padding:14px 18px; display:flex; gap:8px; border-bottom:1px solid var(--c-border); }
+.btn-danger-o { display:inline-flex; align-items:center; gap:6px; padding:9px 14px; border-radius:var(--r-md); border:1.5px solid rgba(239,68,68,.25); background:#fef2f2; color:#dc2626; font-size:13px; font-weight:700; cursor:pointer; font-family:inherit; transition:all var(--t); }
+.btn-danger-o:hover { background:#fee2e2; }
+.status-note  { display:flex; align-items:center; gap:7px; padding:12px 18px; font-size:12.5px; font-weight:600; }
+.status-note:not(.cancelled) { color:var(--c-primary); }
+.status-note.cancelled { color:var(--c-txt-3); }
+
+/* ══ FORM ══ */
+.fc-hd { padding:16px 18px; border-bottom:1px solid var(--c-border); display:flex; justify-content:space-between; align-items:flex-start; gap:8px; }
+.fc-title { font-size:15px; font-weight:700; margin:0; }
+.fc-sub   { font-size:11px; color:var(--c-txt-3); display:block; margin-top:2px; }
+.mode-chip { font-size:10px; font-weight:700; padding:3px 9px; border-radius:var(--r-pill); flex-shrink:0; }
+.mode-chip.add       { background:var(--c-success-bg); color:#2563eb; border:1px solid rgba(91,157,250,.2); }
+.mode-chip.edit-chip { background:rgba(124,58,237,.08); color:#5b21b6; border:1px solid rgba(124,58,237,.2); }
+
+.fc-body { flex:1; padding:16px 18px; display:flex; flex-direction:column; gap:13px; overflow-y:auto; scrollbar-width:thin; scrollbar-color:#e2e8f0 transparent; }
+.field     { display:flex; flex-direction:column; gap:5px; flex:1; min-width:0; }
+.field.full { width:100%; }
+.field-row  { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.flabel { font-size:11px; font-weight:700; color:var(--c-txt-2); }
+.req    { color:var(--c-danger); }
+
+.finp {
+  padding:8px 11px; border:1px solid var(--c-border); border-radius:var(--r-md);
+  font-size:13px; color:var(--c-txt); background:var(--c-bg);
+  outline:none; width:100%; box-sizing:border-box;
+  transition:border-color var(--t),box-shadow var(--t); font-family:inherit;
+}
+.finp:focus { border-color:var(--c-primary); box-shadow:0 0 0 3px rgba(91,157,250,.08); background:#fff; }
+.finp.finp-err { border-color:var(--c-danger); }
+.finp.ftarea { resize:none; }
+.finp.finp-sm { padding:6px 8px; font-size:12px; }
+.finp.finp-num { text-align:center; }
+.finp[readonly] { background:#f8fafc; color:var(--c-txt-3); cursor:default; }
+.err-msg { font-size:11px; color:var(--c-danger); }
+
+/* Debt hint in form */
+.debt-hint { background:var(--c-bg); border:1px solid var(--c-border); border-radius:var(--r-md); padding:10px 12px; display:flex; flex-direction:column; gap:6px; }
+.dh-row { display:flex; justify-content:space-between; align-items:center; font-size:11px; color:var(--c-txt-3); font-weight:600; }
+.dh-bar { height:5px; background:#e2e8f0; border-radius:3px; overflow:hidden; }
+.dh-fill { height:100%; border-radius:3px; transition:width .4s; }
+.dh-warn { font-size:10.5px; font-weight:700; color:#b45309; }
+
+/* Items form */
+.items-form-list { display:flex; flex-direction:column; gap:6px; }
+.items-form-hd { display:flex; gap:6px; font-size:10px; font-weight:700; color:var(--c-txt-3); text-transform:uppercase; padding:0 2px; }
+.item-form-row { display:flex; align-items:center; gap:6px; }
+.add-item-btn {
+  display:inline-flex; align-items:center; gap:6px;
+  padding:6px 12px; border-radius:var(--r-md); align-self:flex-start;
+  border:1.5px dashed rgba(91,157,250,.3); background:transparent; color:var(--c-primary);
+  font-size:12px; font-weight:600; cursor:pointer; font-family:inherit; transition:all var(--t);
+}
+.add-item-btn:hover { background:var(--c-success-bg); border-color:var(--c-primary); }
+.limit-row { display:flex; align-items:center; gap:5px; font-size:11px; color:var(--c-txt-3); background:var(--c-bg); border-radius:var(--r-sm); padding:7px 10px; border:1px dashed var(--c-border); }
+.limit-row strong { color:var(--c-primary); font-weight:800; margin-left:4px; }
+.fc-footer { padding:14px 18px; border-top:1px solid var(--c-border); display:flex; justify-content:space-between; align-items:center; gap:8px; }
+
+/* ══ BUTTONS ══ */
+.btn-p {
+  background:var(--c-primary); color:#fff; border:none; border-radius:var(--r-md);
+  padding:9px 16px; font-size:13px; font-weight:600; cursor:pointer;
+  transition:background var(--t),transform var(--t); font-family:inherit;
+  display:inline-flex; align-items:center; gap:6px;
+}
+.btn-p:hover { background:var(--c-primary-d); transform:translateY(-1px); }
+.btn-o {
+  background:transparent; color:var(--c-primary); border:1.5px solid rgba(91,157,250,.3);
+  border-radius:var(--r-md); padding:9px 16px; font-size:13px; font-weight:600;
+  cursor:pointer; transition:all var(--t); font-family:inherit;
+}
+.btn-o:hover { background:var(--c-success-bg); }
+.btn-ghost {
+  background:var(--c-bg); border:1px solid var(--c-border); border-radius:var(--r-md);
+  padding:8px 14px; font-size:12px; font-weight:600; color:var(--c-txt-2);
+  cursor:pointer; transition:all var(--t); display:flex; align-items:center; gap:5px; font-family:inherit;
+}
+.btn-ghost:hover { background:#fff; box-shadow:var(--sh-card); }
+.btn-danger { background:var(--c-danger); color:#fff; border:none; border-radius:var(--r-md); padding:9px 16px; font-size:13px; font-weight:600; cursor:pointer; transition:background var(--t); font-family:inherit; }
+.btn-danger:hover { background:#dc2626; }
+.btn-csv {
+  background:var(--c-bg); border:1px solid var(--c-border); border-radius:var(--r-md);
+  padding:8px 14px; font-size:12px; font-weight:600; color:var(--c-txt-2);
+  cursor:pointer; transition:all var(--t); display:inline-flex; align-items:center; gap:5px; font-family:inherit;
+}
+.btn-csv:hover { background:#fff; box-shadow:var(--sh-card); }
+
+/* ══ TOAST ══ */
+.toast-snack {
+  position:fixed; bottom:28px; right:28px; z-index:500;
+  display:inline-flex; align-items:center; gap:9px;
+  padding:11px 18px; border-radius:12px;
+  font-size:13px; font-weight:600; font-family:inherit;
+  box-shadow:0 8px 32px rgba(15,23,42,.2),0 2px 8px rgba(15,23,42,.1);
+  min-width:240px;
+}
+.toast-snack.success { background:var(--c-success-bg); color:#2563eb; border:1px solid rgba(91,157,250,.2); }
+.toast-snack.danger  { background:#fef2f2; color:#991b1b; border:1px solid rgba(239,68,68,.2); }
+.toast-snack.warn    { background:#fffbeb; color:#92400e; border:1px solid rgba(245,158,11,.2); }
+.toast-enter-active { animation:toastIn .25s cubic-bezier(.2,.8,.2,1); }
+.toast-leave-active { animation:toastIn .2s cubic-bezier(.2,.8,.2,1) reverse; }
+@keyframes toastIn { from { opacity:0; transform:translateY(12px) scale(.97); } to { opacity:1; transform:translateY(0) scale(1); } }
+
+/* ══ MODAL ══ */
+.modal-bg { position:fixed; inset:0; z-index:200; background:rgba(15,23,42,.45); backdrop-filter:blur(4px); display:flex; align-items:center; justify-content:center; padding:20px; }
+.modal-box { width:min(420px,100%); background:var(--c-surface); border-radius:16px; border:1px solid var(--c-border); box-shadow:var(--sh-modal); padding:32px 28px 24px; display:flex; flex-direction:column; align-items:center; text-align:center; gap:10px; }
+.del-icon-wrap { width:52px; height:52px; border-radius:50%; background:var(--c-danger-bg); color:var(--c-danger); display:flex; align-items:center; justify-content:center; margin-bottom:4px; }
+.modal-title  { font-size:17px; font-weight:700; margin:0; }
+.modal-desc   { font-size:13px; color:var(--c-txt-2); margin:0; line-height:1.6; }
+.modal-actions { display:flex; gap:10px; margin-top:8px; }
+
+/* ── Panel slide ── */
+.panel-enter-active { animation:panelIn .22s cubic-bezier(.4,0,.2,1); }
+.panel-leave-active { animation:panelOut .18s cubic-bezier(.4,0,.2,1); }
+@keyframes panelIn  { from { opacity:0; transform:translateX(18px); } to { opacity:1; transform:translateX(0); } }
+@keyframes panelOut { from { opacity:1; transform:translateX(0); } to { opacity:0; transform:translateX(18px); } }
+
+/* ══ RESPONSIVE ══ */
+@media (max-width:1100px) { .dl-flex { flex-direction:column; } .side-panel { width:100%; max-height:none; position:static; } }
+@media (max-width:700px)  { .field-row { grid-template-columns:1fr; } .lc-tools { flex-direction:column; align-items:stretch; } }
 </style>

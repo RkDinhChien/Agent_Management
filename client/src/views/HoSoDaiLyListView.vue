@@ -93,10 +93,19 @@
         </g>
       </svg>
 
+      <svg class="ctx-wm" viewBox="0 0 100 90" fill="none" stroke="currentColor" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <circle cx="35" cy="28" r="16"/>
+        <path d="M8 85c0-15 12-27 27-27s27 12 27 27"/>
+        <circle cx="72" cy="22" r="11"/>
+        <path d="M54 85c0-10 8-18 18-18s18 8 18 18"/>
+        <line x1="50" y1="28" x2="62" y2="22" stroke-width="3" stroke-dasharray="3 3"/>
+      </svg>
+
+      <!-- Title row — no icon badge -->
       <div class="ctx-top">
-        <div>
-          <h1 class="ctx-title">Đại lý</h1>
-          <p class="ctx-sub">Quản lý thông tin và công nợ các đại lý phân phối</p>
+        <div class="ctx-title-block">
+          <p class="ctx-eyebrow">Nghiệp vụ · Quản lý đại lý</p>
+          <h1 class="ctx-title">Hồ Sơ Đại Lý</h1>
         </div>
         <div class="ctx-actions">
           <button class="btn-csv" @click="exportCSV"><Download :size="13"/> Xuất CSV</button>
@@ -106,33 +115,91 @@
 
       <div class="ctx-divider"></div>
 
+      <!-- ── KPI columns (inside banner, matching PhieuNhapView) ── -->
       <div class="ctx-stats">
+
+        <!-- Col 1: Tổng đại lý -->
         <div class="cs-col">
-          <strong class="cs-num">{{ agents.length }}</strong>
-          <span class="cs-lbl">Tổng đại lý</span>
+          <div class="cs-num-row">
+            <strong class="cs-num">{{ agents.length }}</strong>
+          </div>
+          <div class="cs-delta cs-up">↑ {{ newThisMonth }} so tháng trước</div>
+          <span class="cs-lbl">Tổng đại lý tháng này</span>
         </div>
+
         <div class="cs-sep"></div>
-        <div class="cs-col cs-warn">
-          <strong class="cs-num cs-red">
-            {{ overLimitCount }}
-            <span class="cs-tag" v-if="overLimitCount > 0">cần xử lý</span>
-          </strong>
-          <span class="cs-lbl">Vượt hạn mức nợ</span>
-        </div>
-        <div class="cs-sep"></div>
+
+        <!-- Col 2: Tổng công nợ + spark bars -->
         <div class="cs-col">
-          <strong class="cs-num">{{ fmtMoneyShort(totalDebt) }}</strong>
+          <div class="cs-num-row">
+            <strong class="cs-num">{{ fmtMoneyShort(totalDebt) }}</strong>
+          </div>
+          <div class="cs-delta cs-up">↑ 18% so tháng 4</div>
+          <div class="cs-spark-wrap">
+            <div
+              v-for="(h, i) in debtSparkBars" :key="i"
+              class="cs-spark-bar"
+              :class="{ 'cs-spark-last': i === debtSparkBars.length - 1 }"
+              :style="{ height: h + '%' }"
+            ></div>
+          </div>
           <span class="cs-lbl">Tổng công nợ</span>
         </div>
+
         <div class="cs-sep"></div>
-        <div class="cs-col">
-          <strong class="cs-num">
-            {{ newThisMonth }}
-            <span class="cs-tag cs-tag-green" v-if="newThisMonth > 0">tháng này</span>
-          </strong>
-          <span class="cs-lbl">Mới tiếp nhận</span>
+
+        <!-- Col 3: Vượt hạn mức + donut -->
+        <div class="cs-col cs-donut-col">
+          <div class="cs-donut-row">
+            <svg viewBox="0 0 60 60" width="56" height="56" class="cs-donut-svg">
+              <circle cx="30" cy="30" r="22" fill="none" stroke="#f1f5f9" stroke-width="7"/>
+              <circle cx="30" cy="30" r="22" fill="none"
+                :stroke="overLimitCount > 0 ? '#EF4444' : '#10b981'"
+                stroke-width="7" stroke-linecap="round"
+                :stroke-dasharray="138.2"
+                :stroke-dashoffset="138.2 * (1 - debtRatioPct / 100)"
+                transform="rotate(-90 30 30)"
+                style="transition: stroke-dashoffset .6s ease"
+              />
+            </svg>
+            <div class="cs-donut-info">
+              <div class="cs-num-row">
+                <strong class="cs-num" :class="{ 'cs-red': overLimitCount > 0 }">{{ overLimitCount }}</strong>
+                <span v-if="overLimitCount > 0" class="cs-tag">cần xử lý</span>
+              </div>
+              <div class="cs-delta" :class="overLimitCount > 0 ? 'cs-down' : 'cs-up'">
+                {{ overLimitCount > 0 ? '↓ 1 so tháng 4' : 'Tất cả trong hạn mức' }}
+              </div>
+            </div>
+          </div>
+          <div class="cs-legend">
+            <span class="cs-leg"><i class="cs-dot ok"></i>OK · {{ agents.length - overLimitCount }}</span>
+            <span class="cs-leg"><i class="cs-dot warn"></i>Vượt · {{ overLimitCount }}</span>
+          </div>
+          <span class="cs-lbl">Công nợ đại lý</span>
         </div>
+
+        <div class="cs-sep"></div>
+
+        <!-- Col 4: Mới tiếp nhận -->
+        <div class="cs-col">
+          <div class="cs-num-row">
+            <strong class="cs-num">{{ newThisMonth }}</strong>
+            <span class="cs-tag cs-tag-green" v-if="newThisMonth > 0">tháng này</span>
+          </div>
+          <div class="cs-delta cs-up">↑ 1 so tháng 4</div>
+          <span class="cs-lbl">Đại lý mới tiếp nhận</span>
+        </div>
+
       </div>
+
+      <!-- Month progress bar -->
+      <div class="ctx-timeline">
+        <span class="ctl-label">Tháng {{ currentMonth }} · Ngày {{ dayOfMonth }}/{{ daysInMonth }}</span>
+        <div class="ctl-bar"><div class="ctl-fill" :style="{ width: monthProgressPct + '%' }"></div></div>
+        <span class="ctl-pct">{{ monthProgressPct }}% tiến độ tháng</span>
+      </div>
+
     </div>
 
     <!-- ══ Main layout ══ -->
@@ -211,8 +278,16 @@
               >
                 <td class="col-mono muted">#{{ a.MaDaiLy }}</td>
                 <td class="col-name">
-                  <span class="a-name">{{ a.TenDaiLy }}</span>
-                  <span class="a-email">{{ a.Email }}</span>
+                  <div class="row-av-wrap">
+                    <span class="row-av" :style="{ background: agentBrand(a).bg }">
+                      <img v-if="agentLogoUrl(a)" :src="agentLogoUrl(a)" class="av-logo-img" :alt="a.TenDaiLy" @error="$event.target.style.display='none'"/>
+                      <span class="av-init">{{ agentBrandAbbr(a) }}</span>
+                    </span>
+                    <div>
+                      <span class="a-name">{{ a.TenDaiLy }}</span>
+                      <span class="a-email">{{ a.Email }}</span>
+                    </div>
+                  </div>
                 </td>
                 <td>
                   <span class="loai-chip" :class="a.MaLoaiDaiLy === 1 ? 'l1' : 'l2'">
@@ -260,20 +335,37 @@
 
         <!-- ── VIEW mode: agent detail ── -->
         <template v-if="panelMode === 'view' && selectedAgent">
-          <div class="ap-hd">
-            <div class="ap-avatar">{{ selectedAgent.TenDaiLy.charAt(0) }}</div>
-            <div class="ap-title-block">
-              <h3 class="ap-name">{{ selectedAgent.TenDaiLy }}</h3>
-              <div class="ap-badges">
-                <span class="loai-chip" :class="selectedAgent.MaLoaiDaiLy === 1 ? 'l1' : 'l2'">
+          <!-- ── Brand banner ── -->
+          <div class="ap-banner" :style="{ background: agentBannerGrad(selectedAgent) }">
+            <!-- Subtle noise overlay -->
+            <div class="ap-banner-overlay"></div>
+
+            <!-- Agent photo badge -->
+            <div class="ap-logo-badge" :style="{ background: agentBrand(selectedAgent).bg }">
+              <img v-if="agentLogoUrl(selectedAgent)" :src="agentLogoUrl(selectedAgent)" class="ap-logo-img" :alt="selectedAgent.TenDaiLy" @error="$event.target.style.display='none'"/>
+              <span class="ap-logo-init">{{ agentBrandAbbr(selectedAgent) }}</span>
+            </div>
+
+            <!-- Controls top-right -->
+            <div class="ap-banner-ctrl">
+              <button class="ap-glass-btn" @click="editAgent(selectedAgent)" title="Sửa">
+                <Edit2 :size="13"/>
+              </button>
+              <button class="ap-glass-btn" @click="closePanel" title="Đóng">
+                <X :size="13"/>
+              </button>
+            </div>
+
+            <!-- Info bottom -->
+            <div class="ap-banner-info">
+              <h3 class="ap-banner-name">{{ selectedAgent.TenDaiLy }}</h3>
+              <div class="ap-banner-badges">
+                <span class="loai-chip" :class="selectedAgent.MaLoaiDaiLy === 1 ? 'l1w' : 'l2w'">
                   {{ loaiLabel(selectedAgent.MaLoaiDaiLy) }}
                 </span>
-                <span class="dist-chip">{{ quanLabel(selectedAgent.MaQuan) }}</span>
+                <span class="dist-chip-w">{{ quanLabel(selectedAgent.MaQuan) }}</span>
               </div>
             </div>
-            <button class="act-btn edit-btn ap-edit-btn" @click="editAgent(selectedAgent)" title="Sửa">
-              <Edit2 :size="14"/>
-            </button>
           </div>
 
           <!-- Debt gauge -->
@@ -346,6 +438,24 @@
               <Hash :size="13" class="ig-ic"/>
               <span class="ig-lbl">Mã đại lý</span>
               <span class="ig-val col-mono">#{{ selectedAgent.MaDaiLy }}</span>
+            </div>
+          </div>
+
+          <!-- Map widget -->
+          <div class="map-section">
+            <div class="map-hd">
+              <MapPin :size="11" class="ig-ic"/>
+              <span class="map-lbl">Vị trí</span>
+            </div>
+            <div class="map-wrap">
+              <iframe
+                :src="agentMapUrl"
+                class="map-iframe"
+                frameborder="0"
+                allowfullscreen
+                loading="lazy"
+              />
+              <div class="map-addr-pill">{{ selectedAgent.DiaChi || quanLabel(selectedAgent.MaQuan) }}</div>
             </div>
           </div>
 
@@ -496,6 +606,7 @@ import {
   CheckCircle2, SearchX
 } from 'lucide-vue-next';
 
+
 /* ─── Sort icon helper component ─── */
 const SortIcon = {
   props: ['field', 'sortKey', 'sortDir'],
@@ -573,6 +684,66 @@ const newThisMonth   = computed(() => {
   }).length;
 });
 
+/* ─── KPI extras: debt sparkline bars + donut + month progress ─── */
+const debtSparkBars = computed(() => {
+  const raw = [28.5, 32.1, 35.8, 38.2, 40.1, totalDebt.value / 1_000_000];
+  const max = Math.max(...raw);
+  return raw.map(v => Math.max(Math.round((v / max) * 100), 12));
+});
+
+const totalLimit    = computed(() => agents.value.reduce((s, a) => s + agentLimit(a), 0));
+const debtRatioPct  = computed(() => {
+  if (!totalLimit.value) return 0;
+  return Math.min(Math.round((totalDebt.value / totalLimit.value) * 100), 100);
+});
+
+/* ─── Month progress ─── */
+const _now            = new Date();
+const currentMonth    = _now.getMonth() + 1;
+const dayOfMonth      = _now.getDate();
+const daysInMonth     = computed(() => new Date(_now.getFullYear(), _now.getMonth() + 1, 0).getDate());
+const monthProgressPct = computed(() => Math.round((dayOfMonth / daysInMonth.value) * 100));
+
+/* ─── Map ─── */
+const DISTRICT_COORDS = {
+  1: [10.7769, 106.7009],
+  2: [10.7832, 106.6832],
+  3: [10.7547, 106.6595],
+  4: [10.7715, 106.6677],
+  5: [10.8024, 106.7135],
+  6: [10.8380, 106.6687],
+};
+const agentMapUrl = computed(() => {
+  if (!selectedAgent.value) return '';
+  const [lat, lng] = DISTRICT_COORDS[selectedAgent.value.MaQuan] ?? [10.776, 106.700];
+  const d = 0.009;
+  return `https://www.openstreetmap.org/export/embed.html?bbox=${(lng-d).toFixed(4)},${(lat-d).toFixed(4)},${(lng+d).toFixed(4)},${(lat+d).toFixed(4)}&layer=mapnik&marker=${lat},${lng}`;
+});
+
+/* ─── Brand palette — real electrical/electronics brands via SimpleIcons CDN ─── */
+const BRANDS = [
+  { abbr: 'PHI', bg: '#0066A1', grad: 'linear-gradient(135deg,#00375a,#0066A1,#0085cc)',
+    logo: 'https://upload.wikimedia.org/wikipedia/commons/5/52/Philips_logo_new.svg' },
+  { abbr: 'PAN', bg: '#003087', grad: 'linear-gradient(135deg,#001a4a,#003087,#0058e6)',
+    logo: 'https://upload.wikimedia.org/wikipedia/commons/8/8e/Panasonic_logo_%28Blue%29.svg' },
+  { abbr: 'SAM', bg: '#1428A0', grad: 'linear-gradient(135deg,#0a1660,#1428A0,#2a3eb1)',
+    logo: 'https://upload.wikimedia.org/wikipedia/commons/b/b4/Samsung_wordmark.svg' },
+  { abbr: 'LGE', bg: '#A50034', grad: 'linear-gradient(135deg,#63001f,#A50034,#cc0040)',
+    logo: 'https://upload.wikimedia.org/wikipedia/commons/8/8d/LG_logo_%282014%29.svg' },
+  { abbr: 'SIE', bg: '#009999', grad: 'linear-gradient(135deg,#006060,#009999,#00c8c8)',
+    logo: 'https://upload.wikimedia.org/wikipedia/commons/5/5f/Siemens-logo.svg' },
+  { abbr: 'SCH', bg: '#1b7a30', grad: 'linear-gradient(135deg,#0d4a1e,#1b7a30,#3dcd58)',
+    logo: 'https://upload.wikimedia.org/wikipedia/commons/9/95/Schneider_Electric_2007.svg' },
+  { abbr: 'ĐQG', bg: '#C8001A', grad: 'linear-gradient(135deg,#7f0010,#C8001A,#e83347)',
+    logo: 'https://iconape.com/wp-content/png_logo_vector/dien-quang-logo.png' },
+  { abbr: 'RĐ',  bg: '#d97706', grad: 'linear-gradient(135deg,#78350f,#d97706,#fbbf24)',
+    logo: 'https://cdn.haitrieu.com/wp-content/uploads/2022/08/logo-rang-dong.png' },
+];
+const agentBrand     = (a) => BRANDS[(a.MaDaiLy - 1) % BRANDS.length];
+const agentBrandAbbr = (a) => agentBrand(a).abbr;
+const agentBannerGrad= (a) => agentBrand(a).grad;
+const agentLogoUrl   = (a) => agentBrand(a).logo ?? null;
+
 /* ─── Helpers ─── */
 const loaiLabel = (id) => loaiOptions.find(l => l.id === id)?.ten ?? '—';
 const quanLabel = (id) => quanOptions.find(q => q.id === id)?.ten ?? '—';
@@ -630,6 +801,8 @@ const viewAgent = (a) => {
   panelMode.value  = 'view';
   errors.value     = {};
 };
+
+const closePanel = () => { selectedId.value = null; panelMode.value = 'view'; };
 
 const startAdd = () => {
   selectedId.value = null;
@@ -723,6 +896,24 @@ const exportCSV = () => {
   color: var(--c-txt); font-size: 14px; line-height: 1.5;
 }
 
+/* ══ EYEBROW TITLE ══ */
+.ctx-title-block { display: flex; flex-direction: column; gap: 2px; }
+.ctx-eyebrow {
+  margin: 0;
+  font-size: 10.5px; font-weight: 700;
+  color: var(--c-primary);
+  text-transform: uppercase; letter-spacing: 1px;
+  display: flex; align-items: center; gap: 7px;
+}
+.ctx-eyebrow::before {
+  content: '';
+  display: inline-block;
+  width: 18px; height: 2.5px;
+  background: linear-gradient(90deg, #10b981, #059669);
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
 /* ══ CONTEXT BANNER ══ */
 .ctx-card {
   background: linear-gradient(120deg, #ffffff 0%, #f0fdf8 45%, #eef9ff 100%);
@@ -758,10 +949,12 @@ const exportCSV = () => {
 .ctx-deco {
   position: absolute;
   right: 0; top: 0;
-  width: 260px; height: 100%;
+  width: 200px; height: 100%;
   pointer-events: none;
   z-index: 0;
+  opacity: .7;
 }
+.ctx-wm { position:absolute; right:220px; top:22px; width:90px; height:90px; color:#059669; opacity:.06; pointer-events:none; z-index:0; }
 
 .ctx-top {
   display: flex;
@@ -772,67 +965,88 @@ const exportCSV = () => {
   position: relative;
   z-index: 2;
 }
-.ctx-title { font-size: 22px; font-weight: 800; margin: 0; letter-spacing: -.6px; color: var(--c-txt); }
-.ctx-sub   { font-size: 12px; color: var(--c-txt-3); margin: 4px 0 0; }
+.ctx-title-row  { display:flex; align-items:center; gap:14px; }
+.ctx-icon-badge {
+  width:44px; height:44px; border-radius:12px; flex-shrink:0;
+  background:linear-gradient(135deg,#059669,#10b981);
+  display:flex; align-items:center; justify-content:center;
+  color:#fff; box-shadow:0 4px 14px rgba(5,150,105,.35);
+}
+.ctx-title  { font-size:24px; font-weight:800; margin:0; letter-spacing:-.7px; color:var(--c-txt); }
 .ctx-actions { display: flex; gap: 8px; align-items: center; flex-shrink: 0; }
 
 .ctx-divider { height: 1px; background: rgba(16,185,129,.1); position: relative; z-index: 2; }
 
+/* ── KPI columns inside banner ── */
 .ctx-stats {
-  display: flex;
-  align-items: stretch;
-  position: relative;
-  z-index: 2;
+  display: flex; align-items: stretch;
+  position: relative; z-index: 2;
 }
 .cs-col {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  padding: 18px 26px;
-  transition: background var(--t);
+  flex: 1; display: flex; flex-direction: column; gap: 5px;
+  padding: 16px 24px; transition: background var(--t);
 }
-.cs-col:hover { background: rgba(5,150,105,.04); }
-.cs-warn { background: rgba(245,158,11,.04); }
-.cs-warn:hover { background: rgba(245,158,11,.09); }
-
+.cs-col:hover { background: rgba(5,150,105,.03); }
 .cs-sep {
-  width: 1px;
-  background: rgba(16,185,129,.12);
-  flex-shrink: 0;
-  margin: 12px 0;
+  width: 1px; background: rgba(16,185,129,.12);
+  flex-shrink: 0; margin: 14px 0;
 }
-
+.cs-num-row { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
 .cs-num {
-  font-size: 30px;
-  font-weight: 900;
-  letter-spacing: -1.2px;
-  color: var(--c-txt);
-  line-height: 1;
-  display: flex;
-  align-items: baseline;
-  gap: 7px;
-  font-variant-numeric: tabular-nums;
+  font-size: 30px; font-weight: 900; letter-spacing: -1.2px;
+  color: var(--c-txt); line-height: 1; font-variant-numeric: tabular-nums;
 }
-.cs-red { color: #D97706; }
-
+.cs-red   { color: #D97706 !important; }
+.cs-delta { font-size: 11px; font-weight: 600; }
+.cs-up    { color: #059669; }
+.cs-down  { color: #D97706; }
+.cs-lbl   { font-size: 11px; color: var(--c-txt-3); font-weight: 600; letter-spacing: .2px; }
 .cs-tag {
-  font-size: 10px; font-weight: 700;
-  padding: 2px 7px; border-radius: var(--r-pill);
+  font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: var(--r-pill);
   background: #fffbeb; color: #B45309;
-  border: 1px solid rgba(245,158,11,.25);
-  letter-spacing: .2px; vertical-align: middle;
+  border: 1px solid rgba(245,158,11,.25); letter-spacing: .2px; line-height: 1.4;
 }
-.cs-tag-green {
-  background: var(--c-success-bg); color: var(--c-primary);
-  border-color: rgba(16,185,129,.18);
-}
+.cs-tag-green { background: var(--c-success-bg); color: var(--c-primary); border-color: rgba(16,185,129,.18); }
 
-.cs-lbl {
-  font-size: 11px;
-  color: var(--c-txt-3);
-  font-weight: 600;
-  letter-spacing: .2px;
+/* Debt spark bars */
+.cs-spark-wrap { display: flex; align-items: flex-end; gap: 3px; height: 28px; margin: 4px 0 2px; }
+.cs-spark-bar { flex: 1; background: #e2e8f0; border-radius: 2px 2px 0 0; transition: height .3s; }
+.cs-spark-last { background: #10b981 !important; }
+
+/* Donut column */
+.cs-donut-col { gap: 6px; }
+.cs-donut-row { display: flex; align-items: center; gap: 12px; }
+.cs-donut-svg { flex-shrink: 0; }
+.cs-donut-info { display: flex; flex-direction: column; gap: 4px; }
+.cs-legend { display: flex; gap: 12px; }
+.cs-leg { font-size: 10.5px; color: var(--c-txt-3); font-weight: 600; display: flex; align-items: center; gap: 4px; }
+.cs-dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+.cs-dot.ok   { background: #10b981; }
+.cs-dot.warn { background: #F59E0B; }
+
+/* Month progress bar */
+.ctx-timeline {
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 24px 14px; position: relative; z-index: 2;
+}
+.ctl-label { font-size: 11px; font-weight: 600; color: var(--c-txt-3); white-space: nowrap; }
+.ctl-bar { flex: 1; height: 4px; background: rgba(16,185,129,.12); border-radius: 99px; overflow: hidden; }
+.ctl-fill { height: 100%; background: linear-gradient(90deg,#34d399,#059669); border-radius: 99px; transition: width .6s ease; }
+.ctl-pct { font-size: 11px; font-weight: 700; color: var(--c-primary); white-space: nowrap; }
+
+/* ══ MAP ══ */
+.map-section { padding: 12px 18px; border-bottom: 1px solid var(--c-border); }
+.map-hd { display: flex; align-items: center; gap: 5px; margin-bottom: 8px; }
+.map-lbl { font-size: 10.5px; font-weight: 700; color: var(--c-txt-3); text-transform: uppercase; letter-spacing: .5px; }
+.map-wrap { position: relative; border-radius: var(--r-md); overflow: hidden; height: 120px; border: 1px solid var(--c-border); }
+.map-iframe { width: 100%; height: 100%; display: block; border: none; }
+.map-addr-pill {
+  position: absolute; bottom: 7px; left: 50%; transform: translateX(-50%);
+  background: rgba(255,255,255,.92); backdrop-filter: blur(6px);
+  border: 1px solid rgba(0,0,0,.08); border-radius: var(--r-pill);
+  padding: 3px 10px; font-size: 10px; font-weight: 600; color: var(--c-txt-2);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 90%;
+  box-shadow: 0 2px 8px rgba(0,0,0,.1);
 }
 
 /* ══ MAIN LAYOUT ══ */
@@ -927,23 +1141,111 @@ const exportCSV = () => {
 /* ══ SIDE PANEL ══ */
 .side-panel { display: flex; flex-direction: column; min-height: 500px; width: 360px; flex-shrink: 0; }
 
-/* — Agent detail — */
-.ap-hd {
-  padding: 18px 18px 14px;
-  border-bottom: 1px solid var(--c-border);
-  display: flex; align-items: flex-start; gap: 12px;
+/* — Brand banner — */
+.ap-banner {
+  position: relative;
+  height: 172px;
+  overflow: hidden;
+  border-radius: var(--r-card) var(--r-card) 0 0;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
-.ap-avatar {
-  width: 44px; height: 44px; border-radius: 50%; flex-shrink: 0;
-  background: linear-gradient(135deg, #059669, #10b981);
-  color: #fff; font-size: 18px; font-weight: 800;
+.ap-banner-overlay {
+  position: absolute; inset: 0;
+  background: linear-gradient(to bottom,
+    rgba(0,0,0,.12) 0%,
+    rgba(0,0,0,.05) 45%,
+    rgba(0,0,0,.70) 100%);
+  z-index: 1;
+}
+/* Brand logo badge */
+.ap-logo-badge {
+  position: absolute;
+  top: 22px; left: 50%; transform: translateX(-50%);
+  width: 80px; height: 80px;
+  border-radius: 16px;
+  box-shadow: 0 6px 24px rgba(0,0,0,.3), 0 0 0 2px rgba(255,255,255,.2);
   display: flex; align-items: center; justify-content: center;
+  overflow: hidden;
+  z-index: 2;
 }
-.ap-title-block { flex: 1; min-width: 0; }
-.ap-name   { font-size: 15px; font-weight: 700; margin: 0 0 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.ap-badges { display: flex; gap: 5px; flex-wrap: wrap; }
+.ap-logo-init {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 20px; font-weight: 900; letter-spacing: -1px;
+  color: rgba(255,255,255,.9);
+  z-index: 1;
+}
+.ap-logo-img {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+  object-fit: contain;
+  padding: 14px; box-sizing: border-box;
+  background: inherit;
+  filter: brightness(0) invert(1);
+  z-index: 2;
+}
+.ap-banner-ctrl {
+  position: absolute; top: 10px; right: 10px;
+  display: flex; gap: 6px;
+  z-index: 3;
+}
+.ap-glass-btn {
+  width: 28px; height: 28px; border-radius: 50%; border: none; cursor: pointer;
+  background: rgba(255,255,255,.22); backdrop-filter: blur(6px);
+  border: 1px solid rgba(255,255,255,.35);
+  color: #fff; display: flex; align-items: center; justify-content: center;
+  transition: background var(--t);
+}
+.ap-glass-btn:hover { background: rgba(255,255,255,.38); }
+.ap-banner-info {
+  position: absolute; bottom: 0; left: 0; right: 0;
+  padding: 14px 16px 12px;
+  z-index: 3;
+}
+.ap-banner-name {
+  font-size: 16px; font-weight: 700; color: #fff; margin: 0 0 6px;
+  text-shadow: 0 1px 4px rgba(0,0,0,.4);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.ap-banner-badges { display: flex; gap: 5px; flex-wrap: wrap; }
+.l1w { background: rgba(16,185,129,.3); color: #d1fae5; border: 1px solid rgba(16,185,129,.4); }
+.l2w { background: rgba(59,130,246,.3); color: #dbeafe;  border: 1px solid rgba(59,130,246,.4); }
+.dist-chip-w {
+  font-size: 10px; font-weight: 600; color: rgba(255,255,255,.8);
+  background: rgba(255,255,255,.15); border: 1px solid rgba(255,255,255,.25);
+  border-radius: var(--r-pill); padding: 3px 8px; backdrop-filter: blur(4px);
+}
+
+/* Table avatar */
+.row-av-wrap { display: flex; align-items: center; gap: 9px; }
+.row-av {
+  width: 38px; height: 38px; border-radius: 8px; flex-shrink: 0;
+  border: 1px solid rgba(0,0,0,.12);
+  display: flex; align-items: center; justify-content: center;
+  overflow: hidden; position: relative;
+  box-shadow: 0 1px 4px rgba(0,0,0,.15);
+}
+/* Fallback abbreviation — white text on brand-color bg (set inline on container) */
+.av-init {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 900; color: rgba(255,255,255,.9);
+  letter-spacing: -.3px; z-index: 1;
+}
+/* Logo — inverted to white, background:inherit fills transparent areas with brand color */
+.av-logo-img {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+  object-fit: contain;
+  padding: 6px; box-sizing: border-box;
+  background: inherit;
+  z-index: 2;
+  filter: brightness(0) invert(1);
+}
 .dist-chip { font-size: 10px; font-weight: 600; color: var(--c-txt-3); background: var(--c-bg); border: 1px solid var(--c-border); border-radius: var(--r-pill); padding: 3px 8px; }
-.ap-edit-btn { flex-shrink: 0; }
 
 /* — Gauge section — */
 .gauge-section { padding: 16px 18px; border-bottom: 1px solid var(--c-border); }

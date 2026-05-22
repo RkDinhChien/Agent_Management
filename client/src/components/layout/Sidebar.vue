@@ -7,17 +7,15 @@
     </button>
 
     <div class="brand-unit">
-      <!-- Custom geometric A mark — two legs + emerald crossbar -->
-      <svg class="brand-mark" viewBox="0 0 26 30" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M13 2 L24 28" stroke="#0f172a" stroke-width="2.4" stroke-linecap="round"/>
-        <path d="M13 2 L2 28" stroke="#0f172a" stroke-width="2.4" stroke-linecap="round"/>
-        <line x1="6.5" y1="19" x2="19.5" y2="19" stroke="#059669" stroke-width="2.4" stroke-linecap="round"/>
-        <circle cx="13" cy="2" r="2.2" fill="#059669"/>
-      </svg>
-
+      <img
+        src="/agentix-logo.png"
+        class="brand-logo"
+        :class="{ 'brand-logo--collapsed': isCollapsed }"
+        alt="Agentix"
+      />
       <div class="brand-meta" v-if="!isCollapsed">
-        <span class="b-head">gentix</span>
-        <span class="b-sub">Agent Management</span>
+        <span class="b-line1">Hệ thống</span>
+        <span class="b-line2">Quản lý đại lý</span>
       </div>
     </div>
 
@@ -142,18 +140,42 @@ const handleLogout = () => { authStore.logout(); router.push('/login'); };
 }
 
 /* Brand */
-.brand-unit { display: flex; align-items: center; gap: 10px; margin-bottom: 24px; padding-left: 6px; transition: 0.3s; }
-.brand-mark  { flex-shrink: 0; width: 26px; height: 30px; }
-
-.b-head {
-  font-size: 1.25rem;
-  font-weight: 800;
-  color: #0f172a;
-  display: block;
-  letter-spacing: -0.6px;
-  line-height: 1.15;
+.brand-unit {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 22px;
+  padding-left: 4px;
 }
-.b-sub { font-size: 0.62rem; color: #94a3b8; font-weight: 700; text-transform: uppercase; letter-spacing: 1.2px; }
+.brand-logo {
+  width: 80px;
+  height: auto;
+  object-fit: contain;
+  flex-shrink: 0;
+  transition: width 0.3s;
+}
+.brand-logo--collapsed { width: 44px; }
+.brand-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.b-line1 {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  line-height: 1.3;
+}
+.b-line2 {
+  font-size: 0.88rem;
+  font-weight: 800;
+  color: #059669;
+  letter-spacing: -0.3px;
+  line-height: 1.3;
+}
 
 /* Toggle Trigger Button */
 .toggle-trigger-btn {
