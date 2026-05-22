@@ -29,6 +29,11 @@ app.use('/api/mat-hang', require('./routes/mathang.routes'));
 app.use('/api/phieu-nhap', require('./routes/phieunhap.routes'));
 app.use('/api/phieu-xuat', require('./routes/phieuxuat.routes'));
 app.use('/api/phieu-thu', require('./routes/phieuthu.routes'));
+app.use('/api/don-vi-tinh', require('./routes/donvitinh.routes'));
+app.use('/api/nhom-nguoi-dung', require('./routes/nhomnguoidung.routes'));
+app.use('/api/nguoi-dung', require('./routes/nguoidung.routes'));
+app.use('/api/phan-quyen', require('./routes/phanquyen.routes'));
+app.use('/api/chuc-nang', require('./routes/chucnang.routes'));
 app.use('/api/bao-cao', require('./routes/baocao.routes'));
 app.use('/api/tham-so', require('./routes/thamso.routes'));
 app.use('/api/quan', require('./routes/quan.routes'));
@@ -47,12 +52,12 @@ app.use((err, req, res, next) => {
 const startServer = async () => {
   try {
     await sequelize.authenticate();
-    console.log('✅ Kết nối MySQL thành công');
+    console.log('✅ Kết nối MySQL thành công'); ///??????
 
-    if (process.env.NODE_ENV === 'development') {
-      await sequelize.sync({ alter: true });
-      console.log('✅ Đồng bộ database thành công');
-    }
+    // if (process.env.NODE_ENV === 'development') {
+    //   await sequelize.sync({ alter: true });
+    //   console.log('✅ Đồng bộ database thành công');
+    // }
 
     app.listen(PORT, () => {
       console.log(`🚀 Server đang chạy tại http://localhost:${PORT}`);

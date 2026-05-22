@@ -10,6 +10,22 @@ const PhanQuyen = sequelize.define('PhanQuyen', {
     type: DataTypes.INTEGER,
     primaryKey: true,
   },
+  Xem: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: true,
+  },
+  Them: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: true,
+  },
+  Xoa: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: true,
+  },
+  Sua: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: true,
+  },
 }, {
   tableName: 'PHANQUYEN',
   timestamps: false,

@@ -12,7 +12,7 @@ const DVT = sequelize.define('DVT', {
     allowNull: false,
   },
 }, {
-  tableName: 'DVT',
+  tableName: 'DONVITINH',
   timestamps: true,
 });
 

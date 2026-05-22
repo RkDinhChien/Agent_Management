@@ -14,19 +14,19 @@ const getDashboard = async (req, res) => {
     const tongDoanhSo = await PhieuXuatHang.sum('TongTien') || 0;
 
     // Tổng nợ
-    const tongNo = await DaiLy.sum('TienNo') || 0;
+    const tongNo = await DaiLy.sum('TongNo') || 0;
 
     // Tổng mặt hàng
     const tongMatHang = await MatHang.count();
 
     // Top 5 đại lý nợ nhiều nhất
     const topDebtors = await DaiLy.findAll({
-      where: { TienNo: { [Op.gt]: 0 } },
+      where: { TongNo: { [Op.gt]: 0 } },
       include: [
         { model: LoaiDaiLy, as: 'loaiDaiLy' },
         { model: Quan, as: 'quan' },
       ],
-      order: [['TienNo', 'DESC']],
+      order: [['TongNo', 'DESC']],
       limit: 5,
     });
 

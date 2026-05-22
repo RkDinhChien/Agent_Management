@@ -2,22 +2,20 @@ const { DataTypes } = require('sequelize');
 const sequelize = require('../config/database');
 
 const ThamSo = sequelize.define('ThamSo', {
-  MaThamSo: {
+  SoDaiLyToiDa: {
     type: DataTypes.INTEGER,
-    primaryKey: true,
-    autoIncrement: true,
+    defaultValue: 100,
+    field: 'SoDaiLyToiDa',
   },
-  TenThamSo: {
-    type: DataTypes.STRING(100),
-    allowNull: false,
-    unique: true,
+  TiLeTinhDonGiaXuat: {
+    type: DataTypes.DECIMAL(5,2),
+    defaultValue: 1.02,
+    field: 'TiLeTinhDonGiaXuat',
   },
-  GiaTri: {
-    type: DataTypes.STRING(255),
-    allowNull: false,
-  },
-  MoTa: {
-    type: DataTypes.STRING(255),
+  ApDungQDKiemTraSoTienThu: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: false,
+    field: 'ApDungQDKiemTraSoTienThu',
   },
 }, {
   tableName: 'THAMSO',

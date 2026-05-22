@@ -1,4 +1,4 @@
-const { DaiLy, LoaiDaiLy, Quan, ThamSo, PhieuXuatHang, PhieuThuTien, CT_PXH, MatHang } = require('../models');
+const { DaiLy, LoaiDaiLy, Quan, ThamSo, PhieuXuatHang, PhieuThuTien, ChiTiet_PhieuXuat, MatHang } = require('../models');
 const { Op } = require('sequelize');
 
 /**
@@ -53,11 +53,11 @@ const getById = async (req, res) => {
  */
 const create = async (req, res) => {
   try {
-    const { TenDaiLy, MaLoai, MaQuan, DienThoai, DiaChi, Email, NgayTiepNhan } = req.body;
+    const { TenDaiLy, MaLoaiDaiLy, MaQuan, SDT, DiaChi, Email, NgayTiepNhan } = req.body;
 
     // QĐ1: Kiểm tra số đại lý tối đa trong quận
-    const thamSo = await ThamSo.findOne({ where: { TenThamSo: 'SoDaiLyToiDa' } });
-    const soDaiLyToiDa = thamSo ? parseInt(thamSo.GiaTri) : 4;
+    const thamSo = await ThamSo.findOne();
+    const soDaiLyToiDa = thamSo && thamSo.SoDaiLyToiDa ? parseInt(thamSo.SoDaiLyToiDa) : 4;
 
     const soDaiLyHienTai = await DaiLy.count({ where: { MaQuan } });
     if (soDaiLyHienTai >= soDaiLyToiDa) {
@@ -67,16 +67,16 @@ const create = async (req, res) => {
         rule: 'QD1',
       });
     }
-
+// them đại lý
     const daiLy = await DaiLy.create({
       TenDaiLy,
-      MaLoai,
+      MaLoaiDaiLy,
       MaQuan,
-      DienThoai,
+      SDT,
       DiaChi,
       Email,
       NgayTiepNhan: NgayTiepNhan || new Date(),
-      TienNo: 0,
+      TongNo: 0,
     });
 
     const result = await DaiLy.findByPk(daiLy.MaDaiLy, {
@@ -106,8 +106,8 @@ const update = async (req, res) => {
 
     // Nếu đổi quận, kiểm tra QĐ1
     if (req.body.MaQuan && req.body.MaQuan !== daiLy.MaQuan) {
-      const thamSo = await ThamSo.findOne({ where: { TenThamSo: 'SoDaiLyToiDa' } });
-      const soDaiLyToiDa = thamSo ? parseInt(thamSo.GiaTri) : 4;
+      const thamSo = await ThamSo.findOne();
+      const soDaiLyToiDa = thamSo && thamSo.SoDaiLyToiDa ? parseInt(thamSo.SoDaiLyToiDa) : 4;
       const soDaiLyHienTai = await DaiLy.count({ where: { MaQuan: req.body.MaQuan } });
       if (soDaiLyHienTai >= soDaiLyToiDa) {
         return res.status(400).json({
@@ -159,8 +159,8 @@ const remove = async (req, res) => {
  */
 const checkQuan = async (req, res) => {
   try {
-    const thamSo = await ThamSo.findOne({ where: { TenThamSo: 'SoDaiLyToiDa' } });
-    const soDaiLyToiDa = thamSo ? parseInt(thamSo.GiaTri) : 4;
+    const thamSo = await ThamSo.findOne();
+    const soDaiLyToiDa = thamSo && thamSo.SoDaiLyToiDa ? parseInt(thamSo.SoDaiLyToiDa) : 4;
     const soDaiLyHienTai = await DaiLy.count({ where: { MaQuan: req.params.maQuan } });
 
     res.json({

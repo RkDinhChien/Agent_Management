@@ -1,9 +1,9 @@
 const express = require('express');
 const router = express.Router();
-const { mockLoaiDaiLys } = require('../mockData');
+const { getAll } = require('../controllers/loaidaily.controller');
+const { authenticateToken } = require('../middleware/auth');
 
-router.get('/', (req, res) => {
-  res.json({ status: 'success', data: mockLoaiDaiLys });
-});
+router.use(authenticateToken);
+router.get('/', getAll);
 
 module.exports = router;
