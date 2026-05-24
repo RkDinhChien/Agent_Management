@@ -7,7 +7,7 @@ const getAll = async (req, res) => {
   try {
     const phieuThus = await PhieuThuTien.findAll({
       include: [{ model: DaiLy, as: 'daiLy' }],
-      order: [['MaPT', 'DESC']],
+      order: [['MaPhieuThu', 'DESC']],
     });
 
     res.json({ status: 'success', data: phieuThus });
@@ -28,7 +28,7 @@ const getAll = async (req, res) => {
 const create = async (req, res) => {
   const t = await sequelize.transaction();
   try {
-    const { MaDaiLy, NgayThu, SoTienThu } = req.body;
+    const { MaDaiLy, NgayThuTien, SoTienThu } = req.body;
 
     const daiLy = await DaiLy.findByPk(MaDaiLy, { transaction: t });
     if (!daiLy) {
@@ -42,7 +42,7 @@ const create = async (req, res) => {
 
     const tienNo = parseFloat(daiLy.TienNo) || 0;
 
-    if (kiemTra && SoTienThu > tienNo) {
+    if (kiemTra && SoTienThu >= tienNo) {
       await t.rollback();
       return res.status(400).json({
         status: 'error',
@@ -61,7 +61,7 @@ const create = async (req, res) => {
 
     // Tạo phiếu thu
     const phieu = await PhieuThuTien.create(
-      { MaDaiLy, NgayThu: NgayThu || new Date(), SoTienThu },
+      { MaDaiLy, NgayThuTien: NgayThuTien || new Date(), SoTienThu },
       { transaction: t }
     );
 
@@ -74,7 +74,7 @@ const create = async (req, res) => {
 
     await t.commit();
 
-    const result = await PhieuThuTien.findByPk(phieu.MaPT, {
+    const result = await PhieuThuTien.findByPk(phieu.MaPhieuThu, {
       include: [{ model: DaiLy, as: 'daiLy' }],
     });
 

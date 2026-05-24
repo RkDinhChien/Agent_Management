@@ -8,12 +8,12 @@ const PhanQuyen = require('./PhanQuyen');
 const LoaiDaiLy = require('./LoaiDaiLy');
 const Quan = require('./Quan');
 const DaiLy = require('./DaiLy');
-const DVT = require('./DonViTinh');
+const DonViTinh = require('./DonViTinh');
 const MatHang = require('./MatHang');
 const PhieuNhapHang = require('./PhieuNhapHang');
-const CT_PNH = require('./ChiTiet_PhieuNhap');
+const ChiTiet_PhieuNhap = require('./ChiTiet_PhieuNhap');
 const PhieuXuatHang = require('./PhieuXuatHang');
-const CT_PXH = require('./ChiTiet_PhieuXuat');
+const ChiTiet_PhieuXuat = require('./ChiTiet_PhieuXuat');
 const PhieuThuTien = require('./PhieuThuTien');
 const ThamSo = require('./ThamSo');
 const BaoCaoDoanhSo = require('./BaoCaoDoanhSo');
@@ -51,28 +51,28 @@ Quan.hasMany(DaiLy, { foreignKey: 'MaQuan', as: 'daiLys' });
 DaiLy.belongsTo(Quan, { foreignKey: 'MaQuan', as: 'quan' });
 
 // Mặt hàng <-> Đơn vị tính
-DVT.hasMany(MatHang, { foreignKey: 'MaDVT', as: 'matHangs' });
-MatHang.belongsTo(DVT, { foreignKey: 'MaDVT', as: 'dvt' });
+DonViTinh.hasMany(MatHang, { foreignKey: 'MaDVT', as: 'matHangs' });
+MatHang.belongsTo(DonViTinh, { foreignKey: 'MaDVT', as: 'dvt' });
 
 // Phiếu nhập hàng <-> Chi tiết phiếu nhập
-PhieuNhapHang.hasMany(CT_PNH, { foreignKey: 'MaPN', as: 'chiTiets' });
-CT_PNH.belongsTo(PhieuNhapHang, { foreignKey: 'MaPN', as: 'phieuNhap' });
+PhieuNhapHang.hasMany(ChiTiet_PhieuNhap, { foreignKey: 'MaPN', as: 'chiTiets' });
+ChiTiet_PhieuNhap.belongsTo(PhieuNhapHang, { foreignKey: 'MaPN', as: 'phieuNhap' });
 
 // Chi tiết phiếu nhập <-> Mặt hàng
-MatHang.hasMany(CT_PNH, { foreignKey: 'MaMatHang', as: 'chiTietNhaps' });
-CT_PNH.belongsTo(MatHang, { foreignKey: 'MaMatHang', as: 'matHang' });
+MatHang.hasMany(ChiTiet_PhieuNhap, { foreignKey: 'MaMatHang', as: 'chiTietNhaps' });
+ChiTiet_PhieuNhap.belongsTo(MatHang, { foreignKey: 'MaMatHang', as: 'matHang' });
 
 // Phiếu xuất hàng <-> Đại lý
 DaiLy.hasMany(PhieuXuatHang, { foreignKey: 'MaDaiLy', as: 'phieuXuats' });
 PhieuXuatHang.belongsTo(DaiLy, { foreignKey: 'MaDaiLy', as: 'daiLy' });
 
 // Phiếu xuất hàng <-> Chi tiết phiếu xuất
-PhieuXuatHang.hasMany(CT_PXH, { foreignKey: 'MaPX', as: 'chiTiets' });
-CT_PXH.belongsTo(PhieuXuatHang, { foreignKey: 'MaPX', as: 'phieuXuat' });
+PhieuXuatHang.hasMany(ChiTiet_PhieuXuat, { foreignKey: 'MaPX', as: 'chiTiets' });
+ChiTiet_PhieuXuat.belongsTo(PhieuXuatHang, { foreignKey: 'MaPX', as: 'phieuXuat' });
 
 // Chi tiết phiếu xuất <-> Mặt hàng
-MatHang.hasMany(CT_PXH, { foreignKey: 'MaMatHang', as: 'chiTietXuats' });
-CT_PXH.belongsTo(MatHang, { foreignKey: 'MaMatHang', as: 'matHang' });
+MatHang.hasMany(ChiTiet_PhieuXuat, { foreignKey: 'MaMatHang', as: 'chiTietXuats' });
+ChiTiet_PhieuXuat.belongsTo(MatHang, { foreignKey: 'MaMatHang', as: 'matHang' });
 
 // Phiếu thu tiền <-> Đại lý
 DaiLy.hasMany(PhieuThuTien, { foreignKey: 'MaDaiLy', as: 'phieuThus' });
@@ -110,12 +110,12 @@ module.exports = {
   LoaiDaiLy,
   Quan,
   DaiLy,
-  DVT,
+  DonViTinh,
   MatHang,
   PhieuNhapHang,
-  CT_PNH,
+  ChiTiet_PhieuNhap,
   PhieuXuatHang,
-  CT_PXH,
+  ChiTiet_PhieuXuat,
   PhieuThuTien,
   ThamSo,
   BaoCaoDoanhSo,

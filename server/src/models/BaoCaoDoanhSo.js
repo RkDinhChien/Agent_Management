@@ -2,16 +2,14 @@ const { DataTypes } = require('sequelize');
 const sequelize = require('../config/database');
 
 const BaoCaoDoanhSo = sequelize.define('BaoCaoDoanhSo', {
-  MaBC: {
+  MaBCDS: {
     type: DataTypes.INTEGER,
     primaryKey: true,
     autoIncrement: true,
-    field: 'MaBCDS',
   },
   Thang: {
     type: DataTypes.INTEGER,
     allowNull: false,
-    field: 'Thang',
   },
   Nam: {
     type: DataTypes.INTEGER,
@@ -20,8 +18,7 @@ const BaoCaoDoanhSo = sequelize.define('BaoCaoDoanhSo', {
   },
   TongDoanhSo: {
     type: DataTypes.DECIMAL(15, 2),
-    defaultValue: 0,
-    field: 'TongDoanhSo',
+    defaultValue: 0,  
   },
 }, {
   tableName: 'BAOCAODOANHSO',

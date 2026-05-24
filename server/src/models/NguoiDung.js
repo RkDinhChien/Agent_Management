@@ -6,17 +6,16 @@ const NguoiDung = sequelize.define('NguoiDung', {
   TenNguoiDung: {
     type: DataTypes.STRING(30),
     primaryKey: true,
-    field: 'TenNguoiDung',
+    allowNull: false,
+
   },
   MatKhau: {
     type: DataTypes.STRING(100),
     allowNull: false,
-    field: 'MatKhau',
   },
   MaNhom: {
     type: DataTypes.INTEGER,
     allowNull: false,
-    field: 'MaNhom',
   },
 }, {
   tableName: 'NGUOIDUNG',

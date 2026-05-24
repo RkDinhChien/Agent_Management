@@ -1,35 +1,30 @@
 const { DataTypes } = require('sequelize');
 const sequelize = require('../config/database');
 
-const CT_PNH = sequelize.define('CT_PNH', {
-  MaPN: {
+const ChiTiet_PhieuNhap = sequelize.define('ChiTiet_PhieuNhap', {
+  MaPhieuNhap: {
     type: DataTypes.INTEGER,
     primaryKey: true,
-    field: 'MaPhieuNhap',
   },
   MaMatHang: {
     type: DataTypes.INTEGER,
     primaryKey: true,
-    field: 'MaMatHang',
   },
-  SoLuong: {
+  SoLuongNhap: {
     type: DataTypes.INTEGER,
     allowNull: false,
-    field: 'SoLuongNhap',
   },
   DonGiaNhap: {
     type: DataTypes.DECIMAL(15, 2),
     allowNull: false,
-    field: 'DonGiaNhap',
   },
   ThanhTien: {
     type: DataTypes.DECIMAL(15, 2),
     allowNull: false,
-    field: 'ThanhTien',
   },
 }, {
   tableName: 'CHITIET_PHIEUNHAP',
   timestamps: false,
 });
 
-module.exports = CT_PNH;
+module.exports = ChiTiet_PhieuNhap;

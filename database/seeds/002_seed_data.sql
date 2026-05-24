@@ -19,6 +19,10 @@ INSERT INTO CHUCNANG (TenChucNang, TenManHinh) VALUES
   ('Lập phiếu thu tiền', 'ThuTienView'),
   ('Báo cáo doanh số', 'BaoCaoView'),
   ('Báo cáo công nợ', 'BaoCaoView'),
+  ('Quản lý loại đại lý', ''),
+  ('Quản lý quận', ''),
+  ('Quản lý mặt hàng', ''),
+  ('Quản lý đơn vị tính', ''),
   ('Cài đặt quy định', 'CaiDatView');
 
 -- Phân quyền: Admin có toàn quyền
@@ -33,43 +37,87 @@ INSERT INTO PHANQUYEN (MaNhom, MaChucNang) VALUES
 INSERT INTO NGUOIDUNG (TenDangNhap, MatKhau, HoTen, Email, MaNhom) VALUES
   ('admin', '$2a$10$rQkXKB5pIqkExmhJ5hGSO.gVVxZqAHfPGYqKPqYqAuFbJfuCxYn2a', 'Quản trị viên', 'admin@quanlydaily.com', 1);
 
--- Loại Đại lý
-INSERT INTO LOAIDAILY (TenLoai, SoNoToiDa) VALUES
-  ('Loại 1', 20000000),
-  ('Loại 2', 10000000);
+-- ============================================================
+-- INSERT DỮ LIỆU
+-- ============================================================
 
--- Quận
+-- THAM SỐ 
+INSERT INTO THAMSO (Id, SoDaiLyToiDa, TiLeTinhDonGiaXuat, ApDungQDKiemTraSoTienThu)
+VALUES (1, 4, 1.02, TRUE)
+ON DUPLICATE KEY UPDATE
+  SoDaiLyToiDa = VALUES(SoDaiLyToiDa),
+  TiLeTinhDonGiaXuat = VALUES(TiLeTinhDonGiaXuat),
+  ApDungQDKiemTraSoTienThu = VALUES(ApDungQDKiemTraSoTienThu);
+
+-- LOẠI ĐẠI LÝ
+INSERT INTO LOAIDAILY (TenLoaiDaiLy, TienNoToiDa) VALUES
+('Loại 1', 10000000),
+('Loại 2', 5000000);
+
+-- QUẬN
 INSERT INTO QUAN (TenQuan) VALUES
-  ('Quận 1'), ('Quận 2'), ('Quận 3'), ('Quận 4'), ('Quận 5'),
-  ('Quận 6'), ('Quận 7'), ('Quận 8'), ('Quận 9'), ('Quận 10'),
-  ('Quận 11'), ('Quận 12'), ('Quận Bình Thạnh'), ('Quận Gò Vấp'),
-  ('Quận Phú Nhuận'), ('Quận Tân Bình'), ('Quận Tân Phú'), 
-  ('Quận Bình Tân'), ('Quận Thủ Đức');
+('Quận 1'),
+('Quận 3'),
+('Quận Bình Thạnh'),
+('Quận Tân Bình');
 
--- Đơn vị tính
-INSERT INTO DVT (TenDVT) VALUES
-  ('Cái'), ('Hộp'), ('Thùng'), ('Kg'), ('Lít');
+-- ĐƠN VỊ TÍNH 
+INSERT INTO DONVITINH (TenDVT) VALUES
+('Thùng'),
+('Chai'),
+('Hộp'),
+('Gói');
 
--- Mặt hàng mẫu
-INSERT INTO MATHANG (TenMatHang, MaDVT, SoLuongTon) VALUES
-  ('Nước ngọt Coca Cola', 3, 200),
-  ('Nước suối Aquafina', 3, 300),
-  ('Mì gói Hảo Hảo', 3, 500),
-  ('Dầu ăn Neptune', 2, 150),
-  ('Sữa tươi Vinamilk', 2, 250);
+-- MẶT HÀNG
+INSERT INTO MATHANG (TenMatHang, MaDVT, DonGiaHienTai, TonKho) VALUES
+('Nước suối Lavie 500ml', 1, 0, 0),
+('Nước ngọt Coca-Cola', 1, 0, 0),
+('Mì gói Hảo Hảo', 3, 0, 0),
+('Bánh quy bơ Đan Mạch', 3, 0, 0),
+('Cà phê hòa tan G7', 4, 0, 0);
 
--- Tham số hệ thống (QĐ1 - QĐ8)
-INSERT INTO THAMSO (TenThamSo, GiaTri, MoTa) VALUES
-  ('SoDaiLyToiDa', '4', 'QĐ1: Số đại lý tối đa trong một quận'),
-  ('TyLeDonGiaXuat', '1.02', 'QĐ2: Tỷ lệ đơn giá xuất so với đơn giá nhập (102%)'),
-  ('KiemTraTienNo', '1', 'QĐ3: Bật/tắt kiểm tra tiền nợ khi xuất hàng (1=bật, 0=tắt)'),
-  ('KiemTraSoTienThu', '1', 'QĐ4: Bật/tắt kiểm tra số tiền thu <= tiền nợ (1=bật, 0=tắt)'),
-  ('KiemTraSoLuongTon', '1', 'QĐ5: Bật/tắt kiểm tra số lượng tồn khi xuất (1=bật, 0=tắt)');
+-- ĐẠI LÝ 
+INSERT INTO DAILY
+(TenDaiLy, MaLoaiDaiLy, MaQuan, SDT, DiaChi, Email, NgayTiepNhan, TongNo)
+VALUES
+('Đại lý Minh Anh', 1, 1, '0901234567', '12 Nguyễn Huệ, Quận 1', 'minhanh@example.com', '2026-01-05', 0),
+('Đại lý Phú Thịnh', 1, 3, '0912345678', '45 Xô Viết Nghệ Tĩnh, Bình Thạnh', 'phuthinh@example.com', '2026-01-10', 0),
+('Đại lý An Khang', 2, 2, '0923456789', '78 Võ Văn Tần, Quận 3', 'ankhang@example.com', '2026-02-01', 0),
+('Đại lý Gia Hân', 2, 4, '0934567890', '23 Cộng Hòa, Tân Bình', 'giahan@example.com', '2026-02-15', 0);
 
--- Đại lý mẫu
-INSERT INTO DAILY (TenDaiLy, MaLoai, MaQuan, DienThoai, DiaChi, Email, NgayTiepNhan, TienNo) VALUES
-  ('Đại lý Minh Phát', 1, 1, '0901234567', '123 Nguyễn Huệ', 'minhphat@gmail.com', '2025-01-15', 5000000),
-  ('Đại lý Hoàng Long', 1, 3, '0912345678', '456 Lê Lợi', 'hoanglong@gmail.com', '2025-02-20', 8000000),
-  ('Đại lý Thanh Tâm', 2, 5, '0923456789', '789 Trần Hưng Đạo', 'thanhtam@gmail.com', '2025-03-10', 3000000),
-  ('Đại lý Phú Quý', 2, 7, '0934567890', '321 Hai Bà Trưng', 'phuquy@gmail.com', '2025-04-05', 7500000),
-  ('Đại lý Tân Tiến', 1, 1, '0945678901', '654 Võ Văn Tần', 'tantien@gmail.com', '2025-05-01', 12000000);
+
+-- PHIẾU NHẬP HÀNG
+INSERT INTO PHIEUNHAPHANG (NgayLapPhieu) VALUES
+('2026-03-01'),
+('2026-03-05');
+
+INSERT INTO CHITIET_PHIEUNHAP
+(MaPhieuNhap, MaMatHang, SoLuongNhap, DonGiaNhap)
+VALUES
+(1, 1, 100, 80000),
+(1, 2, 80, 150000),
+(1, 3, 120, 90000),
+(2, 4, 60, 120000),
+(2, 5, 90, 65000);
+ 
+
+INSERT INTO PHIEUXUATHANG (MaDaiLy, NgayLapPhieu, TienTra) VALUES
+(1, '2026-03-10', 0),
+(2, '2026-03-12', 0),
+(3, '2026-03-15', 0);
+
+INSERT INTO CHITIET_PHIEUXUAT
+(MaPhieuXuat, MaMatHang, SoLuongXuat)
+VALUES
+(1, 1, 20),
+(1, 2, 10),
+(1, 3, 15),
+(2, 2, 12),
+(2, 4, 8),
+(3, 3, 20),
+(3, 5, 10);
+
+INSERT INTO PHIEUTHUTIEN (MaDaiLy, NgayThuTien, SoTienThu) VALUES
+(1, '2026-03-20', 1000000),
+(2, '2026-03-22', 800000),
+(3, '2026-03-25', 500000);

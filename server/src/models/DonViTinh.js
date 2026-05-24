@@ -1,7 +1,7 @@
 const { DataTypes } = require('sequelize');
 const sequelize = require('../config/database');
 
-const DVT = sequelize.define('DVT', {
+const DonViTinh = sequelize.define('DonViTinh', {
   MaDVT: {
     type: DataTypes.INTEGER,
     primaryKey: true,
@@ -16,4 +16,4 @@ const DVT = sequelize.define('DVT', {
   timestamps: true,
 });
 
-module.exports = DVT;
+module.exports = DonViTinh;

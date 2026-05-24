@@ -1,4 +1,4 @@
-const { sequelize, PhieuNhapHang, CT_PNH, MatHang, DVT } = require('../models');
+const { sequelize, PhieuNhapHang, ChiTiet_PhieuNHap, MatHang, DonViTinh } = require('../models');
 
 /**
  * GET /api/phieu-nhap
@@ -9,12 +9,12 @@ const getAll = async (req, res) => {
     const phieuNhaps = await PhieuNhapHang.findAll({
       include: [
         {
-          model: CT_PNH,
+          model: ChiTiet_PhieuNHap,
           as: 'chiTiets',
-          include: [{ model: MatHang, as: 'matHang', include: [{ model: DVT, as: 'dvt' }] }],
+          include: [{ model: MatHang, as: 'matHang', include: [{ model: DonViTinh, as: 'dvt' }] }],
         },
       ],
-      order: [['MaPN', 'DESC']],
+      order: [['MaPhieuNhap', 'DESC']],
     });
 
     res.json({ status: 'success', data: phieuNhaps });
@@ -32,9 +32,9 @@ const getById = async (req, res) => {
     const phieu = await PhieuNhapHang.findByPk(req.params.id, {
       include: [
         {
-          model: CT_PNH,
+          model: ChiTiet_PhieuNHap,
           as: 'chiTiets',
-          include: [{ model: MatHang, as: 'matHang', include: [{ model: DVT, as: 'dvt' }] }],
+          include: [{ model: MatHang, as: 'matHang', include: [{ model: DonViTinh, as: 'dvt' }] }],
         },
       ],
     });
@@ -53,12 +53,12 @@ const getById = async (req, res) => {
 /**
  * POST /api/phieu-nhap
  * Lập phiếu nhập hàng (BM2)
- * Body: { NgayNhap, chiTiets: [{ MaMatHang, SoLuong, DonGiaNhap }] }
+ * Body: { NgayLapPhieu, chiTiets: [{ MaMatHang, SoLuong, DonGiaNhap }] }
  */
 const create = async (req, res) => {
   const t = await sequelize.transaction();
   try {
-    const { NgayNhap, chiTiets } = req.body;
+    const { NgayLapPhieu, chiTiets } = req.body;
 
     if (!chiTiets || chiTiets.length === 0) {
       return res.status(400).json({
@@ -70,27 +70,27 @@ const create = async (req, res) => {
     // Tính tổng tiền
     let tongTien = 0;
     const processedDetails = chiTiets.map((ct) => {
-      const thanhTien = ct.SoLuong * ct.DonGiaNhap;
+      const thanhTien = ct.SoLuongNhap * ct.DonGiaNhap;
       tongTien += thanhTien;
       return { ...ct, ThanhTien: thanhTien };
     });
 
     // Tạo phiếu nhập
     const phieu = await PhieuNhapHang.create(
-      { NgayNhap: NgayNhap || new Date(), TongTien: tongTien },
+      { NgayLapPhieu: NgayLapPhieu || new Date(), TongTien: tongTien },
       { transaction: t }
     );
 
     // Tạo chi tiết + cập nhật tồn kho (QĐ6)
     for (const ct of processedDetails) {
-      await CT_PNH.create(
-        { MaPN: phieu.MaPN, ...ct },
+      await ChiTiet_PhieuNHap.create(
+        { MaPhieuNhap: phieu.MaPhieuNhap, ...ct },
         { transaction: t }
       );
 
       // QĐ6: Cập nhật số lượng tồn kho
       await MatHang.increment('SoLuongTon', {
-        by: ct.SoLuong,
+        by: ct.SoLuongNhap,
         where: { MaMatHang: ct.MaMatHang },
         transaction: t,
       });
@@ -99,12 +99,12 @@ const create = async (req, res) => {
     await t.commit();
 
     // Trả về phiếu đầy đủ
-    const result = await PhieuNhapHang.findByPk(phieu.MaPN, {
+    const result = await PhieuNhapHang.findByPk(phieu.MaPhieuNhap, {
       include: [
         {
-          model: CT_PNH,
+          model: ChiTiet_PhieuNHap,
           as: 'chiTiets',
-          include: [{ model: MatHang, as: 'matHang', include: [{ model: DVT, as: 'dvt' }] }],
+          include: [{ model: MatHang, as: 'matHang', include: [{ model: DonViTinh, as: 'dvt' }] }],
         },
       ],
     });

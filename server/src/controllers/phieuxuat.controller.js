@@ -1,13 +1,13 @@
 const {
   sequelize,
   PhieuXuatHang,
-  CT_PXH,
+  ChiTiet_PhieuXuat,
   DaiLy,
   LoaiDaiLy,
   MatHang,
-  DVT,
+  DonViTinh,
   ThamSo,
-  CT_PNH,
+  ChiTiet_PhieuNhap,
 } = require('../models');
 
 /**
@@ -19,12 +19,12 @@ const getAll = async (req, res) => {
       include: [
         { model: DaiLy, as: 'daiLy' },
         {
-          model: CT_PXH,
+          model: ChiTiet_PhieuXuat,
           as: 'chiTiets',
-          include: [{ model: MatHang, as: 'matHang', include: [{ model: DVT, as: 'dvt' }] }],
+          include: [{ model: MatHang, as: 'matHang', include: [{ model: DonViTinh, as: 'dvt' }] }],
         },
       ],
-      order: [['MaPX', 'DESC']],
+      order: [['MaPhieuXuat', 'DESC']],
     });
 
     res.json({ status: 'success', data: phieuXuats });
@@ -43,9 +43,9 @@ const getById = async (req, res) => {
       include: [
         { model: DaiLy, as: 'daiLy', include: [{ model: LoaiDaiLy, as: 'loaiDaiLy' }] },
         {
-          model: CT_PXH,
+          model: ChiTiet_PhieuXuat,
           as: 'chiTiets',
-          include: [{ model: MatHang, as: 'matHang', include: [{ model: DVT, as: 'dvt' }] }],
+          include: [{ model: MatHang, as: 'matHang', include: [{ model: DonViTinh, as: 'dvt' }] }],
         },
       ],
     });
@@ -64,7 +64,7 @@ const getById = async (req, res) => {
 /**
  * POST /api/phieu-xuat
  * Lập phiếu xuất hàng (BM3)
- * Body: { MaDaiLy, NgayXuat, chiTiets: [{ MaMatHang, SoLuong }] }
+ * Body: { MaDaiLy, NgayLapPhieu, chiTiets: [{ MaMatHang, TonKho }] }
  *
  * QĐ2: DonGiaXuat = DonGiaNhap × TyLeDonGiaXuat
  * QĐ3: Kiểm tra hạn mức nợ
@@ -75,7 +75,7 @@ const getById = async (req, res) => {
 const create = async (req, res) => {
   const t = await sequelize.transaction();
   try {
-    const { MaDaiLy, NgayXuat, chiTiets } = req.body;
+    const { MaDaiLy, NgayLapPhieu, chiTiets } = req.body;
 
     if (!chiTiets || chiTiets.length === 0) {
       return res.status(400).json({
@@ -116,11 +116,11 @@ const create = async (req, res) => {
       }
 
       // QĐ5: Kiểm tra tồn kho
-      if (kiemTraTon && matHang.SoLuongTon < ct.SoLuong) {
+      if (kiemTraTon && matHang.TonKho < ct.TonKho) {
         await t.rollback();
         return res.status(400).json({
           status: 'error',
-          message: `Mặt hàng "${matHang.TenMatHang}" không đủ tồn kho. Hiện có: ${matHang.SoLuongTon}, cần: ${ct.SoLuong}.`,
+          message: `Mặt hàng "${matHang.TenMatHang}" không đủ tồn kho. Hiện có: ${matHang.TonKho}, cần: ${ct.TonKho}.`,
           rule: 'QD5',
         });
       }
@@ -129,18 +129,18 @@ const create = async (req, res) => {
       // Lấy giá nhập gần nhất
       const lastImport = await CT_PNH.findOne({
         where: { MaMatHang: ct.MaMatHang },
-        order: [['MaPN', 'DESC']],
+        order: [['MaPhieuNhap', 'DESC']],
         transaction: t,
       });
 
       const donGiaNhap = lastImport ? parseFloat(lastImport.DonGiaNhap) : 0;
       const donGiaXuat = Math.round(donGiaNhap * tyLe);
-      const thanhTien = donGiaXuat * ct.SoLuong;
+      const thanhTien = donGiaXuat * ct.TonKho;
       tongTien += thanhTien;
 
       processedDetails.push({
         MaMatHang: ct.MaMatHang,
-        SoLuong: ct.SoLuong,
+        TonKho: ct.TonKho,
         DonGiaXuat: donGiaXuat,
         ThanhTien: thanhTien,
       });
@@ -148,44 +148,44 @@ const create = async (req, res) => {
 
     // QĐ3: Kiểm tra hạn mức nợ
     if (kiemTraNo) {
-      const tienNoHienTai = parseFloat(daiLy.TienNo) || 0;
-      const soNoToiDa = parseFloat(daiLy.loaiDaiLy.SoNoToiDa) || 0;
+      const tienNoHienTai = parseFloat(daiLy.TongNo) || 0;
+      const tienNoToiDa = parseFloat(daiLy.loaiDaiLy.TienNoToiDa) || 0;
       const tienNoSauXuat = tienNoHienTai + tongTien;
 
       if (tienNoSauXuat > soNoToiDa) {
         await t.rollback();
         return res.status(400).json({
           status: 'error',
-          message: `Vượt hạn mức nợ! Nợ hiện tại: ${tienNoHienTai.toLocaleString()}đ, đơn hàng: ${tongTien.toLocaleString()}đ, tổng: ${tienNoSauXuat.toLocaleString()}đ > hạn mức: ${soNoToiDa.toLocaleString()}đ.`,
+          message: `Vượt hạn mức nợ! Nợ hiện tại: ${tienNoHienTai.toLocaleString()}đ, đơn hàng: ${tongTien.toLocaleString()}đ, tổng: ${tienNoSauXuat.toLocaleString()}đ > hạn mức: ${tienNoToiDa.toLocaleString()}đ.`,
           rule: 'QD3',
-          data: { tienNoHienTai, tongTien, tienNoSauXuat, soNoToiDa },
+          data: { tienNoHienTai, tongTien, tienNoSauXuat, tienNoToiDa },
         });
       }
     }
 
     // Tạo phiếu xuất
     const phieu = await PhieuXuatHang.create(
-      { MaDaiLy, NgayXuat: NgayXuat || new Date(), TongTien: tongTien },
+      { MaDaiLy, NgayLapPhieu: NgayLapPhieu || new Date(), TongTien: tongTien },
       { transaction: t }
     );
 
     // Tạo chi tiết + cập nhật tồn kho
     for (const ct of processedDetails) {
-      await CT_PXH.create(
-        { MaPX: phieu.MaPX, ...ct },
+      await ChiTiet_PhieuXuat.create(
+        { MaPhieuXuat: phieu.MaPhieuXuat, ...ct },
         { transaction: t }
       );
 
       // QĐ6: Giảm tồn kho
-      await MatHang.decrement('SoLuongTon', {
-        by: ct.SoLuong,
+      await MatHang.decrement('TonKho', {
+        by: ct.TonKho,
         where: { MaMatHang: ct.MaMatHang },
         transaction: t,
       });
     }
 
     // QĐ7: Cập nhật tiền nợ
-    await DaiLy.increment('TienNo', {
+    await DaiLy.increment('TongNo', {
       by: tongTien,
       where: { MaDaiLy },
       transaction: t,
@@ -194,13 +194,13 @@ const create = async (req, res) => {
     await t.commit();
 
     // Trả về phiếu đầy đủ
-    const result = await PhieuXuatHang.findByPk(phieu.MaPX, {
+    const result = await PhieuXuatHang.findByPk(phieu.MaPhieuXuat, {
       include: [
         { model: DaiLy, as: 'daiLy' },
         {
-          model: CT_PXH,
+          model: ChiTiet_PhieuXuat,
           as: 'chiTiets',
-          include: [{ model: MatHang, as: 'matHang', include: [{ model: DVT, as: 'dvt' }] }],
+          include: [{ model: MatHang, as: 'matHang', include: [{ model: DonViTinh, as: 'dvt' }] }],
         },
       ],
     });

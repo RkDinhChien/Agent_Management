@@ -22,7 +22,6 @@ const ChiTiet_BaoCaoDoanhSo = sequelize.define('ChiTiet_BaoCaoDoanhSo', {
     TiLe: {
       type: DataTypes.DECIMAL(5, 2),
       defaultValue: 0,
-      field: 'TiLe',
     },
 }, {
     tableName: 'CHITIET_BAOCAODOANHSO',

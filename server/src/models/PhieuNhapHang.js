@@ -2,21 +2,18 @@ const { DataTypes } = require('sequelize');
 const sequelize = require('../config/database');
 
 const PhieuNhapHang = sequelize.define('PhieuNhapHang', {
-  MaPN: {
+  MaPhieuNhap: {
     type: DataTypes.INTEGER,
     primaryKey: true,
     autoIncrement: true,
-    field: 'MaPhieuNhap',
   },
-  NgayNhap: {
+  NgayLapPhieu: {
     type: DataTypes.DATEONLY,
     allowNull: false,
-    field: 'NgayLapPhieu',
   },
   TongTien: {
     type: DataTypes.DECIMAL(15, 2),
     defaultValue: 0,
-    field: 'TongTien',
   },
 }, {
   tableName: 'PHIEUNHAPHANG',

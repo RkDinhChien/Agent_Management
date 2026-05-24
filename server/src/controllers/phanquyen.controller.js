@@ -11,19 +11,11 @@ const getByGroup = async (req, res) => {
   }
 };
 
-<<<<<<< HEAD
-
 const replaceForGroup = async (req, res) => {
   const t = await sequelize.transaction();
   try {
     const { MaNhom, permissions } = req.body; // phân quyền: [{ MaChucNang, Xem, Them, Xoa, Sua }]
-=======
-// Replace permissions for a group (bulk)
-const replaceForGroup = async (req, res) => {
-  const t = await sequelize.transaction();
-  try {
-    const { MaNhom, permissions } = req.body; // permissions: [{ MaChucNang, Xem, Them, Xoa, Sua }]
->>>>>>> recover-stash
+
     if (!MaNhom) return res.status(400).json({ status: 'error', message: 'MaNhom required.' });
 
     // remove existing

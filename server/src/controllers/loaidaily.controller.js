@@ -5,7 +5,7 @@ const { LoaiDaiLy } = require('../models');
  */
 const getAll = async (req, res) => {
   try {
-    const loais = await LoaiDaiLy.findAll({ order: [['MaLoai', 'ASC']] });
+    const loais = await LoaiDaiLy.findAll({ order: [['MaLoaiDaiLy', 'ASC']] });
     res.json({ status: 'success', data: loais });
   } catch (error) {
     console.error('LoaiDaiLy getAll error:', error);

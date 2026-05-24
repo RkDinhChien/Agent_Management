@@ -109,17 +109,17 @@ const getDoanhSo = async (req, res) => {
         TenDaiLy: dl.TenDaiLy,
         LoaiDaiLy: dl.loaiDaiLy?.TenLoai,
         Quan: dl.quan?.TenQuan,
-        SoPhieuXuat: soPhieuXuat,
+        SoLuongPhieuXuat: soPhieuXuat,
         TongTriGia: tongTriGia,
-        TiLe: 0,
+        TiLe: 0, // sẽ tính sau
       };
     });
-
+    // tính tỉ lệ
     baoCaoData.forEach((item) => {
       item.TiLe = tongDoanhSo > 0 ? Math.round((item.TongTriGia / tongDoanhSo) * 10000) / 100 : 0;
     });
 
-    const filtered = baoCaoData.filter((item) => item.SoPhieuXuat > 0);
+    const filtered = baoCaoData.filter((item) => item.SoLuongPhieuXuat > 0);
 
     const summary = await BaoCaoDoanhSo.create({
       Thang: month,
@@ -130,7 +130,7 @@ const getDoanhSo = async (req, res) => {
     const detailPayload = filtered.map((item) => ({
       MaBCDS: summary.MaBCDS,
       MaDaiLy: item.MaDaiLy,
-      SoLuongPhieuXuat: item.SoPhieuXuat,
+      SoLuongPhieuXuat: item.SoLuongPhieuXuat,
       TongTriGia: item.TongTriGia,
       TiLe: item.TiLe,
     }));
@@ -185,7 +185,7 @@ const getCongNo = async (req, res) => {
         {
           model: PhieuThuTien,
           as: 'phieuThus',
-          where: { NgayThu: { [Op.between]: [startDate, endDate] } },
+          where: { NgayThuTien: { [Op.between]: [startDate, endDate] } },
           required: false,
         },
       ],

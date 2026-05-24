@@ -1,7 +1,7 @@
 const { DataTypes } = require('sequelize');
 const sequelize = require('../config/database');
 
-const CT_PXH = sequelize.define('CT_PXH', {
+const ChiTiet_PhieuXuat = sequelize.define('ChiTiet_PhieuXuat', {
   MaPX: {
     type: DataTypes.INTEGER,
     primaryKey: true,
@@ -32,4 +32,4 @@ const CT_PXH = sequelize.define('CT_PXH', {
   timestamps: false,
 });
 
-module.exports = CT_PXH;
+module.exports = ChiTiet_PhieuXuat;
