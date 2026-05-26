@@ -9,7 +9,7 @@
         <defs>
           <polygon id="mhhx" points="0,-24 20.8,-12 20.8,12 0,24 -20.8,12 -20.8,-12"/>
         </defs>
-        <g stroke="#0d9488" stroke-width=".9" opacity=".13">
+        <g stroke="#059669" stroke-width=".9" opacity=".13">
           <use href="#mhhx" transform="translate(21,24)"/>  <use href="#mhhx" transform="translate(62,24)"/>
           <use href="#mhhx" transform="translate(103,24)"/> <use href="#mhhx" transform="translate(144,24)"/>
           <use href="#mhhx" transform="translate(185,24)"/> <use href="#mhhx" transform="translate(226,24)"/>
@@ -27,21 +27,21 @@
           <use href="#mhhx" transform="translate(164,132)"/><use href="#mhhx" transform="translate(205,132)"/>
           <use href="#mhhx" transform="translate(246,132)"/><use href="#mhhx" transform="translate(287,132)"/>
         </g>
-        <g stroke="#0d9488" stroke-width="1.2" opacity=".28">
+        <g stroke="#059669" stroke-width="1.2" opacity=".28">
           <use href="#mhhx" transform="translate(144,60)"/>
           <use href="#mhhx" transform="translate(185,24)"/>
           <use href="#mhhx" transform="translate(226,96)"/>
         </g>
-        <polygon points="144,36 164.8,48 164.8,72 144,84 123.2,72 123.2,48" fill="#0d9488" opacity=".07"/>
-        <polygon points="185,0 205.8,12 205.8,36 185,48 164.2,36 164.2,12" fill="#0891b2" opacity=".06"/>
-        <g fill="#0d9488" opacity=".5">
+        <polygon points="144,36 164.8,48 164.8,72 144,84 123.2,72 123.2,48" fill="#059669" opacity=".07"/>
+        <polygon points="185,0 205.8,12 205.8,36 185,48 164.2,36 164.2,12" fill="#047857" opacity=".06"/>
+        <g fill="#059669" opacity=".5">
           <circle cx="144" cy="60" r="3.5"/><circle cx="185" cy="24" r="3"/><circle cx="226" cy="96" r="3"/>
         </g>
-        <g stroke="#0d9488" stroke-width=".8" stroke-dasharray="3 4" opacity=".2">
+        <g stroke="#059669" stroke-width=".8" stroke-dasharray="3 4" opacity=".2">
           <line x1="144" y1="60" x2="185" y2="24"/>
           <line x1="144" y1="60" x2="226" y2="96"/>
         </g>
-        <g fill="#0891b2" opacity=".3">
+        <g fill="#047857" opacity=".3">
           <circle cx="62" cy="24" r="2"/><circle cx="267" cy="60" r="2"/><circle cx="103" cy="132" r="2"/>
         </g>
       </svg>
@@ -204,7 +204,10 @@
                 <td><span class="mh-code">{{ r.code }}</span></td>
                 <td>
                   <div class="mh-name-cell">
-                    <img :src="`https://picsum.photos/seed/mh${r.id}/44/44`" class="prod-thumb" :alt="r.name" @error="$event.target.style.display='none'"/>
+                    <div class="prod-thumb">
+                      <img v-if="prodImgUrls[r.id]" :src="prodImgUrls[r.id]" class="prod-img" :alt="r.name" @error="e => e.target.style.display='none'"/>
+                      <span class="prod-init" :style="{ background: prodCatColor(r.category) }">{{ r.category.charAt(0) }}</span>
+                    </div>
                     <div>
                       <span class="mh-name">{{ r.name }}</span>
                       <span class="cat-chip">{{ r.category }}</span>
@@ -253,7 +256,8 @@
         <template v-if="panelMode === 'view' && selectedProduct">
           <div class="ap-hd">
             <div class="ap-avatar">
-              <img :src="`https://picsum.photos/seed/mh${selectedProduct.id}/80/80`" class="av-img" :alt="selectedProduct.name" @error="$event.target.style.display='none'"/>
+              <img v-if="prodImgUrls[selectedProduct.id]" :src="prodImgUrls[selectedProduct.id]" class="prod-img" :alt="selectedProduct.name" @error="e => e.target.style.display='none'"/>
+              <span class="prod-init" :style="{ background: prodCatColor(selectedProduct.category) }">{{ selectedProduct.name.charAt(0) }}</span>
             </div>
             <div class="ap-title-block">
               <h3 class="ap-name">{{ selectedProduct.name }}</h3>
@@ -333,7 +337,7 @@
             <div class="ig-row">
               <BarChart2 :size="13" class="ig-ic"/>
               <span class="ig-lbl">Giá xuất</span>
-              <span class="ig-val" style="font-weight:700;color:#0891b2">{{ fmtPrice(selectedProduct.sellPrice) }}</span>
+              <span class="ig-val" style="font-weight:700;color:#047857">{{ fmtPrice(selectedProduct.sellPrice) }}</span>
             </div>
           </div>
 
@@ -528,8 +532,8 @@ import {
 const SortIcon = {
   props: ['field', 'sk', 'sd'],
   template: `<span class="sort-arrow"><svg width="8" height="10" viewBox="0 0 8 10" fill="none">
-    <path d="M4 0L7 3.5H1L4 0Z" :fill="sk===field && sd==='asc' ? '#0d9488' : '#cbd5e1'"/>
-    <path d="M4 10L1 6.5H7L4 10Z" :fill="sk===field && sd==='desc' ? '#0d9488' : '#cbd5e1'"/>
+    <path d="M4 0L7 3.5H1L4 0Z" :fill="sk===field && sd==='asc' ? '#059669' : '#cbd5e1'"/>
+    <path d="M4 10L1 6.5H7L4 10Z" :fill="sk===field && sd==='desc' ? '#059669' : '#cbd5e1'"/>
   </svg></span>`,
 };
 
@@ -538,16 +542,36 @@ const categories = ['Đèn LED', 'Đèn', 'Thiết bị điện', 'Dây cáp'];
 const dvts       = ['Cái', 'Bộ', 'Mét', 'Cuộn', 'Hộp'];
 
 /* ── Mock data ── */
+const PROD_CATS = {
+  'Đèn LED':       '#16a34a',
+  'Đèn':           '#d97706',
+  'Thiết bị điện': '#1d4ed8',
+  'Dây cáp':       '#dc2626',
+}
+const prodCatColor = (cat) => PROD_CATS[cat] ?? '#64748b'
+
 const products = ref([
-  { id:1, code:'MH-001', name:'Bóng đèn LED 9W',    dvt:'Cái',  category:'Đèn LED',       buyPrice:0.120,  sellPrice:0.1224, stock:850  },
-  { id:2, code:'MH-002', name:'Đèn LED panel 12W',  dvt:'Cái',  category:'Đèn LED',       buyPrice:0.280,  sellPrice:0.2856, stock:320  },
-  { id:3, code:'MH-003', name:'Đèn huỳnh quang T8', dvt:'Bộ',   category:'Đèn',           buyPrice:0.095,  sellPrice:0.0969, stock:540  },
-  { id:4, code:'MH-004', name:'Công tắc điện Sino',  dvt:'Cái',  category:'Thiết bị điện', buyPrice:0.080,  sellPrice:0.0816, stock:1200 },
-  { id:5, code:'MH-005', name:'Ổ cắm 3 chấu',        dvt:'Cái',  category:'Thiết bị điện', buyPrice:0.065,  sellPrice:0.0663, stock:95   },
-  { id:6, code:'MH-006', name:'Cầu dao MCB 20A',     dvt:'Cái',  category:'Thiết bị điện', buyPrice:0.450,  sellPrice:0.459,  stock:210  },
-  { id:7, code:'MH-007', name:'Dây điện CVV 1.5mm',  dvt:'Mét',  category:'Dây cáp',       buyPrice:0.022,  sellPrice:0.0224, stock:4500 },
-  { id:8, code:'MH-008', name:'Relay nhiệt LS 10A',  dvt:'Cái',  category:'Thiết bị điện', buyPrice:0.380,  sellPrice:0.3876, stock:68   },
+  { id:1, code:'MH-001', name:'Bóng đèn LED 9W',    dvt:'Cái',  category:'Đèn LED',       buyPrice:0.120,  sellPrice:0.1224, stock:850,  img:'LED_A19_Bulb.jpg' },
+  { id:2, code:'MH-002', name:'Đèn LED panel 12W',  dvt:'Cái',  category:'Đèn LED',       buyPrice:0.280,  sellPrice:0.2856, stock:320,  img:'LED_panel_lamp.jpg' },
+  { id:3, code:'MH-003', name:'Đèn huỳnh quang T8', dvt:'Bộ',   category:'Đèn',           buyPrice:0.095,  sellPrice:0.0969, stock:540,  img:'Fluorescent_tube_2.jpg' },
+  { id:4, code:'MH-004', name:'Công tắc điện Sino',  dvt:'Cái',  category:'Thiết bị điện', buyPrice:0.080,  sellPrice:0.0816, stock:1200, img:'Light_switch.jpg' },
+  { id:5, code:'MH-005', name:'Ổ cắm 3 chấu',        dvt:'Cái',  category:'Thiết bị điện', buyPrice:0.065,  sellPrice:0.0663, stock:95,   img:'Schuko_outlet.jpg' },
+  { id:6, code:'MH-006', name:'Cầu dao MCB 20A',     dvt:'Cái',  category:'Thiết bị điện', buyPrice:0.450,  sellPrice:0.459,  stock:210,  img:'Merlin_gerin_mcb.jpg' },
+  { id:7, code:'MH-007', name:'Dây điện CVV 1.5mm',  dvt:'Mét',  category:'Dây cáp',       buyPrice:0.022,  sellPrice:0.0224, stock:4500, img:'Stranded_wire.jpg' },
+  { id:8, code:'MH-008', name:'Relay nhiệt LS 10A',  dvt:'Cái',  category:'Thiết bị điện', buyPrice:0.380,  sellPrice:0.3876, stock:68,   img:'Thermal_overload_relay.jpg' },
 ]);
+
+/* ── Product image URLs — verified Wikimedia Commons thumbnails ── */
+const prodImgUrls = reactive({
+  1: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e1/Led-lampa.jpg/300px-Led-lampa.jpg',
+  2: 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/65/LED_tubes_in_various_length.JPG/300px-LED_tubes_in_various_length.JPG',
+  3: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/51/Fluorescent_lamps_artistic.jpg/300px-Fluorescent_lamps_artistic.jpg',
+  4: 'https://upload.wikimedia.org/wikipedia/commons/thumb/f/fb/Opened_light_switch.JPG/300px-Opened_light_switch.JPG',
+  5: 'https://upload.wikimedia.org/wikipedia/commons/thumb/d/d0/Steckdose.jpg/300px-Steckdose.jpg',
+  6: 'https://upload.wikimedia.org/wikipedia/commons/f/fd/Jtecul.jpg',
+  7: 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/49/Electrical_wire.jpg/330px-Electrical_wire.jpg',
+  8: 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c8/Overload_relay.jpg/300px-Overload_relay.jpg',
+})
 
 /* ── State ── */
 const searchQ      = ref('');
@@ -727,8 +751,8 @@ const exportCSV = () => {
 <style scoped>
 /* ══ TOKENS ══ */
 .mh {
-  --c-primary:    #0d9488; --c-primary-d: #0f766e;
-  --c-success:    #14b8a6; --c-success-bg:#f0fdfa;
+  --c-primary:    #059669; --c-primary-d: #047857;
+  --c-success:    #059669; --c-success-bg:#f0fdf4;
   --c-danger:     #EF4444; --c-danger-bg: #FEF2F2;
   --c-info:       #4f46e5;
   --c-surface:    #ffffff; --c-bg:        #f8fafc;
@@ -746,20 +770,20 @@ const exportCSV = () => {
 
 /* ══ CONTEXT BANNER ══ */
 .ctx-card {
-  background: linear-gradient(120deg,#ffffff 0%,#f0fdfa 45%,#ecfeff 100%);
-  border: 1px solid rgba(13,148,136,.13);
+  background: linear-gradient(120deg,#ffffff 0%,#f0fdf8 45%,#eef9ff 100%);
+  border: 1px solid rgba(16,185,129,.14);
   border-radius: var(--r-card);
-  box-shadow: 0 2px 16px rgba(13,148,136,.07),0 1px 3px rgba(15,23,42,.04);
+  box-shadow: 0 2px 16px rgba(5,150,105,.07),0 1px 3px rgba(15,23,42,.04);
   margin-bottom: 18px; overflow: hidden; position: relative;
 }
 .ctx-card::before {
   content:''; position:absolute; inset:0;
-  background-image: radial-gradient(rgba(13,148,136,.08) 1px,transparent 1px);
+  background-image: radial-gradient(rgba(5,150,105,.1) 1px,transparent 1px);
   background-size: 22px 22px; pointer-events:none; z-index:0;
 }
 .ctx-card::after {
   content:''; position:absolute; top:0; left:0; right:0; height:2.5px;
-  background: linear-gradient(90deg,transparent,#5eead4 25%,#0d9488 50%,#5eead4 75%,transparent);
+  background: linear-gradient(90deg,transparent,#34d399 25%,#059669 50%,#34d399 75%,transparent);
   z-index:1;
 }
 .ctx-deco { position:absolute; right:0; top:0; width:260px; height:100%; pointer-events:none; z-index:0; }
@@ -768,18 +792,18 @@ const exportCSV = () => {
 .ctx-title { font-size:22px; font-weight:800; margin:0; letter-spacing:-.6px; color:var(--c-txt); }
 .ctx-sub   { font-size:12px; color:var(--c-txt-3); margin:4px 0 0; }
 .ctx-actions { display:flex; gap:8px; align-items:center; flex-shrink:0; }
-.ctx-divider { height:1px; background:rgba(13,148,136,.1); position:relative; z-index:2; }
+.ctx-divider { height:1px; background:rgba(16,185,129,.1); position:relative; z-index:2; }
 
 .ctx-stats { display:flex; align-items:stretch; position:relative; z-index:2; }
 .cs-col { flex:1; display:flex; flex-direction:column; gap:6px; padding:18px 26px; transition:background var(--t); }
-.cs-col:hover { background:rgba(13,148,136,.04); }
+.cs-col:hover { background:rgba(5,150,105,.04); }
 .cs-warn { background:rgba(245,158,11,.04); }
 .cs-warn:hover { background:rgba(245,158,11,.09); }
-.cs-sep { width:1px; background:rgba(13,148,136,.12); flex-shrink:0; margin:12px 0; }
+.cs-sep { width:1px; background:rgba(16,185,129,.12); flex-shrink:0; margin:12px 0; }
 .cs-num { font-size:30px; font-weight:900; letter-spacing:-1.2px; color:var(--c-txt); line-height:1; display:flex; align-items:baseline; gap:7px; font-variant-numeric:tabular-nums; flex-wrap:wrap; }
 .cs-amber { color:#D97706; }
 .cs-tag { font-size:10px; font-weight:700; padding:2px 7px; border-radius:var(--r-pill); background:#fffbeb; color:#B45309; border:1px solid rgba(245,158,11,.25); letter-spacing:.2px; vertical-align:middle; }
-.cs-tag-green { background:var(--c-success-bg); color:var(--c-primary); border-color:rgba(13,148,136,.18); }
+.cs-tag-green { background:var(--c-success-bg); color:var(--c-primary); border-color:rgba(16,185,129,.18); }
 .cs-lbl { font-size:11px; color:var(--c-txt-3); font-weight:600; letter-spacing:.2px; }
 
 /* ── Delta ── */
@@ -791,7 +815,7 @@ const exportCSV = () => {
 /* ── Sparkline ── */
 .spark-wrap { display:flex; align-items:flex-end; gap:3px; height:28px; margin:4px 0 2px; }
 .spark-bar  { flex:1; background:#e2e8f0; border-radius:3px 3px 0 0; min-height:3px; transition:height .4s; }
-.spark-bar.spark-active { background:linear-gradient(180deg,#5eead4,#0d9488); }
+.spark-bar.spark-active { background:linear-gradient(180deg,#5eead4,#059669); }
 
 /* ── Donut ring ── */
 .cs-pending-row { display:flex; align-items:center; gap:11px; }
@@ -810,7 +834,7 @@ const exportCSV = () => {
 .ctl-label { font-size:11px; font-weight:600; color:var(--c-txt-3); }
 .ctl-pct   { font-size:11px; font-weight:700; color:var(--c-primary); }
 .ctl-track { height:4px; background:rgba(13,148,136,.1); border-radius:99px; overflow:hidden; }
-.ctl-fill  { height:100%; background:linear-gradient(90deg,#5eead4,#0d9488); border-radius:99px; transition:width .8s ease; }
+.ctl-fill  { height:100%; background:linear-gradient(90deg,#5eead4,#059669); border-radius:99px; transition:width .8s ease; }
 
 /* ══ MAIN LAYOUT ══ */
 .dl-flex   { display:flex; gap:20px; align-items:flex-start; }
@@ -860,10 +884,11 @@ const exportCSV = () => {
 .mh-name-cell { display:flex; align-items:center; gap:10px; }
 .mh-name { font-size:13px; font-weight:600; }
 .cat-chip { font-size:10px; font-weight:600; padding:2px 7px; border-radius:var(--r-pill); background:var(--c-bg); border:1px solid var(--c-border); color:var(--c-txt-3); align-self:flex-start; }
-.prod-thumb { width:44px; height:44px; border-radius:8px; object-fit:cover; flex-shrink:0; border:1px solid #f1f5f9; }
-.av-img { width:100%; height:100%; object-fit:cover; border-radius:inherit; display:block; }
+.prod-thumb { position:relative; width:44px; height:44px; border-radius:8px; flex-shrink:0; overflow:hidden; background:white; border:1px solid rgba(0,0,0,.08); box-shadow:0 1px 4px rgba(0,0,0,.10); }
+.prod-img   { position:absolute; inset:0; width:100%; height:100%; object-fit:contain; padding:4px; box-sizing:border-box; z-index:2; background:white; display:block; }
+.prod-init  { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:14px; font-weight:800; color:white; }
 .price-num { font-weight:700; font-size:12px; font-variant-numeric:tabular-nums; color:var(--c-txt-2); }
-.sell-price { color:#0891b2; }
+.sell-price { color:#047857; }
 
 /* ── Stock cell ── */
 .stock-cell { display:flex; flex-direction:column; gap:3px; }
@@ -891,7 +916,7 @@ const exportCSV = () => {
 .side-panel { display:flex; flex-direction:column; min-height:500px; width:360px; flex-shrink:0; max-height:calc(100vh - 200px); position:sticky; top:16px; overflow:hidden; }
 
 .ap-hd { padding:18px 18px 14px; border-bottom:1px solid var(--c-border); display:flex; align-items:flex-start; gap:12px; }
-.ap-avatar { width:44px; height:44px; border-radius:12px; flex-shrink:0; color:#fff; font-size:20px; font-weight:800; display:flex; align-items:center; justify-content:center; }
+.ap-avatar { position:relative; width:64px; height:64px; border-radius:12px; flex-shrink:0; overflow:hidden; background:white; border:1px solid rgba(0,0,0,.10); box-shadow:0 2px 8px rgba(0,0,0,.12); }
 .ap-title-block { flex:1; min-width:0; }
 .ap-name   { font-size:15px; font-weight:700; margin:0 0 6px; overflow:hidden; text-overflow:ellipsis; }
 .ap-badges { display:flex; gap:5px; flex-wrap:wrap; align-items:center; }

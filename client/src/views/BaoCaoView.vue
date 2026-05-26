@@ -9,7 +9,7 @@
         <defs>
           <polygon id="bchx" points="0,-24 20.8,-12 20.8,12 0,24 -20.8,12 -20.8,-12"/>
         </defs>
-        <g stroke="#fdba74" stroke-width=".9" opacity=".12">
+        <g stroke="#059669" stroke-width=".9" opacity=".13">
           <use href="#bchx" transform="translate(21,24)"/>  <use href="#bchx" transform="translate(62,24)"/>
           <use href="#bchx" transform="translate(103,24)"/> <use href="#bchx" transform="translate(144,24)"/>
           <use href="#bchx" transform="translate(185,24)"/> <use href="#bchx" transform="translate(226,24)"/>
@@ -27,25 +27,27 @@
           <use href="#bchx" transform="translate(164,132)"/><use href="#bchx" transform="translate(205,132)"/>
           <use href="#bchx" transform="translate(246,132)"/><use href="#bchx" transform="translate(287,132)"/>
         </g>
-        <g stroke="#fdba74" stroke-width="1.2" opacity=".26">
+        <g stroke="#059669" stroke-width="1.2" opacity=".28">
           <use href="#bchx" transform="translate(144,60)"/>
           <use href="#bchx" transform="translate(185,24)"/>
           <use href="#bchx" transform="translate(226,96)"/>
         </g>
-        <polygon points="144,36 164.8,48 164.8,72 144,84 123.2,72 123.2,48" fill="#fdba74" opacity=".06"/>
-        <polygon points="185,0 205.8,12 205.8,36 185,48 164.2,36 164.2,12" fill="#fcd9b8" opacity=".05"/>
-        <g fill="#fdba74" opacity=".45">
+        <polygon points="144,36 164.8,48 164.8,72 144,84 123.2,72 123.2,48" fill="#059669" opacity=".07"/>
+        <polygon points="185,0 205.8,12 205.8,36 185,48 164.2,36 164.2,12" fill="#047857" opacity=".06"/>
+        <polygon points="226,72 246.8,84 246.8,108 226,120 205.2,108 205.2,84" fill="#059669" opacity=".06"/>
+        <g fill="#059669" opacity=".5">
           <circle cx="144" cy="60" r="3.5"/><circle cx="185" cy="24" r="3"/><circle cx="226" cy="96" r="3"/>
         </g>
-        <g stroke="#fdba74" stroke-width=".8" stroke-dasharray="3 4" opacity=".18">
+        <g stroke="#059669" stroke-width=".8" stroke-dasharray="3 4" opacity=".2">
           <line x1="144" y1="60" x2="185" y2="24"/>
           <line x1="144" y1="60" x2="226" y2="96"/>
         </g>
-        <g fill="#fdba74" opacity=".35">
+        <g fill="#047857" opacity=".3">
           <circle cx="62" cy="24" r="2"/><circle cx="267" cy="60" r="2"/><circle cx="103" cy="132" r="2"/>
         </g>
       </svg>
 
+      <!-- Watermark icon: bar chart -->
       <svg class="ctx-wm" viewBox="0 0 100 85" fill="none" stroke="currentColor" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
         <rect x="6" y="45" width="20" height="35" rx="4"/>
         <rect x="38" y="22" width="20" height="58" rx="4"/>
@@ -55,9 +57,9 @@
       </svg>
 
       <div class="ctx-top">
-        <div>
+        <div class="ctx-title-block">
+          <p class="ctx-eyebrow">Nghiệp vụ · Báo cáo kinh doanh</p>
           <h1 class="ctx-title">Hiệu Suất Kinh Doanh</h1>
-          <p class="ctx-sub">Nhìn vào số liệu, hiểu xu hướng, ra quyết định chuẩn xác · T{{ filterMonth }}/{{ filterYear }}</p>
         </div>
         <div class="ctx-actions">
           <select class="sel-month" v-model="filterMonth">
@@ -73,70 +75,108 @@
 
       <div class="ctx-divider"></div>
 
-      <!-- KPI Row -->
-      <div class="ctx-kpi">
+      <!-- KPI Row — cs-col pattern (integrated in dark banner) -->
+      <div class="ctx-stats">
 
-        <!-- KPI 1 – Tổng doanh thu -->
-        <div class="ctx-kpi-card">
-          <div class="kpi-label"><BarChart2 :size="13"/> Tổng doanh thu</div>
-          <div class="kpi-val">{{ fmtM(totalRevenue) }} <span class="kpi-unit">Triệu đ</span></div>
-          <div class="cs-delta" :class="revDelta >= 0 ? 'delta-up' : 'delta-dn'">
-            <TrendingUp v-if="revDelta>=0" :size="11"/>
-            <TrendingDown v-else :size="11"/>
-            {{ Math.abs(revDelta) }}% so tháng trước
+        <!-- KPI 1: Tổng doanh thu + sparkline -->
+        <div class="cs-col">
+          <div class="cs-lbl-row">
+            <span class="cs-ic"><BarChart2 :size="11"/></span>
+            <span class="cs-lbl">Tổng doanh thu</span>
           </div>
+          <strong class="cs-num">
+            {{ fmtM(totalRevenue) }}
+            <span style="font-size:14px;font-weight:600;color:#94a3b8">Tr đ</span>
+          </strong>
+          <span class="cs-delta" :class="revDelta >= 0 ? 'cs-up' : 'cs-down'">
+            <TrendingUp v-if="revDelta>=0" :size="10"/>
+            <TrendingDown v-else :size="10"/>
+            {{ Math.abs(revDelta) }}% so tháng trước
+          </span>
           <div class="spark-wrap">
             <div v-for="(h,i) in revSpark" :key="i"
-                 class="spark-bar"
-                 :class="{ 'spark-active': i === revSpark.length-1 }"
+                 class="spark-bar" :class="{ 'spark-active': i === revSpark.length-1 }"
                  :style="{ height: (h/maxRevSpark*100)+'%' }"></div>
           </div>
+          <span class="cs-lbl" style="margin-top:2px">Doanh số tháng này</span>
         </div>
+        <div class="cs-sep"></div>
 
-        <!-- KPI 2 – Tổng thu tiền -->
-        <div class="ctx-kpi-card">
-          <div class="kpi-label"><CircleDollarSign :size="13"/> Tổng thu tiền</div>
-          <div class="kpi-val">{{ fmtM(totalCollected) }} <span class="kpi-unit">Triệu đ</span></div>
-          <div class="cs-delta delta-up"><TrendingUp :size="11"/> {{ collectDelta }}% so tháng trước</div>
+        <!-- KPI 2: Tổng thu tiền + sparkline -->
+        <div class="cs-col">
+          <div class="cs-lbl-row">
+            <span class="cs-ic"><CircleDollarSign :size="11"/></span>
+            <span class="cs-lbl">Tổng thu tiền</span>
+          </div>
+          <strong class="cs-num">
+            {{ fmtM(totalCollected) }}
+            <span style="font-size:14px;font-weight:600;color:#94a3b8">Tr đ</span>
+          </strong>
+          <span class="cs-delta cs-up"><TrendingUp :size="10"/> {{ collectDelta }}% so tháng trước</span>
           <div class="spark-wrap">
             <div v-for="(h,i) in colSpark" :key="i"
-                 class="spark-bar"
-                 :class="{ 'spark-active': i === colSpark.length-1 }"
+                 class="spark-bar" :class="{ 'spark-active': i === colSpark.length-1 }"
                  :style="{ height: (h/maxColSpark*100)+'%' }"></div>
           </div>
+          <span class="cs-lbl" style="margin-top:2px">Thực thu xác nhận</span>
         </div>
+        <div class="cs-sep"></div>
 
-        <!-- KPI 3 – Tỉ lệ thu nợ / donut -->
-        <div class="ctx-kpi-card kpi-donut-card">
-          <div class="kpi-label"><PieChart :size="13"/> Tỉ lệ thu nợ</div>
-          <div class="kpi-donut-row">
-            <div class="donut-ring" :style="{ background: debtDonutGradient }"></div>
+        <!-- KPI 3: Tỉ lệ thu nợ / donut -->
+        <div class="cs-col cs-warn">
+          <div class="cs-pending-row">
+            <div class="donut-wrap">
+              <div class="donut-ring" :style="{ background: debtDonutGradient }"></div>
+            </div>
             <div>
-              <div class="kpi-val" style="margin-bottom:2px;">{{ collectRatePct }}<span class="kpi-unit">%</span></div>
-              <div style="font-size:.7rem;color:#64748b;">{{ fmtM(totalCollected) }} / {{ fmtM(totalDebt) }} Tr</div>
+              <strong class="cs-num" style="display:block;margin-bottom:2px">
+                {{ collectRatePct }}<span style="font-size:14px;font-weight:600;color:#94a3b8">%</span>
+              </strong>
+              <span class="cs-delta cs-up">{{ fmtM(totalCollected) }} / {{ fmtM(totalDebt) }} Tr</span>
             </div>
           </div>
-          <div class="donut-legend-row">
-            <span class="dl-dot" style="background:#059669;"></span><span class="dl-txt">Đã thu {{ collectRatePct }}%</span>
-            <span class="dl-dot" style="background:#f59e0b;margin-left:8px;"></span><span class="dl-txt">Còn lại {{ 100-collectRatePct }}%</span>
+          <div class="donut-legend">
+            <span class="dl-dot" style="background:#059669"></span> Đã thu {{ collectRatePct }}%
+            <span class="dl-dot" style="background:#f59e0b;margin-left:6px"></span> Còn {{ 100-collectRatePct }}%
           </div>
+          <span class="cs-lbl" style="margin-top:4px">Tỉ lệ thu nợ</span>
+        </div>
+        <div class="cs-sep"></div>
+
+        <!-- KPI 4: Đại lý vượt nợ -->
+        <div class="cs-col">
+          <div class="cs-lbl-row">
+            <span class="cs-ic"><AlertTriangle :size="11"/></span>
+            <span class="cs-lbl">Đại lý vượt nợ</span>
+          </div>
+          <strong class="cs-num" :style="overDebtAgents > 0 ? { color:'#f87171' } : {}">
+            {{ overDebtAgents }}
+            <span class="cs-tag" v-if="overDebtAgents > 0">cần xử lý</span>
+            <span class="cs-tag cs-tag-green" v-else>trong hạn</span>
+          </strong>
+          <span class="cs-delta" :class="overDebtAgents > 0 ? 'cs-down' : 'cs-up'">
+            {{ overDebtAgents > 0 ? '↑ Cần ưu tiên thu hồi' : '✓ Tất cả trong hạn mức' }}
+          </span>
+          <div class="ctl-track" style="margin-top:8px">
+            <div class="ctl-fill" :style="{
+              width: (overDebtAgents / debtRows.length * 100) + '%',
+              background: overDebtAgents > 0 ? '#f87171' : '#059669'
+            }"></div>
+          </div>
+          <span class="cs-lbl" style="margin-top:4px">{{ overDebtAgents }}/{{ debtRows.length }} đại lý</span>
         </div>
 
-        <!-- KPI 4 – Đại lý vượt nợ -->
-        <div class="ctx-kpi-card">
-          <div class="kpi-label"><AlertTriangle :size="13"/> Đại lý vượt nợ</div>
-          <div class="kpi-val" style="color:#dc2626;">{{ overDebtAgents }}<span class="kpi-unit">đại lý</span></div>
-          <div class="cs-delta delta-dn" v-if="overDebtAgents > 0">
-            <AlertTriangle :size="11"/> Cần ưu tiên thu hồi nợ
-          </div>
-          <div class="cs-delta delta-up" v-else>
-            <CheckCircle :size="11"/> Tất cả trong hạn mức
-          </div>
-          <div class="ctx-timeline">
-            <div class="ctl-bar" :style="{ width: (overDebtAgents/debtRows.length*100)+'%', background:'#dc2626' }"></div>
-          </div>
-        </div>
+      </div>
 
+      <!-- Month progress -->
+      <div class="ctx-timeline">
+        <div class="ctl-row">
+          <span class="ctl-label">T{{ filterMonth }}/{{ filterYear }} · Nhìn vào số liệu, hiểu xu hướng, ra quyết định chuẩn xác</span>
+          <span class="ctl-pct">{{ fmtM(totalRevenue) }} Tr doanh thu</span>
+        </div>
+        <div class="ctl-track">
+          <div class="ctl-fill" :style="{ width: Math.min(totalRevenue/300*100,100) + '%' }"></div>
+        </div>
       </div>
     </div>
     <!-- ════════════════════════════════ -->
@@ -195,7 +235,10 @@
                   @click="selectRow(r, 'doanh-so')">
                 <td>
                   <div class="row-av-wrap">
-                    <div class="row-av"><img :src="`https://i.pravatar.cc/56?img=${(r.id % 70) + 1}`" class="av-img" :alt="r.name" @error="$event.target.style.display='none'"/></div>
+                    <div class="row-av">
+                      <img :src="agentBrand(r.id).logo" class="av-logo" :alt="r.name" @error="e => e.target.style.display='none'"/>
+                      <span class="av-init" :style="{ background: agentBrand(r.id).bg }">{{ avatarInit(r.name) }}</span>
+                    </div>
                     <div>
                       <div class="row-name">{{ r.name }}</div>
                       <div class="row-sub">{{ r.district }}</div>
@@ -242,7 +285,10 @@
                   @click="selectRow(r, 'cong-no')">
                 <td>
                   <div class="row-av-wrap">
-                    <div class="row-av"><img :src="`https://i.pravatar.cc/56?img=${(r.id % 70) + 1}`" class="av-img" :alt="r.name" @error="$event.target.style.display='none'"/></div>
+                    <div class="row-av">
+                      <img :src="agentBrand(r.id).logo" class="av-logo" :alt="r.name" @error="e => e.target.style.display='none'"/>
+                      <span class="av-init" :style="{ background: agentBrand(r.id).bg }">{{ avatarInit(r.name) }}</span>
+                    </div>
                     <div>
                       <div class="row-name">{{ r.name }}</div>
                       <div class="row-sub">{{ r.district }}</div>
@@ -283,7 +329,8 @@
         <div v-if="selected" class="side-panel">
           <div class="sp-header">
             <div class="ap-avatar">
-              <img :src="`https://i.pravatar.cc/80?img=${(selected.id % 70) + 1}`" class="av-img" :alt="selected.name" @error="$event.target.style.display='none'"/>
+              <img :src="agentBrand(selected.id).logo" class="av-logo" :alt="selected.name" @error="e => e.target.style.display='none'"/>
+              <span class="av-init" :style="{ background: agentBrand(selected.id).bg }">{{ avatarInit(selected.name) }}</span>
             </div>
             <div class="sp-id-block">
               <div class="sp-name">{{ selected.name }}</div>
@@ -391,6 +438,19 @@ const search      = ref('');
 const sortKey     = ref('val');
 const sortDir     = ref(-1);
 const selected    = ref(null);
+
+const BRANDS = [
+  { bg:'#0066A1', logo:'https://upload.wikimedia.org/wikipedia/commons/5/52/Philips_logo_new.svg' },
+  { bg:'#003087', logo:'/logos/panasonic.svg' },
+  { bg:'#1428A0', logo:'https://upload.wikimedia.org/wikipedia/commons/b/b4/Samsung_wordmark.svg' },
+  { bg:'#A50034', logo:'https://upload.wikimedia.org/wikipedia/commons/8/8d/LG_logo_%282014%29.svg' },
+  { bg:'#009999', logo:'https://upload.wikimedia.org/wikipedia/commons/5/5f/Siemens-logo.svg' },
+  { bg:'#1b7a30', logo:'https://upload.wikimedia.org/wikipedia/commons/9/95/Schneider_Electric_2007.svg' },
+  { bg:'#C8001A', logo:'https://iconape.com/wp-content/png_logo_vector/dien-quang-logo.png' },
+  { bg:'#d97706', logo:'https://cdn.haitrieu.com/wp-content/uploads/2022/08/logo-rang-dong.png' },
+]
+const agentBrand = (id) => BRANDS[(id - 1 + BRANDS.length) % BRANDS.length]
+const avatarInit = (name) => name.replace(/^Đại lý\s*/i,'').trim().charAt(0).toUpperCase();
 
 const SortIcon = {
   props: ['dir'],
@@ -537,9 +597,9 @@ const exportPrint = () => {
 
 <style scoped>
 .bc {
-  --c-primary: #fb923c;
-  --c-primary-bg: #fff7ed;
-  --c-primary-light: #fdba74;
+  --c-primary: #059669;
+  --c-primary-bg: #f0fdf4;
+  --c-primary-light: #34d399;
   padding: 28px 32px;
   min-height: 100vh;
   background: #f8fafc;
@@ -547,13 +607,24 @@ const exportPrint = () => {
 
 /* ══ BANNER ══ */
 .ctx-card {
-  background: white;
+  background: linear-gradient(120deg,#ffffff 0%,#f0fdf8 45%,#eef9ff 100%);
+  border: 1px solid rgba(16,185,129,.14);
   border-radius: 20px;
   padding: 28px 32px 24px;
   margin-bottom: 24px;
-  box-shadow: 0 1px 3px rgba(0,0,0,.04), 0 4px 16px rgba(251,146,60,.04);
+  box-shadow: 0 2px 16px rgba(5,150,105,.07),0 1px 3px rgba(15,23,42,.04);
   position: relative;
   overflow: hidden;
+}
+.ctx-card::before {
+  content:''; position:absolute; inset:0;
+  background-image: radial-gradient(rgba(5,150,105,.1) 1px,transparent 1px);
+  background-size: 22px 22px; pointer-events:none; z-index:0;
+}
+.ctx-card::after {
+  content:''; position:absolute; top:0; left:0; right:0; height:2.5px;
+  background: linear-gradient(90deg,transparent,#34d399 25%,#059669 50%,#34d399 75%,transparent);
+  z-index:1;
 }
 .ctx-deco {
   position: absolute;
@@ -566,8 +637,8 @@ const exportPrint = () => {
   right: 320px; top: 50%;
   transform: translateY(-50%);
   width: 92px; height: 92px;
-  color: var(--c-primary); opacity: .08;
-  pointer-events: none;
+  color: #059669; opacity: .07;
+  pointer-events: none; z-index: 0;
 }
 .ctx-top {
   display: flex;
@@ -576,13 +647,23 @@ const exportPrint = () => {
   margin-bottom: 20px;
   position: relative;
 }
-.ctx-title { font-size: 1.45rem; font-weight: 800; color: #0f172a; margin: 0 0 4px; }
+.ctx-title { font-size: 1.45rem; font-weight: 800; color: #0f172a; margin: 0; letter-spacing: -.5px; }
+.ctx-title-block { display: flex; flex-direction: column; gap: 2px; }
+.ctx-eyebrow {
+  margin: 0; font-size: 10.5px; font-weight: 700; color: #059669;
+  text-transform: uppercase; letter-spacing: 1px;
+  display: flex; align-items: center; gap: 7px;
+}
+.ctx-eyebrow::before {
+  content: ''; display: inline-block; width: 18px; height: 2.5px;
+  background: linear-gradient(90deg, #10b981, #059669); border-radius: 2px; flex-shrink: 0;
+}
 .ctx-sub   { font-size: .82rem; color: #64748b; margin: 0; }
 .ctx-actions { display: flex; gap: 10px; align-items: center; }
 
 .btn-csv {
   display: flex; align-items: center; gap: 6px;
-  background: #f1f5f9; border: none; border-radius: 10px;
+  background: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 10px;
   padding: 8px 14px; font-size: .75rem; font-weight: 700;
   color: #475569; cursor: pointer;
 }
@@ -602,33 +683,51 @@ const exportPrint = () => {
 }
 .sel-month:focus { border-color: var(--c-primary); }
 
-.ctx-divider { height: 1px; background: #f1f5f9; margin-bottom: 20px; }
+.ctx-divider { height: 1px; background: rgba(16,185,129,.1); margin-bottom: 20px; position: relative; z-index: 2; }
 
-/* KPI cards */
-.ctx-kpi { display: grid; grid-template-columns: repeat(4,1fr); gap: 16px; }
-.ctx-kpi-card {
-  background: #f8fafc;
-  border-radius: 14px;
-  padding: 16px 18px;
-  border: 1px solid #f1f5f9;
+/* ── KPI strip (cs-col pattern) ── */
+.ctx-stats {
+  display: flex; align-items: stretch; gap: 0;
+  margin-bottom: 0; position: relative; z-index: 2;
 }
-.kpi-label {
-  font-size: .68rem; font-weight: 700; color: #64748b;
-  text-transform: uppercase; letter-spacing: .5px;
-  display: flex; align-items: center; gap: 5px;
-  margin-bottom: 8px;
+.cs-col {
+  flex: 1; padding: 18px 26px; display: flex; flex-direction: column; gap: 6px;
+  transition: background .15s;
 }
-.kpi-val {
-  font-size: 1.55rem; font-weight: 800; color: #0f172a;
-  line-height: 1; margin-bottom: 6px;
+.cs-col:hover { background: rgba(5,150,105,.04); }
+.cs-warn { background: rgba(245,158,11,.04); }
+.cs-warn:hover { background: rgba(245,158,11,.09); }
+.cs-sep {
+  width: 1px; background: rgba(16,185,129,.12); flex-shrink: 0; margin: 12px 0;
 }
-.kpi-unit { font-size: .75rem; font-weight: 600; color: #94a3b8; margin-left: 3px; }
+.cs-lbl-row {
+  display: flex; align-items: center; gap: 5px; margin-bottom: 2px;
+}
+.cs-ic {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 18px; height: 18px; border-radius: 5px; flex-shrink: 0;
+  background: rgba(5,150,105,.09); color: #059669;
+}
+.cs-lbl { font-size: 11px; color: #64748b; font-weight: 600; letter-spacing: .2px; }
+.cs-num {
+  font-size: 30px; font-weight: 900; letter-spacing: -1.2px; color: #0f172a; line-height: 1;
+  display: flex; align-items: baseline; gap: 7px; font-variant-numeric: tabular-nums;
+}
+.cs-tag {
+  font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 99px;
+  background: #fffbeb; color: #B45309; border: 1px solid rgba(245,158,11,.25); letter-spacing: .2px;
+  vertical-align: middle;
+}
+.cs-tag-green { background: #ecfdf5; color: #059669; border-color: rgba(16,185,129,.18); }
 .cs-delta {
-  font-size: .68rem; font-weight: 700; display: flex; align-items: center; gap: 4px;
-  margin-bottom: 10px;
+  font-size: 10.5px; font-weight: 600; display: flex; align-items: center; gap: 4px;
+  margin-top: -3px;
 }
-.delta-up { color: #059669; }
-.delta-dn { color: #dc2626; }
+.cs-up   { color: #10b981; }
+.cs-down { color: #dc2626; }
+.cs-warn .cs-num { color: #D97706; }
+.cs-pending-row { display: flex; align-items: center; gap: 12px; }
+.donut-wrap { flex-shrink: 0; }
 
 /* Sparkline */
 .spark-wrap {
@@ -641,22 +740,31 @@ const exportPrint = () => {
 .spark-bar.spark-active { background: var(--c-primary); }
 
 /* Donut */
-.kpi-donut-card { }
-.kpi-donut-row { display: flex; align-items: center; gap: 14px; margin-bottom: 6px; }
 .donut-ring {
   width: 52px; height: 52px; border-radius: 50%; flex-shrink: 0;
   mask: radial-gradient(circle, transparent 52%, black 53%);
   -webkit-mask: radial-gradient(circle, transparent 52%, black 53%);
 }
-.donut-legend-row { display: flex; align-items: center; font-size: .66rem; color: #64748b; flex-wrap: wrap; gap: 2px; }
-.dl-dot { width: 7px; height: 7px; border-radius: 50%; display: inline-block; }
-.dl-txt { margin-right: 2px; }
-
-/* Timeline bar */
-.ctx-timeline {
-  height: 5px; background: #f1f5f9; border-radius: 3px; overflow: hidden; margin-top: 8px;
+.donut-legend {
+  display: flex; align-items: center; font-size: .66rem; color: #64748b;
+  flex-wrap: wrap; gap: 2px; margin-top: 4px;
 }
-.ctl-bar { height: 100%; border-radius: 3px; transition: width .4s; }
+.dl-dot { width: 7px; height: 7px; border-radius: 50%; display: inline-block; flex-shrink: 0; }
+
+/* Month progress */
+.ctx-timeline { padding: 10px 0 0; position: relative; z-index: 2; }
+.ctl-row {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 5px;
+}
+.ctl-label { font-size: 11px; font-weight: 600; color: #64748b; }
+.ctl-pct   { font-size: 11px; font-weight: 700; color: #059669; }
+.ctl-track {
+  height: 4px; background: rgba(5,150,105,.1); border-radius: 99px; overflow: hidden;
+}
+.ctl-fill {
+  height: 100%; background: linear-gradient(90deg, #34d399, #059669); border-radius: 99px; transition: width .8s ease;
+}
 
 /* ══ TABS ══ */
 .stab-group { display: flex; gap: 6px; margin-bottom: 18px; }
@@ -722,11 +830,12 @@ const exportPrint = () => {
 
 .row-av-wrap { display: flex; align-items: center; gap: 10px; }
 .row-av {
-  width: 32px; height: 32px; border-radius: 9px; flex-shrink: 0;
-  display: flex; align-items: center; justify-content: center;
-  font-size: .68rem; font-weight: 800; color: white;
+  position: relative; width: 36px; height: 36px; border-radius: 8px; flex-shrink: 0;
+  border: 1px solid rgba(0,0,0,.12); box-shadow: 0 1px 4px rgba(0,0,0,.15);
+  overflow: hidden; background: white;
 }
-.av-img { width:100%; height:100%; object-fit:cover; border-radius:inherit; display:block; }
+.av-logo { position:absolute; inset:0; width:100%; height:100%; object-fit:contain; object-position:center; padding:5px; box-sizing:border-box; z-index:2; background:white; display:block; }
+.av-init { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:800; color:white; letter-spacing:-.3px; }
 .row-name { font-weight: 700; font-size: .85rem; color: #1e293b; }
 .row-sub  { font-size: .72rem; color: #94a3b8; }
 
@@ -771,9 +880,9 @@ const exportPrint = () => {
   padding: 20px 20px 16px; border-bottom: 1px solid #f1f5f9;
 }
 .ap-avatar {
-  width: 44px; height: 44px; border-radius: 12px; flex-shrink: 0;
-  display: flex; align-items: center; justify-content: center;
-  font-size: .85rem; font-weight: 800; color: white;
+  position: relative; width: 44px; height: 44px; border-radius: 10px; flex-shrink: 0;
+  border: 1px solid rgba(0,0,0,.12); box-shadow: 0 2px 6px rgba(0,0,0,.15);
+  overflow: hidden; background: white;
 }
 .sp-name { font-size: .92rem; font-weight: 800; color: #1e293b; }
 .sp-sub  { font-size: .72rem; color: #94a3b8; }

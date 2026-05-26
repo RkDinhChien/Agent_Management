@@ -199,9 +199,9 @@ import { MessageSquare, X, Search, Send, Paperclip } from 'lucide-vue-next';
 /* ── Avatar palette ── */
 const GRADS = [
   'linear-gradient(135deg,#059669,#10b981)',
-  'linear-gradient(135deg,#2563eb,#60a5fa)',
-  'linear-gradient(135deg,#7c3aed,#a78bfa)',
-  'linear-gradient(135deg,#d97706,#fbbf24)',
+  'linear-gradient(135deg,#047857,#34d399)',
+  'linear-gradient(135deg,#065f46,#6ee7b7)',
+  'linear-gradient(135deg,#0d9488,#2dd4bf)',
 ];
 const agentGrad  = (id) => GRADS[id % 4];
 const shortName  = (name) => name.replace(/^Đại lý\s*/i, '');
@@ -379,7 +379,7 @@ watch(isOpen, (val) => { if (val && activeThread.value !== null) scrollToBottom(
 
 .cp-accent {
   height: 3px; flex-shrink: 0;
-  background: linear-gradient(90deg, #059669, #10b981 50%, #3b82f6);
+  background: linear-gradient(90deg, #059669, #10b981 50%, #34d399);
 }
 
 /* ── Header ── */
@@ -447,7 +447,7 @@ watch(isOpen, (val) => { if (val && activeThread.value !== null) scrollToBottom(
 .cpt-row2  { display: flex; align-items: center; gap: 5px; margin-top: 3px; }
 .cpt-badge { font-size: 9px; font-weight: 800; padding: 1px 5px; border-radius: 4px; flex-shrink: 0; }
 .cpt-badge.type1 { background: #ecfdf5; color: #065f46; }
-.cpt-badge.type2 { background: #eff6ff; color: #1e40af; }
+.cpt-badge.type2 { background: #ecfdf5; color: #065f46; }
 .cpt-preview { font-size: 11px; color: #94a3b8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 1; min-width: 0; }
 .cpt-preview.fw { color: #475569; font-weight: 600; }
 .cpt-unread { background: #059669; color: #fff; font-size: 10px; font-weight: 700; min-width: 18px; height: 18px; border-radius: 99px; display: flex; align-items: center; justify-content: center; padding: 0 4px; flex-shrink: 0; }

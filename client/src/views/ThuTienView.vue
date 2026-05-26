@@ -9,7 +9,7 @@
         <defs>
           <polygon id="pthx" points="0,-24 20.8,-12 20.8,12 0,24 -20.8,12 -20.8,-12"/>
         </defs>
-        <g stroke="#c4b5fd" stroke-width=".9" opacity=".12">
+        <g stroke="#059669" stroke-width=".9" opacity=".12">
           <use href="#pthx" transform="translate(21,24)"/>  <use href="#pthx" transform="translate(62,24)"/>
           <use href="#pthx" transform="translate(103,24)"/> <use href="#pthx" transform="translate(144,24)"/>
           <use href="#pthx" transform="translate(185,24)"/> <use href="#pthx" transform="translate(226,24)"/>
@@ -27,21 +27,21 @@
           <use href="#pthx" transform="translate(164,132)"/><use href="#pthx" transform="translate(205,132)"/>
           <use href="#pthx" transform="translate(246,132)"/><use href="#pthx" transform="translate(287,132)"/>
         </g>
-        <g stroke="#c4b5fd" stroke-width="1.2" opacity=".26">
+        <g stroke="#059669" stroke-width="1.2" opacity=".26">
           <use href="#pthx" transform="translate(144,60)"/>
           <use href="#pthx" transform="translate(185,24)"/>
           <use href="#pthx" transform="translate(226,96)"/>
         </g>
-        <polygon points="144,36 164.8,48 164.8,72 144,84 123.2,72 123.2,48" fill="#c4b5fd" opacity=".06"/>
-        <polygon points="185,0 205.8,12 205.8,36 185,48 164.2,36 164.2,12" fill="#a78bfa" opacity=".05"/>
-        <g fill="#c4b5fd" opacity=".45">
+        <polygon points="144,36 164.8,48 164.8,72 144,84 123.2,72 123.2,48" fill="#059669" opacity=".06"/>
+        <polygon points="185,0 205.8,12 205.8,36 185,48 164.2,36 164.2,12" fill="#047857" opacity=".05"/>
+        <g fill="#059669" opacity=".45">
           <circle cx="144" cy="60" r="3.5"/><circle cx="185" cy="24" r="3"/><circle cx="226" cy="96" r="3"/>
         </g>
-        <g stroke="#c4b5fd" stroke-width=".8" stroke-dasharray="3 4" opacity=".18">
+        <g stroke="#059669" stroke-width=".8" stroke-dasharray="3 4" opacity=".18">
           <line x1="144" y1="60" x2="185" y2="24"/>
           <line x1="144" y1="60" x2="226" y2="96"/>
         </g>
-        <g fill="#c4b5fd" opacity=".35">
+        <g fill="#059669" opacity=".35">
           <circle cx="62" cy="24" r="2"/><circle cx="267" cy="60" r="2"/><circle cx="103" cy="132" r="2"/>
         </g>
       </svg>
@@ -119,7 +119,7 @@
         <div class="cs-col">
           <strong class="cs-num">
             {{ agentsWithDebt }}
-            <span class="cs-tag cs-tag-violet" v-if="agentsWithDebt > 0">còn nợ</span>
+            <span class="cs-tag cs-tag-green" v-if="agentsWithDebt > 0">còn nợ</span>
           </strong>
           <span class="cs-delta cs-down" v-if="agentsWithDebt > 0">↑ 1 so tháng 4</span>
           <span class="cs-delta cs-up" v-else>Tất cả đã trả nợ</span>
@@ -155,7 +155,7 @@
             </button>
             <div class="stab-group">
               <button class="stab" :class="{ active: !filterStatus }" @click="filterStatus = ''">Tất cả</button>
-              <button class="stab stab-violet" :class="{ active: filterStatus === 'confirmed' }" @click="filterStatus = 'confirmed'">
+              <button class="stab stab-green" :class="{ active: filterStatus === 'confirmed' }" @click="filterStatus = 'confirmed'">
                 Đã xác nhận <span class="stab-n">{{ confirmedCount }}</span>
               </button>
               <button class="stab stab-warn" :class="{ active: filterStatus === 'pending' }" @click="filterStatus = 'pending'">
@@ -204,7 +204,10 @@
                 <td class="muted col-mono">{{ r.date }}</td>
                 <td>
                   <div class="agent-cell">
-                    <span class="agent-av"><img :src="`https://i.pravatar.cc/56?img=${(r.agentId % 70) + 1}`" class="av-img" :alt="r.agent" @error="$event.target.style.display='none'"/></span>
+                    <div class="agent-av">
+                      <img :src="agentBrand(r.agentId).logo" class="av-logo" :alt="r.agent" @error="e => e.target.style.display='none'"/>
+                      <span class="av-init" :style="{ background: agentBrand(r.agentId).bg }">{{ avatarInit(r.agent) }}</span>
+                    </div>
                     <div>
                       <span class="agent-name">{{ r.agent }}</span>
                       <span class="agent-debt" :class="debtClass(r.agentId)">
@@ -251,7 +254,8 @@
         <template v-if="panelMode === 'view' && selectedReceipt">
           <div class="ap-hd">
             <div class="ap-avatar">
-              <img :src="`https://i.pravatar.cc/80?img=${(selectedReceipt.agentId % 70) + 1}`" class="av-img" :alt="selectedReceipt.agent" @error="$event.target.style.display='none'"/>
+              <img :src="agentBrand(selectedReceipt.agentId).logo" class="av-logo" :alt="selectedReceipt.agent" @error="e => e.target.style.display='none'"/>
+              <span class="av-init" :style="{ background: agentBrand(selectedReceipt.agentId).bg }">{{ avatarInit(selectedReceipt.agent) }}</span>
             </div>
             <div class="ap-title-block">
               <h3 class="ap-name">{{ selectedReceipt.code }}</h3>
@@ -470,8 +474,8 @@ import {
 const SortIcon = {
   props: ['field', 'sk', 'sd'],
   template: `<span class="sort-arrow"><svg width="8" height="10" viewBox="0 0 8 10" fill="none">
-    <path d="M4 0L7 3.5H1L4 0Z" :fill="sk===field && sd==='asc' ? '#9b72f5' : '#cbd5e1'"/>
-    <path d="M4 10L1 6.5H7L4 10Z" :fill="sk===field && sd==='desc' ? '#9b72f5' : '#cbd5e1'"/>
+    <path d="M4 0L7 3.5H1L4 0Z" :fill="sk===field && sd==='asc' ? '#059669' : '#cbd5e1'"/>
+    <path d="M4 10L1 6.5H7L4 10Z" :fill="sk===field && sd==='desc' ? '#059669' : '#cbd5e1'"/>
   </svg></span>`,
 };
 
@@ -488,7 +492,7 @@ const AGENT_CLR = [
   'linear-gradient(135deg,#0284c7,#38bdf8)',
   'linear-gradient(135deg,#4f46e5,#818cf8)',
   'linear-gradient(135deg,#0891b2,#22d3ee)',
-  'linear-gradient(135deg,#9b72f5,#c4b5fd)',
+  'linear-gradient(135deg,#059669,#059669)',
 ];
 const agentColor = (id) => AGENT_CLR[id % AGENT_CLR.length];
 
@@ -519,6 +523,19 @@ const filterAgent  = ref('');
 const filterStatus = ref('');
 const sk           = ref('rawDate');
 const sd           = ref('desc');
+
+const BRANDS = [
+  { bg:'#0066A1', logo:'https://upload.wikimedia.org/wikipedia/commons/5/52/Philips_logo_new.svg' },
+  { bg:'#003087', logo:'/logos/panasonic.svg' },
+  { bg:'#1428A0', logo:'https://upload.wikimedia.org/wikipedia/commons/b/b4/Samsung_wordmark.svg' },
+  { bg:'#A50034', logo:'https://upload.wikimedia.org/wikipedia/commons/8/8d/LG_logo_%282014%29.svg' },
+  { bg:'#009999', logo:'https://upload.wikimedia.org/wikipedia/commons/5/5f/Siemens-logo.svg' },
+  { bg:'#1b7a30', logo:'https://upload.wikimedia.org/wikipedia/commons/9/95/Schneider_Electric_2007.svg' },
+  { bg:'#C8001A', logo:'https://iconape.com/wp-content/png_logo_vector/dien-quang-logo.png' },
+  { bg:'#d97706', logo:'https://cdn.haitrieu.com/wp-content/uploads/2022/08/logo-rang-dong.png' },
+]
+const agentBrand = (id) => BRANDS[(id - 1 + BRANDS.length) % BRANDS.length]
+const avatarInit = (name) => name.replace(/^Đại lý\s*/i,'').trim().charAt(0).toUpperCase();
 const selectedId   = ref(null);
 const panelMode    = ref('view');
 const deleteTarget = ref(null);
@@ -705,10 +722,10 @@ const exportCSV = () => {
 <style scoped>
 /* ══ TOKENS ══ */
 .tt {
-  --c-primary:    #9b72f5; --c-primary-d: #7c3aed;
-  --c-success:    #7c3aed; --c-success-bg:#f5f3ff;
+  --c-primary:    #059669; --c-primary-d: #047857;
+  --c-success:    #059669; --c-success-bg:#f0fdf4;
   --c-danger:     #EF4444; --c-danger-bg: #FEF2F2;
-  --c-info:       #a78bfa;
+  --c-info:       #047857;
   --c-surface:    #ffffff; --c-bg:        #f8fafc;
   --c-border:     rgba(15,23,42,.07); --c-border-s: rgba(15,23,42,.04);
   --c-txt:        #0f172a; --c-txt-2:     #475569; --c-txt-3: #94a3b8;
@@ -724,20 +741,20 @@ const exportCSV = () => {
 
 /* ══ CONTEXT BANNER ══ */
 .ctx-card {
-  background: linear-gradient(120deg,#ffffff 0%,#f5f3ff 45%,#fdf4ff 100%);
-  border: 1px solid rgba(155,114,245,.13);
+  background: linear-gradient(120deg,#ffffff 0%,#f0fdf8 45%,#eef9ff 100%);
+  border: 1px solid rgba(16,185,129,.14);
   border-radius: var(--r-card);
-  box-shadow: 0 2px 16px rgba(155,114,245,.07),0 1px 3px rgba(15,23,42,.04);
+  box-shadow: 0 2px 16px rgba(5,150,105,.07),0 1px 3px rgba(15,23,42,.04);
   margin-bottom: 18px; overflow: hidden; position: relative;
 }
 .ctx-card::before {
   content:''; position:absolute; inset:0;
-  background-image: radial-gradient(rgba(155,114,245,.07) 1px,transparent 1px);
+  background-image: radial-gradient(rgba(5,150,105,.1) 1px,transparent 1px);
   background-size: 22px 22px; pointer-events:none; z-index:0;
 }
 .ctx-card::after {
   content:''; position:absolute; top:0; left:0; right:0; height:2.5px;
-  background: linear-gradient(90deg,transparent,#e9d5ff 25%,#c4b5fd 50%,#e9d5ff 75%,transparent);
+  background: linear-gradient(90deg,transparent,#34d399 25%,#059669 50%,#34d399 75%,transparent);
   z-index:1;
 }
 .ctx-deco  { position:absolute; right:0; top:0; width:260px; height:100%; pointer-events:none; z-index:0; }
@@ -746,18 +763,18 @@ const exportCSV = () => {
 .ctx-title { font-size:22px; font-weight:800; margin:0; letter-spacing:-.6px; color:var(--c-txt); }
 .ctx-sub   { font-size:12px; color:var(--c-txt-3); margin:4px 0 0; }
 .ctx-actions { display:flex; gap:8px; align-items:center; flex-shrink:0; }
-.ctx-divider { height:1px; background:rgba(155,114,245,.1); position:relative; z-index:2; }
+.ctx-divider { height:1px; background:rgba(16,185,129,.1); position:relative; z-index:2; }
 
 .ctx-stats { display:flex; align-items:stretch; position:relative; z-index:2; }
 .cs-col { flex:1; display:flex; flex-direction:column; gap:6px; padding:18px 26px; transition:background var(--t); }
-.cs-col:hover { background:rgba(155,114,245,.03); }
+.cs-col:hover { background:rgba(5,150,105,.04); }
 .cs-warn { background:rgba(245,158,11,.04); }
 .cs-warn:hover { background:rgba(245,158,11,.09); }
-.cs-sep { width:1px; background:rgba(155,114,245,.1); flex-shrink:0; margin:12px 0; }
+.cs-sep { width:1px; background:rgba(16,185,129,.12); flex-shrink:0; margin:12px 0; }
 .cs-num { font-size:30px; font-weight:900; letter-spacing:-1.2px; color:var(--c-txt); line-height:1; display:flex; align-items:baseline; gap:7px; font-variant-numeric:tabular-nums; }
 .cs-amber { color:#D97706; }
 .cs-tag { font-size:10px; font-weight:700; padding:2px 7px; border-radius:var(--r-pill); background:#fffbeb; color:#B45309; border:1px solid rgba(245,158,11,.25); }
-.cs-tag-violet { background:var(--c-success-bg); color:#7c3aed; border:1px solid rgba(155,114,245,.2); }
+.cs-tag-green { background:var(--c-success-bg); color:#047857; border:1px solid rgba(16,185,129,.18); }
 .cs-lbl { font-size:11px; color:var(--c-txt-3); font-weight:600; letter-spacing:.2px; }
 
 /* ── Delta ── */
@@ -769,7 +786,7 @@ const exportCSV = () => {
 /* ── Sparkline ── */
 .spark-wrap { display:flex; align-items:flex-end; gap:3px; height:28px; margin:4px 0 2px; }
 .spark-bar  { flex:1; background:#e2e8f0; border-radius:3px 3px 0 0; min-height:3px; transition:height .4s; }
-.spark-bar.spark-active { background:linear-gradient(180deg,#e9d5ff,#c4b5fd); }
+.spark-bar.spark-active { background:linear-gradient(180deg,#34d399,#059669); }
 
 /* ── Donut ── */
 .cs-pending-row { display:flex; align-items:center; gap:11px; }
@@ -788,7 +805,7 @@ const exportCSV = () => {
 .ctl-label { font-size:11px; font-weight:600; color:var(--c-txt-3); }
 .ctl-pct   { font-size:11px; font-weight:700; color:var(--c-primary); }
 .ctl-track { height:4px; background:rgba(155,114,245,.1); border-radius:99px; overflow:hidden; }
-.ctl-fill  { height:100%; background:linear-gradient(90deg,#e9d5ff,#c4b5fd); border-radius:99px; transition:width .8s ease; }
+.ctl-fill  { height:100%; background:linear-gradient(90deg,#dcfce7,#059669); border-radius:99px; transition:width .8s ease; }
 
 /* ══ MAIN LAYOUT ══ */
 .dl-flex   { display:flex; gap:20px; align-items:flex-start; }
@@ -813,7 +830,7 @@ const exportCSV = () => {
 .stab { padding:4px 10px; border:none; border-radius:var(--r-sm); font-size:11px; font-weight:700; cursor:pointer; background:transparent; color:var(--c-txt-3); transition:all var(--t); font-family:inherit; display:inline-flex; align-items:center; gap:4px; white-space:nowrap; }
 .stab:hover { background:#fff; color:var(--c-txt-2); }
 .stab.active { background:#fff; color:var(--c-txt); box-shadow:0 1px 3px rgba(15,23,42,.08); }
-.stab-violet.active { background:var(--c-success-bg); color:#7c3aed; }
+.stab-green.active { background:var(--c-success-bg); color:#047857; }
 .stab-warn.active   { background:#fef3c7; color:#b45309; }
 .stab-n { font-size:10px; background:rgba(15,23,42,.06); padding:0 5px; border-radius:3px; line-height:1.6; }
 
@@ -836,8 +853,13 @@ const exportCSV = () => {
 
 .tt-code { font-size:12px; font-weight:700; color:var(--c-primary); background:var(--c-success-bg); padding:3px 8px; border-radius:6px; font-variant-numeric:tabular-nums; }
 .agent-cell { display:flex; align-items:center; gap:9px; }
-.agent-av   { width:30px; height:30px; border-radius:9px; flex-shrink:0; color:#fff; font-size:12px; font-weight:800; display:flex; align-items:center; justify-content:center; overflow:hidden; }
-.av-img { width:100%; height:100%; object-fit:cover; border-radius:inherit; display:block; }
+.agent-av   {
+  position: relative; width: 36px; height: 36px; border-radius: 8px; flex-shrink: 0;
+  border: 1px solid rgba(0,0,0,.12); box-shadow: 0 1px 4px rgba(0,0,0,.15);
+  overflow: hidden; background: white;
+}
+.av-logo { position:absolute; inset:0; width:100%; height:100%; object-fit:contain; object-position:center; padding:5px; box-sizing:border-box; z-index:2; background:white; display:block; }
+.av-init { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:800; color:white; letter-spacing:-.3px; }
 .agent-name { display:block; font-size:13px; font-weight:600; }
 .agent-debt { display:block; font-size:10.5px; font-weight:600; margin-top:1px; }
 .debt-ok   { color:#10b981; }
@@ -848,7 +870,7 @@ const exportCSV = () => {
 .total-num { font-weight:700; font-size:13px; font-variant-numeric:tabular-nums; }
 
 .status-badge { display:inline-flex; align-items:center; padding:3px 9px; border-radius:var(--r-pill); font-size:11px; font-weight:700; white-space:nowrap; }
-.status-badge.confirmed { background:var(--c-success-bg); color:#7c3aed; border:1px solid rgba(155,114,245,.2); }
+.status-badge.confirmed { background:var(--c-success-bg); color:#047857; border:1px solid rgba(155,114,245,.2); }
 .status-badge.pending   { background:#fef3c7; color:#92400e; border:1px solid rgba(245,158,11,.2); }
 
 .col-actions { text-align:center; white-space:nowrap; }
@@ -869,7 +891,11 @@ const exportCSV = () => {
 .side-panel { display:flex; flex-direction:column; min-height:500px; width:360px; flex-shrink:0; max-height:calc(100vh - 200px); position:sticky; top:16px; overflow:hidden; }
 
 .ap-hd { padding:18px 18px 14px; border-bottom:1px solid var(--c-border); display:flex; align-items:flex-start; gap:12px; }
-.ap-avatar { width:44px; height:44px; border-radius:50%; flex-shrink:0; color:#fff; font-size:18px; font-weight:800; display:flex; align-items:center; justify-content:center; }
+.ap-avatar {
+  position: relative; width: 44px; height: 44px; border-radius: 10px; flex-shrink: 0;
+  border: 1px solid rgba(0,0,0,.12); box-shadow: 0 2px 6px rgba(0,0,0,.15);
+  overflow: hidden; background: white;
+}
 .ap-title-block { flex:1; min-width:0; }
 .ap-name   { font-size:15px; font-weight:700; margin:0 0 5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .ap-badges { display:flex; gap:5px; flex-wrap:wrap; }
@@ -895,7 +921,7 @@ const exportCSV = () => {
 .debt-pct-lbl { font-size:10px; font-weight:700; white-space:nowrap; }
 
 .debt-status-bar { display:flex; align-items:center; gap:6px; font-size:11px; font-weight:700; padding:7px 12px; border-radius:var(--r-md); }
-.debt-status-bar.confirmed { background:var(--c-success-bg); color:#7c3aed; }
+.debt-status-bar.confirmed { background:var(--c-success-bg); color:#047857; }
 .debt-status-bar.pending   { background:#fef3c7; color:#92400e; }
 
 /* Info grid */
@@ -916,7 +942,7 @@ const exportCSV = () => {
 .fc-title { font-size:15px; font-weight:700; margin:0; }
 .fc-sub   { font-size:11px; color:var(--c-txt-3); display:block; margin-top:2px; }
 .mode-chip { font-size:10px; font-weight:700; padding:3px 9px; border-radius:var(--r-pill); flex-shrink:0; }
-.mode-chip.add { background:var(--c-success-bg); color:#7c3aed; border:1px solid rgba(155,114,245,.2); }
+.mode-chip.add { background:var(--c-success-bg); color:#047857; border:1px solid rgba(155,114,245,.2); }
 
 .fc-body { flex:1; padding:16px 18px; display:flex; flex-direction:column; gap:13px; overflow-y:auto; scrollbar-width:thin; scrollbar-color:#e2e8f0 transparent; }
 .field     { display:flex; flex-direction:column; gap:5px; flex:1; min-width:0; }
@@ -946,7 +972,7 @@ const exportCSV = () => {
 /* Amount hint bar */
 .amt-hint { display:flex; flex-direction:column; gap:5px; margin-top:4px; }
 .amt-hint-bar { height:4px; background:#e2e8f0; border-radius:3px; overflow:hidden; }
-.amt-hint-fill { height:100%; background:linear-gradient(90deg,#e9d5ff,#c4b5fd); border-radius:3px; transition:width .3s; }
+.amt-hint-fill { height:100%; background:linear-gradient(90deg,#dcfce7,#059669); border-radius:3px; transition:width .3s; }
 .amt-hint-txt { font-size:10.5px; color:var(--c-primary); font-weight:600; }
 
 .fc-footer { padding:14px 18px; border-top:1px solid var(--c-border); display:flex; justify-content:space-between; align-items:center; gap:8px; }
@@ -989,7 +1015,7 @@ const exportCSV = () => {
   box-shadow:0 8px 32px rgba(15,23,42,.2),0 2px 8px rgba(15,23,42,.1);
   min-width:240px;
 }
-.toast-snack.success { background:var(--c-success-bg); color:#7c3aed; border:1px solid rgba(155,114,245,.2); }
+.toast-snack.success { background:var(--c-success-bg); color:#047857; border:1px solid rgba(155,114,245,.2); }
 .toast-snack.danger  { background:#fef2f2; color:#991b1b; border:1px solid rgba(239,68,68,.2); }
 .toast-snack.warn    { background:#fffbeb; color:#92400e; border:1px solid rgba(245,158,11,.2); }
 .toast-enter-active { animation:toastIn .25s cubic-bezier(.2,.8,.2,1); }

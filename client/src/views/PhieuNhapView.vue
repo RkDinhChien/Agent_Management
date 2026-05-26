@@ -32,8 +32,8 @@
           <use href="#phx" transform="translate(185,24)"/>
           <use href="#phx" transform="translate(226,96)"/>
         </g>
-        <polygon points="144,36 164.8,48 164.8,72 144,84 123.2,72 123.2,48" fill="#059669" opacity=".07"/>
-        <polygon points="185,0 205.8,12 205.8,36 185,48 164.2,36 164.2,12" fill="#3B82F6" opacity=".06"/>
+        <polygon points="144,36 164.8,48 164.8,72 144,84 123.2,72 123.2,48" fill="#10b981" opacity=".07"/>
+        <polygon points="185,0 205.8,12 205.8,36 185,48 164.2,36 164.2,12" fill="#059669" opacity=".06"/>
         <g fill="#059669" opacity=".5">
           <circle cx="144" cy="60" r="3.5"/><circle cx="185" cy="24" r="3"/><circle cx="226" cy="96" r="3"/>
         </g>
@@ -41,7 +41,7 @@
           <line x1="144" y1="60" x2="185" y2="24"/>
           <line x1="144" y1="60" x2="226" y2="96"/>
         </g>
-        <g fill="#3B82F6" opacity=".3">
+        <g fill="#059669" opacity=".3">
           <circle cx="62" cy="24" r="2"/><circle cx="267" cy="60" r="2"/><circle cx="103" cy="132" r="2"/>
         </g>
       </svg>
@@ -55,8 +55,8 @@
       </svg>
 
       <div class="ctx-top">
-        <div class="ctx-title-row">
-          <div class="ctx-icon-badge"><PackageOpen :size="22"/></div>
+        <div class="ctx-title-block">
+          <p class="ctx-eyebrow">Nghiệp vụ · Quản lý nhập hàng</p>
           <h1 class="ctx-title">Phiếu Nhập Hàng</h1>
         </div>
         <div class="ctx-actions">
@@ -71,16 +71,27 @@
 
         <!-- KPI 1: Tổng phiếu -->
         <div class="cs-col">
-          <strong class="cs-num">{{ receipts.length }}</strong>
-          <span class="cs-delta cs-up">↑ 2 so tháng 4</span>
-          <span class="cs-lbl">Tổng phiếu tháng này</span>
+          <div class="cs-lbl-row">
+            <span class="cs-ic"><CheckCircle2 :size="11"/></span>
+            <span class="cs-lbl">Tổng phiếu tháng này</span>
+          </div>
+          <div class="cs-num-row">
+            <strong class="cs-num">{{ receipts.length }}</strong>
+          </div>
+          <div class="cs-delta cs-up">↑ 2 so tháng 4</div>
         </div>
         <div class="cs-sep"></div>
 
         <!-- KPI 2: Giá trị + sparkline -->
         <div class="cs-col">
-          <strong class="cs-num">{{ totalApproved }} <span style="font-size:14px;font-weight:600;color:#94a3b8">Tr</span></strong>
-          <span class="cs-delta cs-up">↑ 18% so tháng 4</span>
+          <div class="cs-lbl-row">
+            <span class="cs-ic"><TrendingUp :size="11"/></span>
+            <span class="cs-lbl">Tổng giá trị đã duyệt</span>
+          </div>
+          <div class="cs-num-row">
+            <strong class="cs-num">{{ totalApproved }} <span style="font-size:14px;font-weight:600;color:#94a3b8">Tr</span></strong>
+          </div>
+          <div class="cs-delta cs-up">↑ 18% so tháng 4</div>
           <div class="spark-wrap">
             <div v-for="(h, i) in spark" :key="i"
                  class="spark-bar" :class="{ 'spark-active': i === spark.length - 1 }"
@@ -88,41 +99,60 @@
                  :title="sparkLabels[i] + ': ' + h + ' Tr'">
             </div>
           </div>
-          <span class="cs-lbl">Tổng giá trị đã duyệt</span>
         </div>
         <div class="cs-sep"></div>
 
-        <!-- KPI 3: Chờ duyệt + donut ring -->
+        <!-- KPI 3: Chờ duyệt + SVG donut -->
         <div class="cs-col cs-warn">
+          <div class="cs-lbl-row">
+            <span class="cs-ic cs-ic-warn"><Clock :size="11"/></span>
+            <span class="cs-lbl">Phê duyệt phiếu</span>
+          </div>
           <div class="cs-pending-row">
-            <div class="donut-wrap">
-              <div class="donut-ring" :style="{ background: donutGradient }"></div>
-            </div>
+            <svg viewBox="0 0 60 60" width="52" height="52" class="cs-donut-svg">
+              <circle cx="30" cy="30" r="22" fill="none" stroke="#f1f5f9" stroke-width="7" stroke-linecap="butt"/>
+              <circle cx="30" cy="30" r="22" fill="none" stroke="#34d399" stroke-width="7" stroke-linecap="round"
+                :stroke-dasharray="`${Math.max(0, approvedArc - 3)} ${138.2 - Math.max(0, approvedArc - 3)}`"
+                :stroke-dashoffset="138.2"
+                transform="rotate(-90 30 30)" style="transition:stroke-dasharray .6s ease"/>
+              <circle cx="30" cy="30" r="22" fill="none" stroke="#fbbf24" stroke-width="7" stroke-linecap="round"
+                :stroke-dasharray="`${Math.max(0, pendingArc - 3)} ${138.2 - Math.max(0, pendingArc - 3)}`"
+                :stroke-dashoffset="138.2 - approvedArc"
+                transform="rotate(-90 30 30)" style="transition:stroke-dasharray .6s ease"/>
+              <circle cx="30" cy="30" r="22" fill="none" stroke="#94a3b8" stroke-width="7" stroke-linecap="round"
+                :stroke-dasharray="`${Math.max(0, cancelledArc - 3)} ${138.2 - Math.max(0, cancelledArc - 3)}`"
+                :stroke-dashoffset="138.2 - approvedArc - pendingArc"
+                transform="rotate(-90 30 30)" style="transition:stroke-dasharray .6s ease"/>
+            </svg>
             <div>
               <strong class="cs-num cs-amber" style="display:block;margin-bottom:2px">
                 {{ pendingCount }}
                 <span class="cs-tag" v-if="pendingCount > 0">cần duyệt</span>
               </strong>
-              <span class="cs-delta cs-ok">↓ 1 so tháng 4</span>
+              <div class="cs-delta cs-ok">↓ 1 so tháng 4</div>
             </div>
           </div>
           <div class="donut-legend">
-            <span class="dl-dot" style="background:#10b981"></span> Duyệt {{ approvedCount }}
-            <span class="dl-dot" style="background:#f59e0b;margin-left:6px"></span> Chờ {{ pendingCount }}
-            <span class="dl-dot" style="background:#cbd5e1;margin-left:6px"></span> Hủy {{ cancelledCount }}
+            <span class="dl-dot" style="background:#34d399"></span> Duyệt {{ approvedCount }}
+            <span class="dl-dot" style="background:#fbbf24;margin-left:6px"></span> Chờ {{ pendingCount }}
+            <span class="dl-dot" style="background:#94a3b8;margin-left:6px"></span> Hủy {{ cancelledCount }}
           </div>
-          <span class="cs-lbl" style="margin-top:4px">Chờ phê duyệt</span>
         </div>
         <div class="cs-sep"></div>
 
         <!-- KPI 4: Phiếu mới -->
         <div class="cs-col">
-          <strong class="cs-num">
-            {{ newThisMonth }}
-            <span class="cs-tag cs-tag-green" v-if="newThisMonth > 0">tháng này</span>
-          </strong>
-          <span class="cs-delta cs-up">↑ 1 so tháng 4</span>
-          <span class="cs-lbl">Phiếu mới tạo</span>
+          <div class="cs-lbl-row">
+            <span class="cs-ic"><PackagePlus :size="11"/></span>
+            <span class="cs-lbl">Phiếu mới tạo</span>
+          </div>
+          <div class="cs-num-row">
+            <strong class="cs-num">
+              {{ newThisMonth }}
+              <span class="cs-tag cs-tag-green" v-if="newThisMonth > 0">tháng này</span>
+            </strong>
+          </div>
+          <div class="cs-delta cs-up">↑ 1 so tháng 4</div>
         </div>
       </div>
 
@@ -180,21 +210,24 @@
         <!-- Table -->
         <div class="table-wrap">
           <table class="dl-table">
+            <colgroup>
+              <col class="col-code">
+              <col class="col-date">
+              <col class="col-ncc">
+              <col class="col-items">
+              <col class="col-total">
+              <col class="col-status">
+              <col class="col-act">
+            </colgroup>
             <thead>
               <tr>
-                <th style="width:130px">
-                  <span class="sort-hd" @click="toggleSort('code')">Mã phiếu <SortIcon field="code" :sk="sk" :sd="sd"/></span>
-                </th>
-                <th style="width:110px">
-                  <span class="sort-hd" @click="toggleSort('rawDate')">Ngày lập <SortIcon field="rawDate" :sk="sk" :sd="sd"/></span>
-                </th>
+                <th><span class="sort-hd" @click="toggleSort('code')">Mã phiếu <SortIcon field="code" :sk="sk" :sd="sd"/></span></th>
+                <th><span class="sort-hd" @click="toggleSort('rawDate')">Ngày lập <SortIcon field="rawDate" :sk="sk" :sd="sd"/></span></th>
                 <th>Nhà cung cấp</th>
-                <th style="width:110px">Số mặt hàng</th>
-                <th style="width:120px" class="text-right">
-                  <span class="sort-hd" @click="toggleSort('total')">Tổng giá trị <SortIcon field="total" :sk="sk" :sd="sd"/></span>
-                </th>
-                <th style="width:110px">Trạng thái</th>
-                <th style="width:80px" class="text-center">Thao tác</th>
+                <th class="text-center">Số mặt hàng</th>
+                <th class="text-right"><span class="sort-hd" @click="toggleSort('total')">Tổng giá trị <SortIcon field="total" :sk="sk" :sd="sd"/></span></th>
+                <th>Trạng thái</th>
+                <th class="text-center">Thao tác</th>
               </tr>
             </thead>
             <tbody>
@@ -206,10 +239,12 @@
                 <td class="muted col-mono">{{ r.date }}</td>
                 <td>
                   <div class="ncc-cell">
-                    <span class="ncc-av" :style="{ background: nccColor(r.ncc) }">{{ r.ncc[0] }}</span>
-                    <div>
-                      <span class="ncc-name">{{ r.ncc }}</span>
+                    <div class="ncc-av" :style="{ background: nccColor(r.ncc) }">
+                      <img v-if="nccLogo(r.ncc)" :key="nccLogo(r.ncc)" :src="nccLogo(r.ncc)"
+                           class="ncc-av-img" @error="$event.target.style.display='none'"/>
+                      <span class="ncc-av-abbr">{{ nccAbbr(r.ncc) }}</span>
                     </div>
+                    <span class="ncc-name">{{ r.ncc }}</span>
                   </div>
                 </td>
                 <td>
@@ -222,12 +257,14 @@
                   <span class="status-badge" :class="r.status">{{ STATUS[r.status] }}</span>
                 </td>
                 <td class="col-actions">
-                  <button class="act-btn view-btn" title="Xem" @click.stop="openView(r)"><Eye :size="13"/></button>
-                  <template v-if="r.status === 'pending'">
-                    <button class="act-btn edit-btn" title="Sửa" @click.stop="openEdit(r)"><Edit2 :size="13"/></button>
-                    <button class="act-btn ok-btn" title="Duyệt" @click.stop="approveReceipt(r)"><CheckCircle :size="13"/></button>
-                  </template>
-                  <button v-else class="act-btn del-btn" title="Xóa" @click.stop="askDelete(r)"><Trash2 :size="13"/></button>
+                  <div class="act-group">
+                    <button class="act-btn view-btn" title="Xem chi tiết" @click.stop="openView(r)"><Eye :size="13"/></button>
+                    <template v-if="r.status === 'pending'">
+                      <button class="act-btn edit-btn" title="Sửa phiếu" @click.stop="openEdit(r)"><Edit2 :size="13"/></button>
+                      <button class="act-btn ok-btn" title="Duyệt phiếu" @click.stop="approveReceipt(r)"><CheckCircle :size="13"/></button>
+                    </template>
+                    <button v-else class="act-btn del-btn" title="Xóa phiếu" @click.stop="askDelete(r)"><Trash2 :size="13"/></button>
+                  </div>
                 </td>
               </tr>
               <tr v-if="!sortedList.length">
@@ -252,17 +289,22 @@
         <!-- ─ VIEW MODE ─ -->
         <template v-if="panelMode === 'view' && selectedReceipt">
           <div class="ap-hd">
-            <div class="ap-avatar" :style="{ background: nccColor(selectedReceipt.ncc) }">
-              {{ selectedReceipt.ncc[0] }}
+            <div class="ap-avatar-sq" :style="{ background: nccColor(selectedReceipt.ncc) }">
+              <img v-if="nccLogo(selectedReceipt.ncc)"
+                   :key="nccLogo(selectedReceipt.ncc)"
+                   :src="nccLogo(selectedReceipt.ncc)"
+                   class="ap-logo-img" @error="$event.target.style.display='none'"/>
+              <span class="ap-logo-abbr">{{ nccAbbr(selectedReceipt.ncc) }}</span>
             </div>
             <div class="ap-title-block">
               <h3 class="ap-name">{{ selectedReceipt.code }}</h3>
+              <p class="ap-ncc">{{ selectedReceipt.ncc }}</p>
               <div class="ap-badges">
                 <span class="status-badge" :class="selectedReceipt.status">{{ STATUS[selectedReceipt.status] }}</span>
                 <span class="dist-chip">{{ selectedReceipt.items.length }} mặt hàng</span>
               </div>
             </div>
-            <div style="display:flex;gap:5px">
+            <div style="display:flex;gap:5px;align-self:flex-start;flex-shrink:0">
               <button v-if="selectedReceipt.status === 'pending'" class="act-btn edit-btn" title="Sửa phiếu" @click="openEdit(selectedReceipt)"><Edit2 :size="14"/></button>
               <button class="act-btn" style="background:rgba(15,23,42,.04);color:var(--c-txt-3)" title="Đóng" @click="closePanel"><X :size="14"/></button>
             </div>
@@ -521,10 +563,20 @@
     <Teleport to="body">
       <div v-if="deleteTarget" class="modal-bg" @click="deleteTarget = null">
         <div class="modal-box" @click.stop>
-          <div class="del-icon-wrap"><Trash2 :size="24"/></div>
+          <div class="del-avatar-wrap">
+            <div class="del-ncc-avatar" :style="{ background: nccColor(deleteTarget.ncc) }">
+              <img v-if="nccLogo(deleteTarget.ncc)"
+                   :key="nccLogo(deleteTarget.ncc)"
+                   :src="nccLogo(deleteTarget.ncc)"
+                   class="del-ncc-img" @error="$event.target.style.display='none'"/>
+              <span class="del-ncc-abbr">{{ nccAbbr(deleteTarget.ncc) }}</span>
+            </div>
+            <div class="del-trash-badge"><Trash2 :size="13"/></div>
+          </div>
           <h4 class="modal-title">Xác nhận xóa phiếu nhập</h4>
           <p class="modal-desc">
             Bạn có chắc muốn xóa <strong>{{ deleteTarget.code }}</strong>?<br/>
+            <span style="color:#94a3b8">{{ deleteTarget.ncc }}</span><br/>
             Hành động này không thể hoàn tác.
           </p>
           <div class="modal-actions">
@@ -541,9 +593,9 @@
 <script setup>
 import { ref, computed, reactive } from 'vue';
 import {
-  Search, Plus, Download, X, Eye, CheckCircle, XCircle,
+  Search, Plus, Download, X, Eye, CheckCircle, CheckCircle2, XCircle,
   Trash2, PackageOpen, Package, Building2, CalendarDays,
-  UserRound, FileText, Clock, Edit2,
+  UserRound, FileText, Clock, Edit2, TrendingUp, PackagePlus,
 } from 'lucide-vue-next';
 
 /* ── Sort icon ── */
@@ -635,13 +687,11 @@ const totalApproved   = computed(() => receipts.value.filter(r => r.status === '
 const newThisMonth    = computed(() => receipts.value.length);
 const monthMax        = computed(() => Math.max(...receipts.value.map(r => r.total), 1));
 
-/* ── Donut ring ── */
-const donutGradient = computed(() => {
-  const total = receipts.value.length || 1;
-  const a = Math.round(approvedCount.value / total * 100);
-  const p = Math.round(pendingCount.value  / total * 100);
-  return `conic-gradient(#10b981 0% ${a}%, #f59e0b ${a}% ${a + p}%, #e2e8f0 ${a + p}% 100%)`;
-});
+/* ── Donut SVG arcs ── */
+const C_DONUT = 138.2;
+const approvedArc  = computed(() => receipts.value.length ? (approvedCount.value  / receipts.value.length) * C_DONUT : 0);
+const pendingArc   = computed(() => receipts.value.length ? (pendingCount.value   / receipts.value.length) * C_DONUT : 0);
+const cancelledArc = computed(() => receipts.value.length ? (cancelledCount.value / receipts.value.length) * C_DONUT : 0);
 
 /* ── Sparkline (mock last 6 months: Dec→May) ── */
 const spark       = [128, 145, 112, 178, 165, 195];
@@ -667,16 +717,26 @@ const addItem    = () => form.value.items.push({ name: '', qty: 1, price: 0 });
 const removeItem = (i) => { if (form.value.items.length > 1) form.value.items.splice(i, 1); };
 
 /* ── Helpers ── */
-const fmtTr    = (v) => v >= 1 ? `${v.toFixed(1)} Tr` : `${(v * 1000).toFixed(0)} K`;
-const NCC_CLR = [
+const fmtTr = (v) => v >= 1 ? `${v.toFixed(1)} Tr` : `${(v * 1000).toFixed(0)} K`;
+
+const SUPPLIERS = [
+  { match: 'Philips',   abbr: 'PHI', grad: 'linear-gradient(135deg,#00375a,#0066A1,#0085cc)', logo: 'https://upload.wikimedia.org/wikipedia/commons/5/52/Philips_logo_new.svg' },
+  { match: 'Siemens',   abbr: 'SIE', grad: 'linear-gradient(135deg,#006060,#009999,#00c8c8)', logo: 'https://upload.wikimedia.org/wikipedia/commons/5/5f/Siemens-logo.svg' },
+  { match: 'Panasonic', abbr: 'PAN', grad: 'linear-gradient(135deg,#001a4a,#003087,#0058e6)', logo: 'https://upload.wikimedia.org/wikipedia/commons/e/e0/Panasonic_logo_%28Blue%29.svg' },
+  { match: 'Toshiba',   abbr: 'TOS', grad: 'linear-gradient(135deg,#8b0000,#e50012,#ff4d5a)', logo: 'https://upload.wikimedia.org/wikipedia/commons/8/80/Toshiba_logo_2019.svg' },
+  { match: 'Samsung',   abbr: 'SAM', grad: 'linear-gradient(135deg,#0a1660,#1428A0,#2a3eb1)', logo: 'https://upload.wikimedia.org/wikipedia/commons/b/b4/Samsung_wordmark.svg' },
+  { match: 'LG',        abbr: 'LGE', grad: 'linear-gradient(135deg,#63001f,#A50034,#cc0040)', logo: 'https://upload.wikimedia.org/wikipedia/commons/8/8d/LG_logo_%282014%29.svg' },
+];
+const _fallbackGrads = [
   'linear-gradient(135deg,#059669,#34d399)',
-  'linear-gradient(135deg,#0d9488,#2dd4bf)',
-  'linear-gradient(135deg,#0284c7,#38bdf8)',
   'linear-gradient(135deg,#4f46e5,#818cf8)',
   'linear-gradient(135deg,#0891b2,#22d3ee)',
   'linear-gradient(135deg,#7c3aed,#a78bfa)',
 ];
-const nccColor = (ncc) => NCC_CLR[ncc.charCodeAt(0) % NCC_CLR.length];
+const supplierOf   = (ncc) => SUPPLIERS.find(s => ncc.toLowerCase().includes(s.match.toLowerCase()));
+const nccColor     = (ncc) => supplierOf(ncc)?.grad ?? _fallbackGrads[ncc.charCodeAt(0) % _fallbackGrads.length];
+const nccLogo      = (ncc) => supplierOf(ncc)?.logo ?? null;
+const nccAbbr      = (ncc) => supplierOf(ncc)?.abbr ?? ncc.slice(0, 3).toUpperCase();
 
 const totalBarPct = (r) => Math.min((r.total / monthMax.value) * 100, 100);
 const totalBarColor = (r) => {
@@ -832,6 +892,18 @@ const exportCSV = () => {
   display:flex; align-items:center; justify-content:center;
   color:#fff; box-shadow:0 4px 14px rgba(5,150,105,.35);
 }
+.ctx-title-block { display:flex; flex-direction:column; gap:2px; }
+.ctx-eyebrow {
+  margin:0; font-size:10.5px; font-weight:700;
+  color:var(--c-primary); text-transform:uppercase; letter-spacing:1px;
+  display:flex; align-items:center; gap:7px;
+}
+.ctx-eyebrow::before {
+  content:''; display:inline-block;
+  width:18px; height:2.5px;
+  background:linear-gradient(90deg,#10b981,#059669);
+  border-radius:2px; flex-shrink:0;
+}
 .ctx-title  { font-size:24px; font-weight:800; margin:0; letter-spacing:-.7px; color:var(--c-txt); }
 .ctx-actions { display:flex; gap:8px; align-items:center; flex-shrink:0; }
 .ctx-divider { height:1px; background:rgba(16,185,129,.1); position:relative; z-index:2; }
@@ -846,7 +918,15 @@ const exportCSV = () => {
 .cs-amber { color:#D97706; }
 .cs-tag { font-size:10px; font-weight:700; padding:2px 7px; border-radius:var(--r-pill); background:#fffbeb; color:#B45309; border:1px solid rgba(245,158,11,.25); letter-spacing:.2px; vertical-align:middle; }
 .cs-tag-green { background:var(--c-success-bg); color:var(--c-primary); border-color:rgba(16,185,129,.18); }
+.cs-lbl-row { display:flex; align-items:center; gap:5px; margin-bottom:2px; }
 .cs-lbl { font-size:11px; color:var(--c-txt-3); font-weight:600; letter-spacing:.2px; }
+.cs-num-row { display:flex; align-items:baseline; gap:8px; flex-wrap:wrap; }
+.cs-ic {
+  display:inline-flex; align-items:center; justify-content:center;
+  width:18px; height:18px; border-radius:5px; flex-shrink:0;
+  background:rgba(5,150,105,.09); color:#059669;
+}
+.cs-ic.cs-ic-warn { background:rgba(245,158,11,.1); color:#d97706; }
 
 /* ── Delta ── */
 .cs-delta { font-size:10.5px; font-weight:600; margin-top:-3px; }
@@ -859,14 +939,9 @@ const exportCSV = () => {
 .spark-bar  { flex:1; background:#e2e8f0; border-radius:3px 3px 0 0; min-height:3px; transition:height .4s; }
 .spark-bar.spark-active { background: linear-gradient(180deg,#34d399,#059669); }
 
-/* ── Donut ring ── */
+/* ── Donut SVG ── */
 .cs-pending-row { display:flex; align-items:center; gap:11px; }
-.donut-wrap { flex-shrink:0; }
-.donut-ring {
-  width:46px; height:46px; border-radius:50%;
-  -webkit-mask: radial-gradient(circle,transparent 52%,black 53%);
-  mask: radial-gradient(circle,transparent 52%,black 53%);
-}
+.cs-donut-svg { flex-shrink:0; display:block; }
 .donut-legend { display:flex; align-items:center; flex-wrap:wrap; gap:3px; margin-top:5px; font-size:10px; color:var(--c-txt-3); font-weight:600; }
 .dl-dot { width:7px; height:7px; border-radius:50%; display:inline-block; flex-shrink:0; }
 
@@ -898,7 +973,7 @@ const exportCSV = () => {
 
 /* ══ TABLE ══ */
 .table-wrap { overflow-x:auto; }
-.dl-table { width:100%; border-collapse:collapse; font-size:13px; }
+.dl-table { width:100%; border-collapse:collapse; font-size:13px; table-layout:fixed; }
 .dl-table thead tr { background:var(--c-bg); border-bottom:1px solid var(--c-border); }
 .dl-table th { padding:10px 14px; text-align:left; font-size:10.5px; font-weight:700; text-transform:uppercase; letter-spacing:.5px; color:var(--c-txt-3); white-space:nowrap; }
 .dl-table td { padding:11px 14px; border-bottom:1px solid var(--c-border-s); vertical-align:middle; }
@@ -908,15 +983,37 @@ const exportCSV = () => {
 .pn-row:last-child td { border-bottom:none; }
 .sort-hd { display:inline-flex; align-items:center; gap:4px; cursor:pointer; user-select:none; }
 .sort-arrow { display:inline-flex; align-items:center; }
-.text-right  { text-align:right; }
-.text-center { text-align:center; }
+.dl-table .text-right  { text-align:right !important; }
+.dl-table .text-center { text-align:center !important; }
 .col-mono { font-variant-numeric:tabular-nums; font-size:12px; }
 .muted    { color:var(--c-txt-3); }
+/* Colgroup widths */
+col.col-code   { width: 130px; }
+col.col-date   { width: 108px; }
+col.col-ncc    { width: 190px; }
+col.col-items  { width: 106px; }
+col.col-total  { width: 116px; }
+col.col-status { width: 106px; }
+col.col-act    { width: 96px; }
 
 .pn-code { font-size:12px; font-weight:700; color:var(--c-primary); background:var(--c-success-bg); padding:3px 8px; border-radius:6px; font-variant-numeric:tabular-nums; }
-.ncc-cell { display:flex; align-items:center; gap:8px; }
-.ncc-av   { width:28px; height:28px; border-radius:8px; flex-shrink:0; display:flex; align-items:center; justify-content:center; color:#fff; font-size:12px; font-weight:800; }
-.ncc-name { font-size:13px; font-weight:600; }
+.ncc-cell { display:flex; align-items:center; gap:8px; min-width:0; }
+.ncc-av {
+  width:32px; height:32px; border-radius:8px; flex-shrink:0;
+  position:relative; overflow:hidden;
+  box-shadow:0 2px 6px rgba(15,23,42,.12);
+}
+.ncc-av-img {
+  position:absolute; inset:0;
+  width:100%; height:100%;
+  object-fit:contain; padding:5px; box-sizing:border-box; z-index:2; background:white; display:block;
+}
+.ncc-av-abbr {
+  position:absolute; inset:0;
+  display:flex; align-items:center; justify-content:center;
+  color:#fff; font-size:10px; font-weight:800; letter-spacing:-.3px; z-index:0;
+}
+.ncc-name { font-size:13px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .item-cnt-chip { font-size:11.5px; font-weight:600; color:var(--c-txt-3); background:var(--c-bg); border:1px solid var(--c-border); padding:2px 8px; border-radius:var(--r-pill); }
 .total-num { font-weight:700; font-size:13px; font-variant-numeric:tabular-nums; }
 
@@ -925,16 +1022,20 @@ const exportCSV = () => {
 .status-badge.approved  { background:var(--c-success-bg); color:#065f46; border:1px solid rgba(16,185,129,.2); }
 .status-badge.cancelled { background:var(--c-bg); color:var(--c-txt-3); border:1px solid var(--c-border); }
 
-.col-actions { text-align:center; white-space:nowrap; }
-.act-btn  { width:28px; height:28px; display:inline-flex; align-items:center; justify-content:center; border:none; border-radius:var(--r-sm); cursor:pointer; transition:background var(--t); }
-.view-btn { background:rgba(5,150,105,.08); color:var(--c-primary); }
-.view-btn:hover { background:rgba(5,150,105,.18); }
-.edit-btn { background:rgba(59,130,246,.08); color:var(--c-info); }
-.edit-btn:hover { background:rgba(59,130,246,.18); }
-.ok-btn   { background:rgba(16,185,129,.1); color:var(--c-success); }
-.ok-btn:hover { background:rgba(16,185,129,.2); }
-.del-btn  { background:rgba(239,68,68,.08); color:var(--c-danger); }
-.del-btn:hover { background:rgba(239,68,68,.18); }
+.col-actions { white-space:nowrap; vertical-align:middle; }
+.act-group { display:flex; align-items:center; gap:4px; }
+.act-btn {
+  width:30px; height:30px; display:inline-flex; align-items:center; justify-content:center;
+  border:none; border-radius:8px; cursor:pointer; transition:all var(--t);
+}
+.view-btn { background:rgba(5,150,105,.08); color:#059669; }
+.view-btn:hover { background:rgba(5,150,105,.18); transform:scale(1.1); }
+.edit-btn { background:rgba(15,23,42,.06); color:#64748b; }
+.edit-btn:hover { background:rgba(15,23,42,.12); color:#1e293b; transform:scale(1.1); }
+.ok-btn   { background:rgba(5,150,105,.1); color:#059669; }
+.ok-btn:hover { background:#059669; color:white; transform:scale(1.1); }
+.del-btn  { background:rgba(239,68,68,.08); color:#dc2626; }
+.del-btn:hover { background:rgba(239,68,68,.16); transform:scale(1.1); }
 .del-btn:disabled { opacity:.3; cursor:not-allowed; }
 
 .empty-row { text-align:center; padding:40px 0; color:var(--c-txt-3); }
@@ -944,11 +1045,26 @@ const exportCSV = () => {
 /* ══ SIDE PANEL ══ */
 .side-panel { display:flex; flex-direction:column; min-height:500px; width:360px; flex-shrink:0; max-height:calc(100vh - 200px); position:sticky; top:16px; overflow:hidden; }
 
-/* Agent-style header */
-.ap-hd { padding:18px 18px 14px; border-bottom:1px solid var(--c-border); display:flex; align-items:flex-start; gap:12px; }
-.ap-avatar { width:44px; height:44px; border-radius:50%; flex-shrink:0; color:#fff; font-size:18px; font-weight:800; display:flex; align-items:center; justify-content:center; }
+/* Panel header */
+.ap-hd { padding:16px 18px 14px; border-bottom:1px solid var(--c-border); display:flex; align-items:flex-start; gap:12px; }
+.ap-avatar-sq {
+  width:54px; height:54px; border-radius:14px; flex-shrink:0;
+  position:relative; overflow:hidden;
+  box-shadow:0 3px 12px rgba(15,23,42,.15);
+}
+.ap-logo-img {
+  position:absolute; inset:0;
+  width:100%; height:100%;
+  object-fit:contain; padding:8px; box-sizing:border-box; z-index:2; background:white; display:block;
+}
+.ap-logo-abbr {
+  position:absolute; inset:0;
+  display:flex; align-items:center; justify-content:center;
+  color:#fff; font-size:14px; font-weight:800; letter-spacing:-.5px; z-index:0;
+}
 .ap-title-block { flex:1; min-width:0; }
-.ap-name   { font-size:15px; font-weight:700; margin:0 0 5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.ap-name   { font-size:15px; font-weight:700; margin:0 0 2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.ap-ncc    { font-size:11.5px; color:var(--c-txt-3); margin:0 0 6px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .ap-badges { display:flex; gap:5px; flex-wrap:wrap; }
 .dist-chip { font-size:10px; font-weight:600; color:var(--c-txt-3); background:var(--c-bg); border:1px solid var(--c-border); border-radius:var(--r-pill); padding:3px 8px; }
 
@@ -1095,12 +1211,61 @@ const exportCSV = () => {
 .btn-csv:hover { background:#fff; box-shadow:var(--sh-card); }
 
 /* ══ MODAL ══ */
-.modal-bg { position:fixed; inset:0; z-index:200; background:rgba(15,23,42,.45); backdrop-filter:blur(4px); display:flex; align-items:center; justify-content:center; padding:20px; }
-.modal-box { width:min(420px,100%); background:var(--c-surface); border-radius:16px; border:1px solid var(--c-border); box-shadow:var(--sh-modal); padding:32px 28px 24px; display:flex; flex-direction:column; align-items:center; text-align:center; gap:10px; }
-.del-icon-wrap { width:52px; height:52px; border-radius:50%; background:var(--c-danger-bg); color:var(--c-danger); display:flex; align-items:center; justify-content:center; margin-bottom:4px; }
-.modal-title  { font-size:17px; font-weight:700; margin:0; }
-.modal-desc   { font-size:13px; color:var(--c-txt-2); margin:0; line-height:1.6; }
+.modal-bg {
+  --c-primary:#059669; --c-success-bg:#ECFDF5;
+  --c-danger:#EF4444; --c-danger-bg:#FEF2F2;
+  --c-surface:#ffffff; --c-border:rgba(15,23,42,.07);
+  --c-txt:#0f172a; --c-txt-2:#475569;
+  --r-md:8px; --t:.15s ease;
+  position:fixed; inset:0; z-index:200;
+  background:rgba(15,23,42,.5); backdrop-filter:blur(3px);
+  display:flex; align-items:center; justify-content:center; padding:20px;
+}
+.modal-box {
+  width:min(420px,100%);
+  background:linear-gradient(170deg,#fff5f5 0%,#fffafa 45%,#ffffff 100%);
+  border-radius:20px; border:1px solid rgba(239,68,68,.13);
+  box-shadow:0 8px 40px rgba(239,68,68,.1),0 2px 14px rgba(15,23,42,.08);
+  padding:32px 28px 24px;
+  display:flex; flex-direction:column; align-items:center; text-align:center; gap:10px;
+}
+.del-avatar-wrap { position:relative; margin-bottom:4px; }
+.del-ncc-avatar {
+  width:72px; height:72px; border-radius:18px;
+  position:relative; overflow:hidden;
+  box-shadow:0 4px 18px rgba(15,23,42,.14);
+}
+.del-ncc-img {
+  position:absolute; inset:0;
+  width:100%; height:100%;
+  object-fit:contain; padding:10px; box-sizing:border-box; z-index:2; background:white; display:block;
+}
+.del-ncc-abbr {
+  position:absolute; inset:0;
+  display:flex; align-items:center; justify-content:center;
+  color:#fff; font-size:18px; font-weight:800; letter-spacing:-.5px; z-index:0;
+}
+.del-trash-badge {
+  position:absolute; bottom:-7px; right:-7px;
+  width:28px; height:28px; border-radius:50%;
+  background:#fee2e2; border:2.5px solid #fff;
+  color:#ef4444;
+  display:flex; align-items:center; justify-content:center;
+  box-shadow:0 2px 6px rgba(239,68,68,.2);
+}
+.modal-title  { font-size:17px; font-weight:700; margin:0; color:#0f172a; }
+.modal-desc   { font-size:13px; color:#475569; margin:0; line-height:1.6; }
 .modal-actions { display:flex; gap:10px; margin-top:8px; }
+.modal-actions .btn-o {
+  background:transparent; color:#059669; border:1.5px solid rgba(5,150,105,.3);
+  border-radius:8px; padding:9px 20px; font-size:13px; font-weight:600; cursor:pointer; font-family:inherit;
+}
+.modal-actions .btn-o:hover { background:#ecfdf5; }
+.modal-actions .btn-danger {
+  background:#EF4444; color:#fff; border:none;
+  border-radius:8px; padding:9px 20px; font-size:13px; font-weight:600; cursor:pointer; font-family:inherit;
+}
+.modal-actions .btn-danger:hover { background:#dc2626; }
 
 /* ── Panel slide ── */
 .panel-enter-active { animation:panelIn .22s cubic-bezier(.4,0,.2,1); }
