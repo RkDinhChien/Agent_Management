@@ -195,8 +195,8 @@
                 </th>
                 <th>Đại lý</th>
                 <th style="width:110px">Số mặt hàng</th>
-                <th style="width:120px" class="text-right">
-                  <span class="sort-hd" @click="toggleSort('total')">Tổng tiền <SortIcon field="total" :sk="sk" :sd="sd"/></span>
+                <th style="width:130px" class="text-right">
+                  <span class="sort-hd sort-hd-r" @click="toggleSort('total')">Tổng tiền <SortIcon field="total" :sk="sk" :sd="sd"/></span>
                 </th>
                 <th style="width:115px">Trạng thái</th>
                 <th style="width:90px" class="text-center">Thao tác</th>
@@ -226,7 +226,7 @@
                 <td>
                   <span class="item-cnt-chip">{{ r.items.length }} mặt hàng</span>
                 </td>
-                <td class="text-right">
+                <td class="text-right col-total">
                   <span class="total-num">{{ fmtTr(r.total) }}</span>
                 </td>
                 <td>
@@ -544,7 +544,11 @@
           <Truck       v-if="toast.type === 'success'" :size="15"/>
           <XCircle     v-else-if="toast.type === 'danger'" :size="15"/>
           <Clock       v-else :size="15"/>
-          {{ toast.msg }}
+          <span class="toast-msg">{{ toast.msg }}</span>
+          <button v-if="toast.undoFn" class="toast-undo-btn" @click="toast.undoFn">
+            <Undo2 :size="12"/> Hoàn tác
+            <span class="toast-countdown">{{ undoCountdown }}s</span>
+          </button>
         </div>
       </Transition>
     </Teleport>
@@ -553,7 +557,13 @@
     <Teleport to="body">
       <div v-if="deleteTarget" class="modal-bg" @click="deleteTarget = null">
         <div class="modal-box" @click.stop>
-          <div class="del-icon-wrap"><Trash2 :size="24"/></div>
+          <div class="del-avatar-wrap">
+            <div class="del-agent-avatar" :style="{ background: agentBrand(deleteTarget.agentId).bg }">
+              <img :src="agentBrand(deleteTarget.agentId).logo" class="del-avatar-img" :alt="deleteTarget.agent" @error="e => e.target.style.display='none'"/>
+              <span class="del-avatar-abbr">{{ avatarInit(deleteTarget.agent) }}</span>
+            </div>
+            <div class="del-trash-badge"><Trash2 :size="13"/></div>
+          </div>
           <h4 class="modal-title">Xác nhận xóa phiếu xuất</h4>
           <p class="modal-desc">
             Bạn có chắc muốn xóa <strong>{{ deleteTarget.code }}</strong>?<br/>
@@ -575,7 +585,7 @@ import { ref, computed, reactive } from 'vue';
 import {
   Search, Plus, Download, X, Eye, XCircle,
   Trash2, PackageOpen, Package, CalendarDays,
-  UserRound, FileText, Clock, Edit2, Truck, Store,
+  UserRound, FileText, Clock, Edit2, Truck, Store, Undo2,
 } from 'lucide-vue-next';
 
 /* ── Sort icon ── */
@@ -760,12 +770,23 @@ const onProductChange = (item) => {
 };
 
 /* ── Toast ── */
-const toast = ref({ show: false, msg: '', type: 'success' });
+const toast = ref({ show: false, msg: '', type: 'success', undoFn: null });
+const undoCountdown = ref(0);
 let _toastTimer = null;
-const showToast = (msg, type = 'success') => {
-  toast.value = { show: true, msg, type };
+let _countdownTimer = null;
+const showToast = (msg, type = 'success', undoFn = null) => {
   clearTimeout(_toastTimer);
-  _toastTimer = setTimeout(() => { toast.value.show = false; }, 2800);
+  clearInterval(_countdownTimer);
+  const duration = undoFn ? 5000 : 2800;
+  toast.value = { show: true, msg, type, undoFn };
+  if (undoFn) {
+    undoCountdown.value = Math.ceil(duration / 1000);
+    _countdownTimer = setInterval(() => {
+      undoCountdown.value--;
+      if (undoCountdown.value <= 0) clearInterval(_countdownTimer);
+    }, 1000);
+  }
+  _toastTimer = setTimeout(() => { toast.value = { show: false, msg: '', type: 'success', undoFn: null }; }, duration);
 };
 
 /* ── Actions ── */
@@ -799,11 +820,22 @@ const cancelReceipt = (r) => {
 
 const askDelete     = (r) => { deleteTarget.value = r; };
 const confirmDelete = () => {
-  const code = deleteTarget.value.code;
-  receipts.value = receipts.value.filter(r => r.id !== deleteTarget.value.id);
-  if (selectedId.value === deleteTarget.value.id) closePanel();
+  const target = deleteTarget.value;
+  const code = target.code;
+  const deletedReceipt = { ...target, items: target.items.map(i => ({ ...i })) };
+  const deletedIndex = receipts.value.findIndex(r => r.id === target.id);
+  receipts.value = receipts.value.filter(r => r.id !== target.id);
+  if (selectedId.value === target.id) closePanel();
   deleteTarget.value = null;
-  showToast(`Đã xóa phiếu ${code}`, 'danger');
+
+  const undoDelete = () => {
+    receipts.value.splice(deletedIndex, 0, deletedReceipt);
+    clearTimeout(_toastTimer);
+    clearInterval(_countdownTimer);
+    toast.value = { show: false, msg: '', type: 'success', undoFn: null };
+    showToast(`Đã hoàn tác xóa phiếu ${code}`, 'success');
+  };
+  showToast(`Đã xóa phiếu ${code}`, 'danger', undoDelete);
 };
 
 const submitCreate = () => {
@@ -995,8 +1027,10 @@ const exportCSV = () => {
 .px-row:last-child td { border-bottom:none; }
 .sort-hd { display:inline-flex; align-items:center; gap:4px; cursor:pointer; user-select:none; }
 .sort-arrow { display:inline-flex; align-items:center; }
-.text-right  { text-align:right; }
-.text-center { text-align:center; }
+.text-right  { text-align:right !important; }
+.text-center { text-align:center !important; }
+.dl-table .text-right  { text-align: right !important; }
+.dl-table .text-center { text-align: center !important; }
 .col-mono { font-variant-numeric:tabular-nums; font-size:12px; }
 .muted    { color:var(--c-txt-3); }
 
@@ -1016,7 +1050,9 @@ const exportCSV = () => {
 .debt-over { color:var(--c-danger); }
 
 .item-cnt-chip { font-size:11.5px; font-weight:600; color:var(--c-txt-3); background:var(--c-bg); border:1px solid var(--c-border); padding:2px 8px; border-radius:var(--r-pill); }
+.col-total { min-width:110px; }
 .total-num { font-weight:700; font-size:13px; font-variant-numeric:tabular-nums; }
+.sort-hd-r { display: flex !important; justify-content: flex-end; }
 
 .status-badge { display:inline-flex; align-items:center; padding:3px 9px; border-radius:var(--r-pill); font-size:11px; font-weight:700; white-space:nowrap; }
 .status-badge.pending   { background:#fef3c7; color:#92400e; border:1px solid rgba(245,158,11,.2); }
@@ -1191,27 +1227,102 @@ const exportCSV = () => {
 
 /* ══ TOAST ══ */
 .toast-snack {
+  --c-primary: #059669;
+  --c-success-bg: #f0fdf4;
+  --c-danger: #EF4444;
+  --c-danger-bg: #FEF2F2;
   position:fixed; bottom:28px; right:28px; z-index:500;
   display:inline-flex; align-items:center; gap:9px;
   padding:11px 18px; border-radius:12px;
-  font-size:13px; font-weight:600; font-family:inherit;
+  font-size:13px; font-weight:600; font-family:'Inter','Be Vietnam Pro',ui-sans-serif,system-ui,sans-serif;
   box-shadow:0 8px 32px rgba(15,23,42,.2),0 2px 8px rgba(15,23,42,.1);
   min-width:240px;
 }
+.toast-msg { flex:1; }
 .toast-snack.success { background:var(--c-success-bg); color:#2563eb; border:1px solid rgba(91,157,250,.2); }
 .toast-snack.danger  { background:#fef2f2; color:#991b1b; border:1px solid rgba(239,68,68,.2); }
 .toast-snack.warn    { background:#fffbeb; color:#92400e; border:1px solid rgba(245,158,11,.2); }
+.toast-undo-btn {
+  display:inline-flex; align-items:center; gap:5px;
+  padding:5px 12px; border-radius:8px; margin-left:8px;
+  background:rgba(5,150,105,.12); color:#059669; border:1.5px solid rgba(5,150,105,.25);
+  font-size:12px; font-weight:700; cursor:pointer; white-space:nowrap;
+  font-family:inherit; transition:all .15s ease;
+}
+.toast-undo-btn:hover { background:rgba(5,150,105,.22); border-color:#059669; transform:scale(1.03); }
+.toast-countdown {
+  display:inline-flex; align-items:center; justify-content:center;
+  min-width:18px; height:18px; border-radius:50%; margin-left:2px;
+  background:rgba(5,150,105,.15); font-size:10px; font-weight:800; color:#059669;
+}
 .toast-enter-active { animation:toastIn .25s cubic-bezier(.2,.8,.2,1); }
 .toast-leave-active { animation:toastIn .2s cubic-bezier(.2,.8,.2,1) reverse; }
 @keyframes toastIn { from { opacity:0; transform:translateY(12px) scale(.97); } to { opacity:1; transform:translateY(0) scale(1); } }
 
-/* ══ MODAL ══ */
-.modal-bg { position:fixed; inset:0; z-index:200; background:rgba(15,23,42,.45); backdrop-filter:blur(4px); display:flex; align-items:center; justify-content:center; padding:20px; }
-.modal-box { width:min(420px,100%); background:var(--c-surface); border-radius:16px; border:1px solid var(--c-border); box-shadow:var(--sh-modal); padding:32px 28px 24px; display:flex; flex-direction:column; align-items:center; text-align:center; gap:10px; }
-.del-icon-wrap { width:52px; height:52px; border-radius:50%; background:var(--c-danger-bg); color:var(--c-danger); display:flex; align-items:center; justify-content:center; margin-bottom:4px; }
-.modal-title  { font-size:17px; font-weight:700; margin:0; }
-.modal-desc   { font-size:13px; color:var(--c-txt-2); margin:0; line-height:1.6; }
+/* ══ MODAL — variables redeclared here because <Teleport> moves element outside .px ══ */
+.modal-bg {
+  --c-primary:   #059669; --c-primary-d: #047857;
+  --c-success-bg:#f0fdf4;
+  --c-danger:    #EF4444; --c-danger-bg: #FEF2F2;
+  --c-surface:   #ffffff; --c-bg:        #f8fafc;
+  --c-border:    rgba(15,23,42,.07);
+  --c-txt:       #0f172a; --c-txt-2:     #475569;
+  --r-md: 8px; --r-pill: 999px;
+  --sh-modal: 0 20px 60px rgba(15,23,42,.18);
+  --t: .15s ease;
+  position:fixed; inset:0; z-index:200;
+  background:rgba(15,23,42,.5); backdrop-filter:blur(3px);
+  display:flex; align-items:center; justify-content:center; padding:20px;
+  font-family:'Inter','Be Vietnam Pro',ui-sans-serif,system-ui,sans-serif;
+}
+.modal-box {
+  width:min(420px,100%);
+  background:linear-gradient(170deg, #fff5f5 0%, #fffafa 45%, #ffffff 100%);
+  border-radius:20px; border:1px solid rgba(239,68,68,.13);
+  box-shadow:0 8px 40px rgba(239,68,68,.1), 0 2px 14px rgba(15,23,42,.08);
+  padding:32px 28px 24px;
+  display:flex; flex-direction:column; align-items:center; text-align:center; gap:10px;
+}
+.del-avatar-wrap { position:relative; margin-bottom:4px; }
+.del-agent-avatar {
+  width:76px; height:76px; border-radius:18px;
+  overflow:hidden; position:relative;
+  box-shadow:0 4px 18px rgba(15,23,42,.14);
+}
+.del-avatar-img {
+  position:absolute; inset:12px;
+  width:calc(100% - 24px); height:calc(100% - 24px);
+  object-fit:contain; z-index:1;
+}
+.del-avatar-abbr {
+  position:absolute; inset:0;
+  display:flex; align-items:center; justify-content:center;
+  font-size:22px; font-weight:800; color:rgba(255,255,255,.88); letter-spacing:-0.5px;
+  z-index:0;
+}
+.del-trash-badge {
+  position:absolute; bottom:-7px; right:-7px;
+  width:28px; height:28px; border-radius:50%;
+  background:#fee2e2; border:2.5px solid #fff;
+  color:#ef4444;
+  display:flex; align-items:center; justify-content:center;
+  box-shadow:0 2px 6px rgba(239,68,68,.2);
+}
+.modal-title  { font-size:17px; font-weight:700; margin:0; color:#0f172a; }
+.modal-desc   { font-size:13px; color:#475569; margin:0; line-height:1.6; }
 .modal-actions { display:flex; gap:10px; margin-top:8px; }
+.modal-actions .btn-o {
+  background:transparent; color:#059669; border:1.5px solid rgba(5,150,105,.3);
+  border-radius:8px; padding:9px 20px; font-size:13px; font-weight:600; cursor:pointer;
+  font-family:inherit; transition:all .15s ease;
+}
+.modal-actions .btn-o:hover { background:#f0fdf4; }
+.modal-actions .btn-danger {
+  background:#EF4444; color:#fff; border:none;
+  border-radius:8px; padding:9px 20px; font-size:13px; font-weight:600; cursor:pointer;
+  font-family:inherit; transition:background .15s ease;
+}
+.modal-actions .btn-danger:hover { background:#dc2626; }
 
 /* ── Panel slide ── */
 .panel-enter-active { animation:panelIn .22s cubic-bezier(.4,0,.2,1); }
