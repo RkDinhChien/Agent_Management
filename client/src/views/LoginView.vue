@@ -1,561 +1,571 @@
 <template>
-  <div class="login-page">
-    <!-- Animated Background -->
-    <div class="login-bg">
-      <div class="login-bg-circle circle-1"></div>
-      <div class="login-bg-circle circle-2"></div>
-      <div class="login-bg-circle circle-3"></div>
-      <div class="login-bg-circle circle-4"></div>
-    </div>
+  <div class="lp">
 
-    <div class="login-container">
-      <!-- Robot Mascot -->
-      <div class="login-mascot">
-        <img src="../assets/robot-mascot.png" alt="Robot Mascot" class="mascot-img" />
+    <!-- Subtle background orbs -->
+    <div class="lp-orb lp-orb1"></div>
+    <div class="lp-orb lp-orb2"></div>
+
+    <div class="lp-card">
+
+      <!-- Brand — matches sidebar exactly -->
+      <div class="lp-brand">
+        <img src="/agentix-logo.png" class="lp-logo-img" alt="Agentix" />
+        <div class="lp-brand-meta">
+          <span class="lp-b1">Hệ thống</span>
+          <span class="lp-b2">Quản lý đại lý</span>
+        </div>
       </div>
 
-      <!-- Login Card -->
-      <div class="login-card glass">
-        <div class="login-header">
-          <div class="login-logo">
-            <div class="logo-icon">
-              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
-                <polyline points="9 22 9 12 15 12 15 22"></polyline>
-              </svg>
-            </div>
-            <span class="logo-text">Quản Lý Đại Lý</span>
-          </div>
-          <h1 class="login-title">Chào mừng trở lại! 👋</h1>
-          <p class="login-subtitle">Đăng nhập để quản lý hệ thống đại lý của bạn</p>
-        </div>
-
-        <form @submit.prevent="handleLogin" class="login-form">
-          <!-- Username -->
-          <div class="form-group">
-            <label class="form-label" for="username">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                <circle cx="12" cy="7" r="4"></circle>
-              </svg>
-              Tên đăng nhập
-            </label>
-            <div class="input-wrapper">
-              <input
-                id="username"
-                v-model="form.tenDangNhap"
-                type="text"
-                class="form-input"
-                :class="{ error: errors.tenDangNhap }"
-                placeholder="Nhập tên đăng nhập"
-                autocomplete="username"
-                @focus="clearError('tenDangNhap')"
-              />
-            </div>
-            <span v-if="errors.tenDangNhap" class="form-error">{{ errors.tenDangNhap }}</span>
-          </div>
-
-          <!-- Password -->
-          <div class="form-group">
-            <label class="form-label" for="password">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
-                <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
-              </svg>
-              Mật khẩu
-            </label>
-            <div class="input-wrapper">
-              <input
-                id="password"
-                v-model="form.matKhau"
-                :type="showPassword ? 'text' : 'password'"
-                class="form-input"
-                :class="{ error: errors.matKhau }"
-                placeholder="Nhập mật khẩu"
-                autocomplete="current-password"
-                @focus="clearError('matKhau')"
-              />
-              <button
-                type="button"
-                class="toggle-password"
-                @click="showPassword = !showPassword"
-                tabindex="-1"
-              >
-                <svg v-if="!showPassword" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-                  <circle cx="12" cy="12" r="3"></circle>
-                </svg>
-                <svg v-else width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
-                  <line x1="1" y1="1" x2="23" y2="23"></line>
-                </svg>
-              </button>
-            </div>
-            <span v-if="errors.matKhau" class="form-error">{{ errors.matKhau }}</span>
-          </div>
-
-          <!-- Remember & Forgot -->
-          <div class="login-options">
-            <label class="checkbox-label">
-              <input v-model="form.ghiNho" type="checkbox" class="checkbox-input" />
-              <span class="checkbox-custom"></span>
-              <span>Ghi nhớ đăng nhập</span>
-            </label>
-            <a href="#" class="forgot-link" @click.prevent="showForgotModal = true">Quên mật khẩu?</a>
-          </div>
-
-          <!-- Error Message -->
-          <div v-if="loginError" class="login-error">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <circle cx="12" cy="12" r="10"></circle>
-              <line x1="12" y1="8" x2="12" y2="12"></line>
-              <line x1="12" y1="16" x2="12.01" y2="16"></line>
-            </svg>
-            {{ loginError }}
-          </div>
-
-          <!-- Submit -->
-          <button
-            type="submit"
-            class="btn btn-primary btn-block btn-lg login-btn"
-            :disabled="isLoading"
-          >
-            <svg v-if="isLoading" class="spinner" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <circle cx="12" cy="12" r="10" stroke-opacity="0.3"></circle>
-              <path d="M12 2a10 10 0 0 1 10 10"></path>
-            </svg>
-            <span v-if="!isLoading">Đăng nhập</span>
-            <span v-else>Đang xử lý...</span>
+      <!-- Tab switcher -->
+      <div class="lp-tabs">
+        <div class="tabs-track">
+          <div class="tabs-pill" :class="activeTab === 'login' ? 'pill-left' : 'pill-right'"></div>
+          <button class="tab-btn" :class="{ active: activeTab === 'login' }" @click="switchTab('login')">
+            <LogIn :size="13"/> Đăng nhập
           </button>
-        </form>
-
-        <div class="login-footer">
-          <p>SE104 - Nhập môn Công nghệ Phần mềm</p>
+          <button class="tab-btn" :class="{ active: activeTab === 'register' }" @click="switchTab('register')">
+            <UserPlus :size="13"/> Đăng ký
+          </button>
         </div>
       </div>
-    </div>
 
-    <!-- Forgot Password Modal -->
-    <div v-if="showForgotModal" class="modal-overlay" @click.self="showForgotModal = false">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h3>Quên mật khẩu</h3>
-          <button class="modal-close" @click="showForgotModal = false">✕</button>
-        </div>
-        <div class="modal-body">
-          <p style="color: var(--gray-500); margin-bottom: 16px;">
-            Vui lòng liên hệ quản trị viên để đặt lại mật khẩu.
-          </p>
-          <div class="form-group">
-            <label class="form-label">Email liên hệ admin</label>
-            <input type="text" class="form-input" value="admin@quanlydaily.com" readonly />
+      <!-- ── LOGIN FORM ── -->
+      <Transition :name="'tf-' + tabDir" mode="out-in">
+        <div v-if="activeTab === 'login'" key="login">
+
+          <div class="lp-form-hd">
+            <h2 class="lp-form-title">Chào mừng trở lại</h2>
+            <p class="lp-form-sub">Đăng nhập để tiếp tục quản lý hệ thống</p>
           </div>
-          <button class="btn btn-primary btn-block" @click="showForgotModal = false">Đã hiểu</button>
+
+          <form @submit.prevent="handleLogin" class="lp-form" novalidate>
+
+            <div class="lf-group">
+              <label class="lf-label">Tên đăng nhập</label>
+              <div class="lf-field" :class="{ focused: uFocus, err: errors.tenDangNhap }">
+                <User :size="14" class="lf-ico"/>
+                <input v-model="form.tenDangNhap" type="text" class="lf-inp"
+                  placeholder="Nhập tên đăng nhập" autocomplete="username"
+                  @focus="uFocus=true; clearError('tenDangNhap')" @blur="uFocus=false"/>
+              </div>
+              <span class="lf-err" v-if="errors.tenDangNhap"><AlertCircle :size="11"/>{{ errors.tenDangNhap }}</span>
+            </div>
+
+            <div class="lf-group">
+              <div class="lf-label-row">
+                <label class="lf-label">Mật khẩu</label>
+                <a class="lf-forgot" @click.prevent="showForgotModal=true">Quên mật khẩu?</a>
+              </div>
+              <div class="lf-field" :class="{ focused: pFocus, err: errors.matKhau }">
+                <Lock :size="14" class="lf-ico"/>
+                <input v-model="form.matKhau" :type="showPass ? 'text' : 'password'" class="lf-inp"
+                  placeholder="••••••••" autocomplete="current-password"
+                  @focus="pFocus=true; clearError('matKhau')" @blur="pFocus=false"/>
+                <button type="button" class="lf-eye" @click="showPass=!showPass" tabindex="-1">
+                  <Eye v-if="!showPass" :size="14"/><EyeOff v-else :size="14"/>
+                </button>
+              </div>
+              <span class="lf-err" v-if="errors.matKhau"><AlertCircle :size="11"/>{{ errors.matKhau }}</span>
+            </div>
+
+            <label class="lf-check">
+              <input v-model="form.ghiNho" type="checkbox" class="lf-check-inp"/>
+              <span class="lf-check-box" :class="{ on: form.ghiNho }">
+                <Check v-if="form.ghiNho" :size="10"/>
+              </span>
+              <span class="lf-check-lbl">Ghi nhớ đăng nhập</span>
+            </label>
+
+            <div class="lf-login-err" v-if="loginError">
+              <AlertCircle :size="14"/>{{ loginError }}
+            </div>
+
+            <button type="submit" class="lf-submit" :disabled="isLoading">
+              <Loader2 v-if="isLoading" :size="15" class="lf-spin"/>
+              <span>{{ isLoading ? 'Đang xử lý…' : 'Đăng nhập' }}</span>
+              <ArrowRight v-if="!isLoading" :size="15" class="lf-arrow"/>
+            </button>
+
+            <p class="lf-switch-hint">
+              Chưa có tài khoản?
+              <button type="button" class="lf-switch-btn" @click="switchTab('register')">Đăng ký ngay</button>
+            </p>
+          </form>
         </div>
-      </div>
+
+        <!-- ── REGISTER FORM ── -->
+        <div v-else key="register">
+          <Transition name="suc-fade" mode="out-in">
+            <div v-if="regSuccess" class="reg-success">
+              <div class="rs-icon"><CheckCircle2 :size="28"/></div>
+              <h3 class="rs-title">Đăng ký thành công!</h3>
+              <p class="rs-sub">Tài khoản đã được tạo. Đang chuyển về đăng nhập…</p>
+            </div>
+
+            <div v-else key="reg-form">
+              <div class="lp-form-hd">
+                <h2 class="lp-form-title">Tạo tài khoản mới</h2>
+                <p class="lp-form-sub">Điền thông tin để bắt đầu sử dụng hệ thống</p>
+              </div>
+
+              <form @submit.prevent="handleRegister" class="lp-form" novalidate>
+
+                <div class="lf-row2">
+                  <div class="lf-group">
+                    <label class="lf-label">Họ và tên <span class="req">*</span></label>
+                    <div class="lf-field sm" :class="{ focused: rnFocus, err: regErrors.hoTen }">
+                      <UserRound :size="13" class="lf-ico"/>
+                      <input v-model="regForm.hoTen" type="text" class="lf-inp"
+                        placeholder="Nguyễn Văn A"
+                        @focus="rnFocus=true; delete regErrors.hoTen" @blur="rnFocus=false"/>
+                    </div>
+                    <span class="lf-err" v-if="regErrors.hoTen"><AlertCircle :size="11"/>{{ regErrors.hoTen }}</span>
+                  </div>
+                  <div class="lf-group">
+                    <label class="lf-label">Tên đăng nhập <span class="req">*</span></label>
+                    <div class="lf-field sm" :class="{ focused: ruFocus, err: regErrors.tenDangNhap }">
+                      <AtSign :size="13" class="lf-ico"/>
+                      <input v-model="regForm.tenDangNhap" type="text" class="lf-inp"
+                        placeholder="admin123"
+                        @focus="ruFocus=true; delete regErrors.tenDangNhap" @blur="ruFocus=false"/>
+                    </div>
+                    <span class="lf-err" v-if="regErrors.tenDangNhap"><AlertCircle :size="11"/>{{ regErrors.tenDangNhap }}</span>
+                  </div>
+                </div>
+
+                <div class="lf-group">
+                  <label class="lf-label">Email <span class="req">*</span></label>
+                  <div class="lf-field" :class="{ focused: reFocus, err: regErrors.email }">
+                    <Mail :size="14" class="lf-ico"/>
+                    <input v-model="regForm.email" type="email" class="lf-inp"
+                      placeholder="ten@example.com" autocomplete="email"
+                      @focus="reFocus=true; delete regErrors.email" @blur="reFocus=false"/>
+                  </div>
+                  <span class="lf-err" v-if="regErrors.email"><AlertCircle :size="11"/>{{ regErrors.email }}</span>
+                </div>
+
+                <div class="lf-group">
+                  <label class="lf-label">Mật khẩu <span class="req">*</span></label>
+                  <div class="lf-field" :class="{ focused: rpFocus, err: regErrors.matKhau }">
+                    <Lock :size="14" class="lf-ico"/>
+                    <input v-model="regForm.matKhau" :type="showRegPass ? 'text' : 'password'"
+                      class="lf-inp" placeholder="Tối thiểu 6 ký tự"
+                      @focus="rpFocus=true; delete regErrors.matKhau" @blur="rpFocus=false"/>
+                    <button type="button" class="lf-eye" @click="showRegPass=!showRegPass" tabindex="-1">
+                      <Eye v-if="!showRegPass" :size="14"/><EyeOff v-else :size="14"/>
+                    </button>
+                  </div>
+                  <div class="str-bar" v-if="regForm.matKhau">
+                    <div class="str-track">
+                      <div class="str-fill" :style="{ width: (passStrength/4*100)+'%', background: strColor }"></div>
+                    </div>
+                    <span class="str-lbl" :style="{ color: strColor }">{{ strLabel }}</span>
+                  </div>
+                  <span class="lf-err" v-if="regErrors.matKhau"><AlertCircle :size="11"/>{{ regErrors.matKhau }}</span>
+                </div>
+
+                <div class="lf-group">
+                  <label class="lf-label">Xác nhận mật khẩu <span class="req">*</span></label>
+                  <div class="lf-field" :class="{ focused: rcFocus, err: regErrors.xacNhan }">
+                    <Lock :size="14" class="lf-ico"/>
+                    <input v-model="regForm.xacNhan" :type="showRegConf ? 'text' : 'password'"
+                      class="lf-inp" placeholder="Nhập lại mật khẩu"
+                      @focus="rcFocus=true; delete regErrors.xacNhan" @blur="rcFocus=false"/>
+                    <button type="button" class="lf-eye" @click="showRegConf=!showRegConf" tabindex="-1">
+                      <Eye v-if="!showRegConf" :size="14"/><EyeOff v-else :size="14"/>
+                    </button>
+                  </div>
+                  <span class="lf-err" v-if="regErrors.xacNhan"><AlertCircle :size="11"/>{{ regErrors.xacNhan }}</span>
+                </div>
+
+                <button type="submit" class="lf-submit" :disabled="isRegLoading">
+                  <Loader2 v-if="isRegLoading" :size="15" class="lf-spin"/>
+                  <span>{{ isRegLoading ? 'Đang tạo tài khoản…' : 'Tạo tài khoản' }}</span>
+                  <Sparkles v-if="!isRegLoading" :size="15" class="lf-arrow"/>
+                </button>
+
+                <p class="lf-switch-hint">
+                  Đã có tài khoản?
+                  <button type="button" class="lf-switch-btn" @click="switchTab('login')">Đăng nhập</button>
+                </p>
+              </form>
+            </div>
+          </Transition>
+        </div>
+      </Transition>
+
+      <p class="lp-card-foot">© 2026 Agentix · SE104 · Nhập môn Công nghệ Phần mềm</p>
     </div>
   </div>
+
+  <!-- ── Forgot modal ── -->
+  <Teleport to="body">
+    <div v-if="showForgotModal" class="fm-bg" @click.self="showForgotModal=false">
+      <div class="fm-box">
+        <div class="fm-ico"><Lock :size="20"/></div>
+        <h4 class="fm-title">Quên mật khẩu?</h4>
+        <p class="fm-desc">Vui lòng liên hệ quản trị viên để đặt lại mật khẩu cho tài khoản của bạn.</p>
+        <div class="fm-email"><Mail :size="13"/> admin@agentix.vn</div>
+        <button class="lf-submit" style="margin-top:18px;width:100%" @click="showForgotModal=false">Đã hiểu</button>
+      </div>
+    </div>
+  </Teleport>
 </template>
 
 <script setup>
-import { ref, reactive } from 'vue';
+import { ref, reactive, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '../stores/auth';
+import {
+  User, UserRound, Lock, Eye, EyeOff, Check, AlertCircle,
+  CheckCircle2, ArrowRight, Loader2, LogIn, UserPlus,
+  Mail, AtSign, Sparkles,
+} from 'lucide-vue-next';
 
-const router = useRouter();
+const router    = useRouter();
 const authStore = useAuthStore();
 
-const form = reactive({
-  tenDangNhap: '',
-  matKhau: '',
-  ghiNho: false,
-});
+/* ── Tab state ── */
+const activeTab = ref('login');
+const tabDir    = ref('left');
+const switchTab = (tab) => {
+  tabDir.value = tab === 'register' ? 'left' : 'right';
+  activeTab.value = tab;
+};
 
-const errors = reactive({
-  tenDangNhap: '',
-  matKhau: '',
-});
-
-const showPassword = ref(false);
+/* ── Login form ── */
+const form     = reactive({ tenDangNhap: '', matKhau: '', ghiNho: false });
+const errors   = reactive({ tenDangNhap: '', matKhau: '' });
+const showPass = ref(false);
 const isLoading = ref(false);
 const loginError = ref('');
 const showForgotModal = ref(false);
+const uFocus = ref(false);
+const pFocus = ref(false);
 
-const clearError = (field) => {
-  errors[field] = '';
-  loginError.value = '';
-};
+const clearError = (f) => { errors[f] = ''; loginError.value = ''; };
 
 const validate = () => {
-  let valid = true;
-  if (!form.tenDangNhap.trim()) {
-    errors.tenDangNhap = 'Vui lòng nhập tên đăng nhập';
-    valid = false;
-  }
-  if (!form.matKhau) {
-    errors.matKhau = 'Vui lòng nhập mật khẩu';
-    valid = false;
-  }
-  return valid;
+  let ok = true;
+  if (!form.tenDangNhap.trim()) { errors.tenDangNhap = 'Vui lòng nhập tên đăng nhập'; ok = false; }
+  if (!form.matKhau)            { errors.matKhau    = 'Vui lòng nhập mật khẩu';       ok = false; }
+  return ok;
 };
 
 const handleLogin = async () => {
   if (!validate()) return;
-
-  isLoading.value = true;
-  loginError.value = '';
-
+  isLoading.value = true; loginError.value = '';
   try {
-    await authStore.login({
-      tenDangNhap: form.tenDangNhap,
-      matKhau: form.matKhau,
-    });
-
-    if (form.ghiNho) {
-      localStorage.setItem('rememberedUser', form.tenDangNhap);
-    }
-
+    await authStore.login({ tenDangNhap: form.tenDangNhap, matKhau: form.matKhau });
+    if (form.ghiNho) localStorage.setItem('rememberedUser', form.tenDangNhap);
     router.push('/dashboard');
-  } catch (error) {
-    loginError.value = error.response?.data?.message || 'Đăng nhập thất bại. Vui lòng thử lại.';
-  } finally {
-    isLoading.value = false;
-  }
+  } catch (e) {
+    loginError.value = e.response?.data?.message || 'Đăng nhập thất bại. Vui lòng thử lại.';
+  } finally { isLoading.value = false; }
 };
 
-// Restore remembered user
 const remembered = localStorage.getItem('rememberedUser');
-if (remembered) {
-  form.tenDangNhap = remembered;
-  form.ghiNho = true;
-}
+if (remembered) { form.tenDangNhap = remembered; form.ghiNho = true; }
+
+/* ── Register form ── */
+const regForm    = reactive({ hoTen: '', tenDangNhap: '', email: '', matKhau: '', xacNhan: '' });
+const regErrors  = reactive({});
+const showRegPass  = ref(false);
+const showRegConf  = ref(false);
+const isRegLoading = ref(false);
+const regSuccess   = ref(false);
+const rnFocus = ref(false); const ruFocus = ref(false);
+const reFocus = ref(false); const rpFocus = ref(false); const rcFocus = ref(false);
+
+const passStrength = computed(() => {
+  const p = regForm.matKhau;
+  if (!p) return 0;
+  let s = 0;
+  if (p.length >= 6)  s++;
+  if (p.length >= 10) s++;
+  if (/[A-Z]/.test(p)) s++;
+  if (/[0-9]/.test(p)) s++;
+  if (/[^A-Za-z0-9]/.test(p)) s++;
+  return Math.min(s, 4);
+});
+const strColor = computed(() => ['#e2e8f0','#ef4444','#f59e0b','#3b82f6','#10b981'][passStrength.value]);
+const strLabel = computed(() => ['','Yếu','Trung bình','Khá','Mạnh'][passStrength.value]);
+
+const validateReg = () => {
+  const e = {};
+  if (!regForm.hoTen.trim()) e.hoTen = 'Nhập họ và tên';
+  if (!regForm.tenDangNhap.trim() || regForm.tenDangNhap.length < 4) e.tenDangNhap = 'Tối thiểu 4 ký tự';
+  if (!regForm.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(regForm.email)) e.email = 'Email không hợp lệ';
+  if (!regForm.matKhau || regForm.matKhau.length < 6) e.matKhau = 'Tối thiểu 6 ký tự';
+  if (regForm.xacNhan !== regForm.matKhau) e.xacNhan = 'Mật khẩu không khớp';
+  Object.keys(regErrors).forEach(k => delete regErrors[k]);
+  Object.assign(regErrors, e);
+  return Object.keys(e).length === 0;
+};
+
+const handleRegister = async () => {
+  if (!validateReg()) return;
+  isRegLoading.value = true;
+  await new Promise(r => setTimeout(r, 1400));
+  isRegLoading.value = false;
+  regSuccess.value = true;
+  setTimeout(() => {
+    regSuccess.value = false;
+    form.tenDangNhap = regForm.tenDangNhap;
+    switchTab('login');
+  }, 2600);
+};
 </script>
 
 <style scoped>
-.login-page {
+/* ══ ROOT ══ */
+.lp {
   min-height: 100vh;
   display: flex;
   align-items: center;
   justify-content: center;
+  background: var(--s-bg, #f5f7f9);
+  padding: 40px 24px;
   position: relative;
   overflow: hidden;
-  background: linear-gradient(135deg, #0f172a 0%, #1e293b 30%, #1e3a5f 60%, #0f172a 100%);
+  font-family: 'Outfit', 'Inter', ui-sans-serif, system-ui, sans-serif;
 }
 
-/* Animated background circles */
-.login-bg {
-  position: absolute;
-  inset: 0;
-  overflow: hidden;
-  z-index: 0;
-}
-
-.login-bg-circle {
+/* ── Decorative orbs (very subtle) ── */
+.lp-orb {
   position: absolute;
   border-radius: 50%;
-  filter: blur(80px);
-  opacity: 0.4;
+  pointer-events: none;
+}
+.lp-orb1 {
+  width: 700px; height: 700px;
+  background: radial-gradient(circle, rgba(16,185,129,.07) 0%, transparent 65%);
+  top: -260px; right: -160px;
+}
+.lp-orb2 {
+  width: 500px; height: 500px;
+  background: radial-gradient(circle, rgba(5,150,105,.05) 0%, transparent 65%);
+  bottom: -200px; left: -100px;
 }
 
-.circle-1 {
-  width: 500px;
-  height: 500px;
-  background: linear-gradient(135deg, #3b82f6, #8b5cf6);
-  top: -120px;
-  right: -80px;
-  animation: float 8s ease-in-out infinite;
+/* ══ CARD — matches sidebar glass morphism ══ */
+.lp-card {
+  position: relative; z-index: 1;
+  width: 100%; max-width: 480px;
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(25px);
+  -webkit-backdrop-filter: blur(25px);
+  border-radius: 24px;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0, 0, 0, 0.04);
+  padding: 36px 38px 28px;
+  box-sizing: border-box;
+  animation: cardIn .35s cubic-bezier(.4,0,.2,1);
+}
+@keyframes cardIn { from { opacity:0; transform: translateY(14px); } to { opacity:1; transform: translateY(0); } }
+
+/* Green top stripe */
+.lp-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0; height: 3px;
+  background: linear-gradient(90deg, transparent, #34d399 25%, #059669 50%, #34d399 75%, transparent);
+  border-radius: 24px 24px 0 0;
 }
 
-.circle-2 {
-  width: 350px;
-  height: 350px;
-  background: linear-gradient(135deg, #06b6d4, #3b82f6);
-  bottom: -60px;
-  left: -60px;
-  animation: float 10s ease-in-out infinite 2s;
-}
-
-.circle-3 {
-  width: 250px;
-  height: 250px;
-  background: linear-gradient(135deg, #8b5cf6, #ec4899);
-  top: 50%;
-  left: 20%;
-  animation: float 12s ease-in-out infinite 4s;
-}
-
-.circle-4 {
-  width: 180px;
-  height: 180px;
-  background: linear-gradient(135deg, #10b981, #06b6d4);
-  bottom: 30%;
-  right: 15%;
-  animation: float 9s ease-in-out infinite 1s;
-}
-
-.login-container {
-  position: relative;
-  z-index: 1;
+/* ── Brand block — mirrors Sidebar .brand-unit ── */
+.lp-brand {
   display: flex;
-  align-items: center;
-  gap: 20px;
-  padding: 20px;
-  max-width: 900px;
-  width: 100%;
-}
-
-/* Robot Mascot */
-.login-mascot {
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  animation: float 4s ease-in-out infinite;
-}
-
-.mascot-img {
-  width: 320px;
-  height: 320px;
-  object-fit: contain;
-  filter: drop-shadow(0 20px 40px rgba(0, 0, 0, 0.3));
-}
-
-/* Login Card */
-.login-card {
-  flex: 1;
-  max-width: 440px;
-  border-radius: var(--radius-xl);
-  padding: 40px 36px;
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
-  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.2);
-}
-
-.login-header {
-  text-align: center;
-  margin-bottom: 32px;
-}
-
-.login-logo {
-  display: inline-flex;
   align-items: center;
   gap: 10px;
-  margin-bottom: 20px;
-}
-
-.logo-icon {
-  width: 44px;
-  height: 44px;
-  border-radius: var(--radius-md);
-  background: linear-gradient(135deg, var(--primary-500), var(--accent-500));
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: white;
-}
-
-.logo-text {
-  font-size: 1.15rem;
-  font-weight: 700;
-  color: white;
-}
-
-.login-title {
-  font-size: 1.6rem;
-  font-weight: 800;
-  color: white;
-  margin-bottom: 6px;
-}
-
-.login-subtitle {
-  font-size: 0.9rem;
-  color: rgba(255, 255, 255, 0.6);
-}
-
-/* Form in dark mode */
-.login-form .form-label {
-  color: rgba(255, 255, 255, 0.8);
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.login-form .form-label svg {
-  opacity: 0.7;
-}
-
-.login-form .form-input {
-  background: rgba(255, 255, 255, 0.06);
-  border-color: rgba(255, 255, 255, 0.12);
-  color: white;
-  padding: 13px 16px;
-}
-
-.login-form .form-input:focus {
-  border-color: var(--primary-400);
-  background: rgba(255, 255, 255, 0.1);
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
-}
-
-.login-form .form-input::placeholder {
-  color: rgba(255, 255, 255, 0.35);
-}
-
-.input-wrapper {
-  position: relative;
-}
-
-.toggle-password {
-  position: absolute;
-  right: 12px;
-  top: 50%;
-  transform: translateY(-50%);
-  background: none;
-  border: none;
-  color: rgba(255, 255, 255, 0.4);
-  cursor: pointer;
-  padding: 4px;
-  transition: color var(--transition-fast);
-}
-
-.toggle-password:hover {
-  color: rgba(255, 255, 255, 0.8);
-}
-
-/* Options row */
-.login-options {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
   margin-bottom: 24px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid rgba(0,0,0,.06);
 }
-
-.checkbox-label {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  cursor: pointer;
-  font-size: 0.85rem;
-  color: rgba(255, 255, 255, 0.7);
-  user-select: none;
-}
-
-.checkbox-input {
-  display: none;
-}
-
-.checkbox-custom {
-  width: 18px;
-  height: 18px;
-  border: 2px solid rgba(255, 255, 255, 0.2);
-  border-radius: 4px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all var(--transition-fast);
+.lp-logo-img {
+  width: 80px;
+  height: auto;
+  object-fit: contain;
   flex-shrink: 0;
 }
-
-.checkbox-input:checked + .checkbox-custom {
-  background: var(--primary-500);
-  border-color: var(--primary-500);
-}
-
-.checkbox-input:checked + .checkbox-custom::after {
-  content: '✓';
-  color: white;
-  font-size: 11px;
-  font-weight: 700;
-}
-
-.forgot-link {
-  font-size: 0.85rem;
-  color: var(--primary-400);
-  transition: color var(--transition-fast);
-}
-
-.forgot-link:hover {
-  color: var(--primary-300);
-}
-
-/* Error message */
-.login-error {
+.lp-brand-meta {
   display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 12px 16px;
-  background: rgba(239, 68, 68, 0.1);
-  border: 1px solid rgba(239, 68, 68, 0.2);
-  border-radius: var(--radius-md);
-  color: #fca5a5;
-  font-size: 0.85rem;
-  margin-bottom: 20px;
-  animation: slideUp 0.3s ease;
+  flex-direction: column;
+  gap: 2px;
+}
+.lp-b1 {
+  font-size: .7rem;
+  font-weight: 700;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: .8px;
+  line-height: 1.3;
+}
+.lp-b2 {
+  font-size: .88rem;
+  font-weight: 800;
+  color: #059669;
+  letter-spacing: -.3px;
+  line-height: 1.3;
 }
 
-/* Login button */
-.login-btn {
-  font-size: 1rem;
-  padding: 14px;
-  border-radius: var(--radius-md);
-  background: linear-gradient(135deg, var(--primary-500), var(--accent-500));
-  box-shadow: 0 6px 20px rgba(59, 130, 246, 0.3);
-  letter-spacing: 0.3px;
+/* ── Tab switcher ── */
+.lp-tabs { margin-bottom: 20px; }
+.tabs-track {
+  position: relative; display: flex;
+  background: #f1f5f9; border-radius: 10px; padding: 4px;
+}
+.tabs-pill {
+  position: absolute; top: 4px; bottom: 4px;
+  width: calc(50% - 4px);
+  background: white; border-radius: 7px;
+  box-shadow: 0 1px 6px rgba(15,23,42,.1);
+  transition: transform .24s cubic-bezier(.4,0,.2,1);
+}
+.tabs-pill.pill-left  { transform: translateX(0); }
+.tabs-pill.pill-right { transform: translateX(100%); }
+.tab-btn {
+  flex: 1; position: relative; z-index: 1; border: none; background: transparent;
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+  font-size: 12.5px; font-weight: 600; padding: 8px 10px;
+  color: #94a3b8; cursor: pointer; transition: color .18s; font-family: inherit; border-radius: 6px;
+}
+.tab-btn.active { color: #0f172a; }
+
+/* ── Form heading ── */
+.lp-form-hd { margin-bottom: 18px; }
+.lp-form-title { font-size: 1.18rem; font-weight: 800; color: #0f172a; margin: 0 0 4px; letter-spacing: -.45px; }
+.lp-form-sub   { font-size: .82rem; color: #64748b; margin: 0; }
+
+/* ── Form layout ── */
+.lp-form { display: flex; flex-direction: column; gap: 13px; }
+.lf-row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.lf-group { display: flex; flex-direction: column; gap: 5px; }
+.lf-label-row { display: flex; justify-content: space-between; align-items: center; }
+.lf-label { font-size: 11.5px; font-weight: 700; color: #374151; }
+.req { color: #ef4444; }
+.lf-forgot { font-size: 11px; color: #059669; font-weight: 600; text-decoration: none; cursor: pointer; }
+.lf-forgot:hover { color: #047857; text-decoration: underline; }
+
+/* Input field */
+.lf-field {
+  display: flex; align-items: center; gap: 9px;
+  border: 1.5px solid rgba(15,23,42,.1); border-radius: 10px;
+  padding: 0 12px; background: #f8fafc;
+  transition: border-color .14s, background .14s, box-shadow .14s;
+  height: 42px;
+}
+.lf-field.focused { border-color: #059669; background: #fff; box-shadow: 0 0 0 3px rgba(5,150,105,.1); }
+.lf-field.err     { border-color: #ef4444; background: #fef2f2; }
+.lf-ico { color: #94a3b8; flex-shrink: 0; transition: color .14s; }
+.lf-field.focused .lf-ico { color: #059669; }
+.lf-inp { flex: 1; border: none; background: transparent; outline: none; font-size: 13.5px; color: #0f172a; padding: 0; font-family: inherit; }
+.lf-inp::placeholder { color: #cbd5e1; }
+.lf-eye { border: none; background: transparent; cursor: pointer; color: #94a3b8; padding: 4px; display: flex; align-items: center; transition: color .14s; flex-shrink: 0; }
+.lf-eye:hover { color: #475569; }
+.lf-err { display: flex; align-items: center; gap: 4px; font-size: 11px; color: #ef4444; font-weight: 500; }
+
+/* Password strength */
+.str-bar { display: flex; align-items: center; gap: 8px; margin-top: 4px; }
+.str-track { flex: 1; height: 3px; background: #e2e8f0; border-radius: 2px; overflow: hidden; }
+.str-fill  { height: 100%; border-radius: 2px; transition: width .3s ease, background .3s; }
+.str-lbl   { font-size: 10.5px; font-weight: 700; white-space: nowrap; min-width: 58px; text-align: right; }
+
+/* Checkbox */
+.lf-check { display: flex; align-items: center; gap: 8px; cursor: pointer; user-select: none; }
+.lf-check-inp { display: none; }
+.lf-check-box {
+  width: 16px; height: 16px; border-radius: 5px;
+  border: 1.5px solid rgba(15,23,42,.14);
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; transition: all .14s; background: white; color: white;
+}
+.lf-check-box.on { background: #059669; border-color: #059669; }
+.lf-check-lbl { font-size: 12.5px; color: #475569; font-weight: 500; }
+
+/* Login error */
+.lf-login-err {
+  display: flex; align-items: center; gap: 8px;
+  padding: 10px 13px; background: #fef2f2;
+  border: 1px solid rgba(239,68,68,.18); border-radius: 8px;
+  color: #dc2626; font-size: 13px; font-weight: 500;
+  animation: errIn .18s ease;
+}
+@keyframes errIn { from { opacity:0; transform: translateY(-3px); } to { opacity:1; transform: translateY(0); } }
+
+/* Submit */
+.lf-submit {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  width: 100%; padding: 13px 20px;
+  background: linear-gradient(135deg, #059669, #10b981);
+  color: white; border: none; border-radius: 10px;
+  font-size: 14px; font-weight: 700; cursor: pointer; font-family: inherit;
+  box-shadow: 0 4px 16px rgba(5,150,105,.28);
+  transition: transform .13s, box-shadow .13s;
+}
+.lf-submit:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 6px 22px rgba(5,150,105,.38); }
+.lf-submit:active:not(:disabled) { transform: translateY(0); }
+.lf-submit:disabled { opacity: .62; cursor: not-allowed; }
+.lf-spin { animation: spin 1s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.lf-arrow { transition: transform .18s; }
+.lf-submit:hover .lf-arrow { transform: translateX(3px); }
+
+/* Switch hint */
+.lf-switch-hint { text-align: center; font-size: 12.5px; color: #94a3b8; margin: 0; font-weight: 500; }
+.lf-switch-btn { background: none; border: none; color: #059669; font-weight: 700; cursor: pointer; font-family: inherit; font-size: inherit; padding: 0; }
+.lf-switch-btn:hover { color: #047857; text-decoration: underline; }
+
+/* Register success */
+.reg-success {
+  display: flex; flex-direction: column; align-items: center; text-align: center;
+  padding: 24px 16px; gap: 10px; animation: cardIn .28s ease;
+}
+.rs-icon { width: 56px; height: 56px; border-radius: 50%; background: #ecfdf5; color: #059669; display: flex; align-items: center; justify-content: center; }
+.rs-title { font-size: 1.05rem; font-weight: 800; color: #0f172a; margin: 0; }
+.rs-sub   { font-size: .83rem; color: #64748b; margin: 0; line-height: 1.55; }
+
+/* Card footer */
+.lp-card-foot {
+  text-align: center; margin-top: 20px; padding-top: 14px;
+  border-top: 1px solid rgba(15,23,42,.06);
+  font-size: 10.5px; color: #94a3b8; font-weight: 500;
 }
 
-.login-btn:hover:not(:disabled) {
-  box-shadow: 0 8px 30px rgba(59, 130, 246, 0.5);
-  transform: translateY(-2px);
+/* ── Forgot modal ── */
+.fm-bg {
+  position: fixed; inset: 0; z-index: 9999;
+  background: rgba(15,23,42,.4); backdrop-filter: blur(6px);
+  display: flex; align-items: center; justify-content: center; padding: 20px;
 }
-
-/* Spinner */
-.spinner {
-  animation: spin 1s linear infinite;
+.fm-box {
+  background: white; border-radius: 16px;
+  border: 1px solid rgba(15,23,42,.08);
+  box-shadow: 0 20px 60px rgba(15,23,42,.18);
+  padding: 32px 28px; width: min(380px,100%);
+  display: flex; flex-direction: column; align-items: center; text-align: center; gap: 10px;
+  animation: cardIn .22s ease;
 }
+.fm-ico   { width: 48px; height: 48px; border-radius: 50%; background: #ecfdf5; color: #059669; display: flex; align-items: center; justify-content: center; }
+.fm-title { font-size: 1rem; font-weight: 700; color: #0f172a; margin: 0; }
+.fm-desc  { font-size: 13px; color: #64748b; margin: 0; line-height: 1.55; }
+.fm-email { display: flex; align-items: center; gap: 7px; font-size: 13px; font-weight: 700; color: #059669; background: #ecfdf5; border: 1px solid rgba(5,150,105,.15); border-radius: 8px; padding: 8px 16px; }
 
-@keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
-}
+/* ── Transitions ── */
+.tf-left-enter-active, .tf-left-leave-active,
+.tf-right-enter-active,.tf-right-leave-active { transition: all .2s cubic-bezier(.4,0,.2,1); }
+.tf-left-enter-from  { opacity:0; transform: translateX(16px); }
+.tf-left-leave-to    { opacity:0; transform: translateX(-16px); }
+.tf-right-enter-from { opacity:0; transform: translateX(-16px); }
+.tf-right-leave-to   { opacity:0; transform: translateX(16px); }
 
-/* Footer */
-.login-footer {
-  text-align: center;
-  margin-top: 24px;
-  padding-top: 20px;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
-}
+.suc-fade-enter-active,.suc-fade-leave-active { transition: all .18s ease; }
+.suc-fade-enter-from,.suc-fade-leave-to { opacity:0; transform: scale(.96); }
 
-.login-footer p {
-  font-size: 0.8rem;
-  color: rgba(255, 255, 255, 0.3);
-}
-
-/* Responsive */
-@media (max-width: 768px) {
-  .login-container {
-    flex-direction: column;
-    gap: 0;
-  }
-
-  .login-mascot {
-    margin-bottom: -30px;
-  }
-
-  .mascot-img {
-    width: 200px;
-    height: 200px;
-  }
-
-  .login-card {
-    max-width: 100%;
-    padding: 32px 24px;
-  }
-
-  .login-title {
-    font-size: 1.3rem;
-  }
+/* ══ RESPONSIVE ══ */
+@media (max-width: 520px) {
+  .lp { padding: 24px 16px; align-items: flex-start; padding-top: 40px; }
+  .lp-card { border-radius: 18px; padding: 28px 22px 22px; }
+  .lf-row2 { grid-template-columns: 1fr; }
 }
 </style>

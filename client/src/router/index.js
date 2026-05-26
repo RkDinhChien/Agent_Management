@@ -64,7 +64,7 @@ const routes = [
       {
         path: 'phan-quyen',
         name: 'PhanQuyen',
-        component: () => import('../views/CaiDatView.vue'),
+        component: () => import('../views/PhanQuyenView.vue'),
       },
       {
         path: 'bao-cao',
