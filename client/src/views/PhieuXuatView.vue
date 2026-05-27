@@ -185,21 +185,30 @@
         <!-- Table -->
         <div class="table-wrap">
           <table class="dl-table">
+            <colgroup>
+              <col style="width:12%"/>
+              <col style="width:10%"/>
+              <col/>
+              <col style="width:11%"/>
+              <col style="width:11%"/>
+              <col style="width:11%"/>
+              <col style="width:13%"/>
+            </colgroup>
             <thead>
               <tr>
-                <th style="width:130px">
+                <th>
                   <span class="sort-hd" @click="toggleSort('code')">Mã phiếu <SortIcon field="code" :sk="sk" :sd="sd"/></span>
                 </th>
-                <th style="width:110px">
+                <th>
                   <span class="sort-hd" @click="toggleSort('rawDate')">Ngày xuất <SortIcon field="rawDate" :sk="sk" :sd="sd"/></span>
                 </th>
                 <th>Đại lý</th>
-                <th style="width:110px">Số mặt hàng</th>
-                <th style="width:130px" class="text-right">
+                <th>Số mặt hàng</th>
+                <th class="text-right">
                   <span class="sort-hd sort-hd-r" @click="toggleSort('total')">Tổng tiền <SortIcon field="total" :sk="sk" :sd="sd"/></span>
                 </th>
-                <th style="width:115px">Trạng thái</th>
-                <th style="width:90px" class="text-center">Thao tác</th>
+                <th>Trạng thái</th>
+                <th class="text-center">Thao tác</th>
               </tr>
             </thead>
             <tbody>
@@ -215,7 +224,7 @@
                       <img :src="agentBrand(r.agentId).logo" class="av-logo" :alt="r.agent" @error="e => e.target.style.display='none'"/>
                       <span class="av-init" :style="{ background: agentBrand(r.agentId).bg }">{{ avatarInit(r.agent) }}</span>
                     </div>
-                    <div>
+                    <div class="agent-info">
                       <span class="agent-name">{{ r.agent }}</span>
                       <span class="agent-debt" :class="debtClass(r.agentId)">
                         Nợ: {{ fmtMoney(getAgent(r.agentId)?.debt) }}
@@ -1017,9 +1026,9 @@ const exportCSV = () => {
 
 /* ══ TABLE ══ */
 .table-wrap { overflow-x:auto; }
-.dl-table { width:100%; border-collapse:collapse; font-size:13px; }
+.dl-table { width:100%; border-collapse:collapse; font-size:13px; table-layout:fixed; }
 .dl-table thead tr { background:var(--c-bg); border-bottom:1px solid var(--c-border); }
-.dl-table th { padding:10px 14px; text-align:left; font-size:10.5px; font-weight:700; text-transform:uppercase; letter-spacing:.5px; color:var(--c-txt-3); white-space:nowrap; }
+.dl-table th { padding:10px 14px; text-align:left; font-size:10.5px; font-weight:700; text-transform:uppercase; letter-spacing:.5px; color:var(--c-txt-3); white-space:nowrap; overflow:hidden; }
 .dl-table td { padding:11px 14px; border-bottom:1px solid var(--c-border-s); vertical-align:middle; }
 .px-row { cursor:pointer; transition:background var(--t); }
 .px-row:hover { background:rgba(15,23,42,.02); }
@@ -1035,7 +1044,7 @@ const exportCSV = () => {
 .muted    { color:var(--c-txt-3); }
 
 .px-code { font-size:12px; font-weight:700; color:var(--c-primary); background:var(--c-success-bg); padding:3px 8px; border-radius:6px; font-variant-numeric:tabular-nums; }
-.agent-cell { display:flex; align-items:center; gap:9px; }
+.agent-cell { display:flex; align-items:center; gap:9px; min-width:0; }
 .agent-av   {
   position: relative; width: 36px; height: 36px; border-radius: 8px; flex-shrink: 0;
   border: 1px solid rgba(0,0,0,.12); box-shadow: 0 1px 4px rgba(0,0,0,.15);
@@ -1043,8 +1052,9 @@ const exportCSV = () => {
 }
 .av-logo { position:absolute; inset:0; width:100%; height:100%; object-fit:contain; object-position:center; padding:5px; box-sizing:border-box; z-index:2; background:white; display:block; }
 .av-init { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:800; color:white; letter-spacing:-.3px; }
-.agent-name { display:block; font-size:13px; font-weight:600; }
-.agent-debt { display:block; font-size:10.5px; font-weight:600; margin-top:1px; }
+.agent-info { min-width:0; flex:1; }
+.agent-name { display:block; font-size:13px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.agent-debt { display:block; font-size:10.5px; font-weight:600; margin-top:1px; white-space:nowrap; }
 .debt-ok   { color:#059669; }
 .debt-warn { color:#f59e0b; }
 .debt-over { color:var(--c-danger); }
@@ -1080,7 +1090,7 @@ const exportCSV = () => {
 .lc-foot   { padding:10px 20px; font-size:11px; color:var(--c-txt-3); border-top:1px solid var(--c-border-s); }
 
 /* ══ SIDE PANEL ══ */
-.side-panel { display:flex; flex-direction:column; min-height:500px; width:360px; flex-shrink:0; max-height:calc(100vh - 200px); position:sticky; top:16px; overflow:hidden; }
+.side-panel { display:flex; flex-direction:column; width:360px; flex-shrink:0; max-height:calc(100vh - 200px); overflow:hidden; position:sticky; top:16px; }
 
 .ap-hd { padding:18px 18px 14px; border-bottom:1px solid var(--c-border); display:flex; align-items:flex-start; gap:12px; }
 .ap-avatar {
@@ -1325,10 +1335,10 @@ const exportCSV = () => {
 .modal-actions .btn-danger:hover { background:#dc2626; }
 
 /* ── Panel slide ── */
-.panel-enter-active { animation:panelIn .22s cubic-bezier(.4,0,.2,1); }
-.panel-leave-active { animation:panelOut .18s cubic-bezier(.4,0,.2,1); }
-@keyframes panelIn  { from { opacity:0; transform:translateX(18px); } to { opacity:1; transform:translateX(0); } }
-@keyframes panelOut { from { opacity:1; transform:translateX(0); } to { opacity:0; transform:translateX(18px); } }
+.panel-enter-active { animation:panelIn .24s cubic-bezier(.4,0,.2,1); }
+.panel-leave-active { animation:panelOut .2s cubic-bezier(.4,0,.2,1); }
+@keyframes panelIn  { from { opacity:0; transform:translateX(32px); } to { opacity:1; transform:translateX(0); } }
+@keyframes panelOut { from { opacity:1; transform:translateX(0); } to { opacity:0; transform:translateX(32px); } }
 
 /* ══ RESPONSIVE ══ */
 @media (max-width:1100px) { .dl-flex { flex-direction:column; } .side-panel { width:100%; max-height:none; position:static; } }
