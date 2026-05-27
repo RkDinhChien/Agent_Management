@@ -88,6 +88,17 @@ cd client
 npm run dev
 ```
 
+## Ghi chú quản lý mã nguồn
+
+- Một số file cấu hình cá nhân (ví dụ: editor/IDE hoặc tool settings) không nên được đẩy lên kho chung. Tôi đã xóa một file cục bộ không cần thiết (`.claude/settings.local.json`) và đã thêm `.claude/` vào `.gitignore` để tránh đẩy các cấu hình cá nhân sau này.
+- Giữ lại `package-lock.json` giúp tái tạo môi trường cài đặt; nếu bạn muốn loại bỏ lockfile cho cả workspace, thông báo cho tôi trước khi xóa.
+
+## Thông tin nhanh
+
+- Branch hiện tại: `main`
+- Nếu bạn gặp lỗi khi chạy dev server (ví dụ: process bị kill với exit code 137), thử khởi động lại Node/Vite và đảm bảo không có tiến trình cũ đang chiếm cổng, hoặc tăng bộ nhớ cho tiến trình nếu cần.
+
+
 ## 👥 Thành viên nhóm
 
 | STT | Họ tên | MSSV | Vai trò |

@@ -202,30 +202,6 @@
       </span>
     </div>
 
-    <!-- ══ TOP 3 PERFORMERS (doanh-so) ══ -->
-    <div class="top3-strip" v-if="reportTab==='doanh-so' && filteredDs.length >= 3">
-      <div v-for="(r,i) in filteredDs.slice(0,3)" :key="r.id"
-           class="t3-card" :class="`t3-r${i}`"
-           @click="selectRow(r,'doanh-so')">
-        <span class="t3-medal">{{ i===0?'🥇':i===1?'🥈':'🥉' }}</span>
-        <div class="t3-av">
-          <img :src="agentBrand(r.id).logo" class="t3-img" :alt="r.name" @error="e=>e.target.style.display='none'"/>
-          <span class="t3-init" :style="{ background: agentBrand(r.id).bg }">{{ avatarInit(r.name) }}</span>
-        </div>
-        <div class="t3-info">
-          <div class="t3-name">{{ r.name.replace(/^Đại lý\s*/i,'') }}</div>
-          <div class="t3-sub">{{ r.district }}</div>
-        </div>
-        <div class="t3-right">
-          <div class="t3-val">{{ fmtM(r.tongTriGia) }}<span class="t3-unit"> Tr</span></div>
-          <div class="t3-bar-track">
-            <div class="t3-bar-fill" :style="{ width: (r.tongTriGia / filteredDs[0].tongTriGia * 100)+'%' }"></div>
-          </div>
-          <div class="t3-pct">{{ r.tyLe }}%</div>
-        </div>
-      </div>
-    </div>
-
     <!-- ══ DEBT OVERVIEW (cong-no) ══ -->
     <div class="debt-ov-strip" v-if="reportTab==='cong-no'">
       <div class="dov-cell">
@@ -868,14 +844,15 @@ const exportPrint = () => {
 
 /* ══ LIST CARD ══ */
 .list-card {
-  background: white; border-radius: 20px;
-  box-shadow: 0 2px 12px rgba(0,0,0,.06), 0 0 0 1px rgba(0,0,0,.03);
+  background: white; border-radius: 12px;
+  border: 1px solid rgba(15,23,42,.07);
+  box-shadow: 0 1px 3px rgba(15,23,42,.05), 0 1px 2px rgba(15,23,42,.04);
   overflow: hidden;
 }
 .lc-head {
   display: flex; align-items: center; gap: 12px;
-  padding: 18px 24px; border-bottom: 1px solid #f1f5f9;
-  background: linear-gradient(180deg, #fafcff 0%, white 100%);
+  padding: 14px 20px; border-bottom: 1px solid rgba(15,23,42,.06);
+  background: #fafcff;
 }
 .lc-search {
   display: flex; align-items: center; gap: 8px;
@@ -954,8 +931,9 @@ const exportPrint = () => {
 
 /* ══ SIDE PANEL ══ */
 .side-panel {
-  background: white; border-radius: 20px;
-  box-shadow: 0 1px 3px rgba(0,0,0,.07);
+  background: white; border-radius: 12px;
+  border: 1px solid rgba(15,23,42,.07);
+  box-shadow: 0 1px 3px rgba(15,23,42,.05), 0 1px 2px rgba(15,23,42,.04);
   overflow-y: auto; max-height: 76vh;
 }
 .sp-header {
@@ -1038,55 +1016,12 @@ const exportPrint = () => {
 .panel-enter-active, .panel-leave-active { transition: opacity .2s, transform .2s; }
 .panel-enter-from, .panel-leave-to { opacity: 0; transform: translateX(20px); }
 
-/* ══ TOP 3 STRIP ══ */
-.top3-strip {
-  display: grid; grid-template-columns: repeat(3,1fr); gap: 14px; margin-bottom: 18px;
-}
-.t3-card {
-  background: white; border-radius: 16px; padding: 18px 20px;
-  box-shadow: 0 1px 4px rgba(0,0,0,.07);
-  border: 1px solid rgba(0,0,0,.05);
-  display: flex; flex-direction: column; gap: 10px;
-  cursor: pointer; transition: box-shadow .18s, transform .15s;
-  position: relative; overflow: hidden;
-}
-.t3-card:hover { box-shadow: 0 4px 16px rgba(5,150,105,.15); transform: translateY(-2px); }
-.t3-card::before {
-  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
-}
-.t3-r0::before { background: linear-gradient(90deg,#f59e0b,#fbbf24); }
-.t3-r1::before { background: linear-gradient(90deg,#94a3b8,#cbd5e1); }
-.t3-r2::before { background: linear-gradient(90deg,#b45309,#d97706); }
-.t3-medal { font-size: 1.3rem; line-height: 1; }
-.t3-av {
-  position: relative; width: 40px; height: 40px; border-radius: 10px; flex-shrink: 0;
-  border: 1px solid rgba(0,0,0,.1); overflow: hidden; background: white;
-}
-.t3-img { position:absolute; inset:0; width:100%; height:100%; object-fit:contain; padding:4px; box-sizing:border-box; z-index:2; background:white; }
-.t3-init { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:14px; font-weight:800; color:white; }
-.t3-info { flex: 1; }
-.t3-name { font-size: .88rem; font-weight: 800; color: #0f172a; }
-.t3-sub  { font-size: .7rem; color: #94a3b8; }
-.t3-right { display: flex; flex-direction: column; gap: 5px; }
-.t3-val  { font-size: 1.2rem; font-weight: 900; color: #0f172a; letter-spacing: -.4px; }
-.t3-unit { font-size: .75rem; font-weight: 600; color: #94a3b8; }
-.t3-bar-track {
-  height: 5px; background: #f1f5f9; border-radius: 99px; overflow: hidden;
-}
-.t3-bar-fill {
-  height: 100%; border-radius: 99px; transition: width .6s ease;
-}
-.t3-r0 .t3-bar-fill { background: linear-gradient(90deg,#f59e0b,#fbbf24); }
-.t3-r1 .t3-bar-fill { background: linear-gradient(90deg,#64748b,#94a3b8); }
-.t3-r2 .t3-bar-fill { background: linear-gradient(90deg,#b45309,#d97706); }
-.t3-pct { font-size: .7rem; font-weight: 700; color: #94a3b8; }
-
 /* ══ DEBT OVERVIEW STRIP ══ */
 .debt-ov-strip {
   display: flex; align-items: center; gap: 0;
-  background: white; border-radius: 16px;
-  box-shadow: 0 1px 4px rgba(0,0,0,.07);
-  border: 1px solid rgba(0,0,0,.04);
+  background: white; border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(15,23,42,.05), 0 1px 2px rgba(15,23,42,.04);
+  border: 1px solid rgba(15,23,42,.07);
   margin-bottom: 18px; overflow: hidden;
 }
 .dov-cell {

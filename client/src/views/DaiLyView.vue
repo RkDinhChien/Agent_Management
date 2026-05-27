@@ -279,7 +279,7 @@
 import { ref, reactive, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import api from '../services/api';
-import XLSX from 'xlsx';
+import * as XLSX from 'xlsx';
 import {
   Plus, Search, RefreshCcw, Pencil, Trash2, X, Eye,
   Users, MapPin, Wallet, UserPlus, Download, AlertCircle

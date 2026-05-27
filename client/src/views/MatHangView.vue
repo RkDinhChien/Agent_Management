@@ -179,21 +179,30 @@
         <!-- Table -->
         <div class="table-wrap">
           <table class="dl-table">
+            <colgroup>
+              <col style="width:10%"/>
+              <col/>
+              <col style="width:7%"/>
+              <col style="width:11%"/>
+              <col style="width:11%"/>
+              <col style="width:14%"/>
+              <col style="width:12%"/>
+            </colgroup>
             <thead>
               <tr>
-                <th style="width:100px">
+                <th>
                   <span class="sort-hd" @click="toggleSort('code')">Mã <SortIcon field="code" :sk="sk" :sd="sd"/></span>
                 </th>
                 <th>Tên mặt hàng</th>
-                <th style="width:70px">DVT</th>
-                <th style="width:110px" class="text-right">
-                  <span class="sort-hd" @click="toggleSort('buyPrice')">Giá nhập <SortIcon field="buyPrice" :sk="sk" :sd="sd"/></span>
+                <th>DVT</th>
+                <th class="text-right">
+                  <span class="sort-hd sort-hd-r" @click="toggleSort('buyPrice')">Giá nhập <SortIcon field="buyPrice" :sk="sk" :sd="sd"/></span>
                 </th>
-                <th style="width:110px" class="text-right">Giá xuất (+2%)</th>
-                <th style="width:140px">
+                <th class="text-right">Giá xuất (+2%)</th>
+                <th>
                   <span class="sort-hd" @click="toggleSort('stock')">Tồn kho <SortIcon field="stock" :sk="sk" :sd="sd"/></span>
                 </th>
-                <th style="width:90px" class="text-center">Thao tác</th>
+                <th class="text-center">Thao tác</th>
               </tr>
             </thead>
             <tbody>
@@ -865,7 +874,7 @@ const exportCSV = () => {
 
 /* ══ TABLE ══ */
 .table-wrap { overflow-x:auto; }
-.dl-table { width:100%; border-collapse:collapse; font-size:13px; }
+.dl-table { width:100%; border-collapse:collapse; font-size:13px; table-layout:fixed; }
 .dl-table thead tr { background:var(--c-bg); border-bottom:1px solid var(--c-border); }
 .dl-table th { padding:10px 14px; text-align:left; font-size:10.5px; font-weight:700; text-transform:uppercase; letter-spacing:.5px; color:var(--c-txt-3); white-space:nowrap; }
 .dl-table td { padding:11px 14px; border-bottom:1px solid var(--c-border-s); vertical-align:middle; }
@@ -874,6 +883,7 @@ const exportCSV = () => {
 .mh-row.selected { background:var(--c-success-bg); }
 .mh-row:last-child td { border-bottom:none; }
 .sort-hd { display:inline-flex; align-items:center; gap:4px; cursor:pointer; user-select:none; }
+.sort-hd-r { display:flex !important; justify-content:flex-end; }
 .sort-arrow { display:inline-flex; align-items:center; }
 .text-right  { text-align:right; }
 .text-center { text-align:center; }
@@ -881,8 +891,9 @@ const exportCSV = () => {
 .muted    { color:var(--c-txt-3); }
 
 .mh-code { font-size:12px; font-weight:700; color:var(--c-primary); background:var(--c-success-bg); padding:3px 8px; border-radius:6px; font-variant-numeric:tabular-nums; }
-.mh-name-cell { display:flex; align-items:center; gap:10px; }
-.mh-name { font-size:13px; font-weight:600; }
+.mh-name-cell { display:flex; align-items:center; gap:10px; min-width:0; }
+.mh-name-cell > div { min-width:0; }
+.mh-name { font-size:13px; font-weight:600; display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .cat-chip { font-size:10px; font-weight:600; padding:2px 7px; border-radius:var(--r-pill); background:var(--c-bg); border:1px solid var(--c-border); color:var(--c-txt-3); align-self:flex-start; }
 .prod-thumb { position:relative; width:44px; height:44px; border-radius:8px; flex-shrink:0; overflow:hidden; background:white; border:1px solid rgba(0,0,0,.08); box-shadow:0 1px 4px rgba(0,0,0,.10); }
 .prod-img   { position:absolute; inset:0; width:100%; height:100%; object-fit:contain; padding:4px; box-sizing:border-box; z-index:2; background:white; display:block; }
@@ -913,7 +924,7 @@ const exportCSV = () => {
 .lc-foot   { padding:10px 20px; font-size:11px; color:var(--c-txt-3); border-top:1px solid var(--c-border-s); }
 
 /* ══ SIDE PANEL ══ */
-.side-panel { display:flex; flex-direction:column; min-height:500px; width:360px; flex-shrink:0; max-height:calc(100vh - 200px); position:sticky; top:16px; overflow:hidden; }
+.side-panel { display:flex; flex-direction:column; width:360px; flex-shrink:0; max-height:calc(100vh - 200px); position:sticky; top:16px; overflow:hidden; }
 
 .ap-hd { padding:18px 18px 14px; border-bottom:1px solid var(--c-border); display:flex; align-items:flex-start; gap:12px; }
 .ap-avatar { position:relative; width:64px; height:64px; border-radius:12px; flex-shrink:0; overflow:hidden; background:white; border:1px solid rgba(0,0,0,.10); box-shadow:0 2px 8px rgba(0,0,0,.12); }

@@ -1,7 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 70">
-  <circle cx="35" cy="35" r="30" fill="none" stroke="#A50034" stroke-width="3"/>
-  <text x="24" y="45" font-family="Arial,sans-serif" font-size="26" font-weight="900" fill="#A50034">L</text>
-  <text x="38" y="45" font-family="Arial,sans-serif" font-size="26" font-weight="900" fill="#A50034">G</text>
-  <rect x="50" y="35" width="13" height="3" fill="#A50034"/>
-  <text x="125" y="40" font-family="Arial,sans-serif" font-size="13" font-weight="500" fill="#A50034" text-anchor="middle" letter-spacing="1">Life's Good</text>
-</svg>
