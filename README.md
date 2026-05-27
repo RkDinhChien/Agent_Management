@@ -88,10 +88,6 @@ cd client
 npm run dev
 ```
 
-## Ghi chú quản lý mã nguồn
-
-- Một số file cấu hình cá nhân (ví dụ: editor/IDE hoặc tool settings) không nên được đẩy lên kho chung. Tôi đã xóa một file cục bộ không cần thiết (`.claude/settings.local.json`) và đã thêm `.claude/` vào `.gitignore` để tránh đẩy các cấu hình cá nhân sau này.
-- Giữ lại `package-lock.json` giúp tái tạo môi trường cài đặt; nếu bạn muốn loại bỏ lockfile cho cả workspace, thông báo cho tôi trước khi xóa.
 
 ## Thông tin nhanh
 
