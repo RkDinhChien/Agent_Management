@@ -243,12 +243,12 @@
                 </td>
                 <td class="col-actions">
                   <div class="act-group">
-                    <button class="act-btn view-btn" title="Xem chi tiết" @click.stop="openView(r)"><Eye :size="13"/></button>
+                    <button class="act-btn view-btn" data-tooltip="Xem chi tiết" @click.stop="openView(r)"><Eye :size="13"/></button>
                     <template v-if="r.status === 'pending'">
-                      <button class="act-btn edit-btn" title="Sửa phiếu" @click.stop="openEdit(r)"><Edit2 :size="13"/></button>
-                      <button class="act-btn ok-btn" title="Xác nhận giao hàng" @click.stop="deliverReceipt(r)"><Truck :size="13"/></button>
+                      <button class="act-btn edit-btn" data-tooltip="Sửa phiếu" @click.stop="openEdit(r)"><Edit2 :size="13"/></button>
+                      <button class="act-btn ok-btn" data-tooltip="Xác nhận giao hàng" @click.stop="deliverReceipt(r)"><Truck :size="13"/></button>
                     </template>
-                    <button v-else class="act-btn del-btn" title="Xóa phiếu" @click.stop="askDelete(r)"><Trash2 :size="13"/></button>
+                    <button v-else class="act-btn del-btn" data-tooltip="Xóa phiếu" @click.stop="askDelete(r)"><Trash2 :size="13"/></button>
                   </div>
                 </td>
               </tr>
@@ -286,108 +286,113 @@
               </div>
             </div>
             <div style="display:flex;gap:5px">
-              <button v-if="selectedReceipt.status === 'pending'" class="act-btn edit-btn" title="Sửa phiếu" @click="openEdit(selectedReceipt)"><Edit2 :size="14"/></button>
-              <button class="act-btn" style="background:rgba(15,23,42,.04);color:var(--c-txt-3)" title="Đóng" @click="closePanel"><X :size="14"/></button>
+              <button v-if="selectedReceipt.status === 'pending'" class="act-btn edit-btn" data-tooltip="Sửa phiếu" @click="openEdit(selectedReceipt)"><Edit2 :size="14"/></button>
+              <button class="act-btn" style="background:rgba(15,23,42,.04);color:var(--c-txt-3)" data-tooltip="Đóng" @click="closePanel"><X :size="14"/></button>
             </div>
           </div>
 
-          <!-- Revenue summary -->
-          <div class="gauge-section">
-            <div class="val-summary">
-              <div class="vs-main">
-                <span class="vs-label">Tổng tiền phiếu xuất</span>
-                <span class="vs-val">{{ fmtTr(selectedReceipt.total) }}</span>
+          <div class="ap-body">
+            <!-- Info grid -->
+            <div class="info-grid">
+              <div class="ig-row">
+                <Store :size="13" class="ig-ic"/>
+                <span class="ig-lbl">Đại lý</span>
+                <span class="ig-val" style="font-weight:600">{{ selectedReceipt.agent }}</span>
               </div>
-              <div class="vs-bar-wrap">
-                <div class="vs-bar">
-                  <div class="vs-fill" :style="{ width: revBarPct(selectedReceipt) + '%', background: revBarColor(selectedReceipt) }"></div>
+              <div class="ig-row">
+                <CalendarDays :size="13" class="ig-ic"/>
+                <span class="ig-lbl">Ngày xuất</span>
+                <span class="ig-val col-mono">{{ selectedReceipt.date }}</span>
+              </div>
+              <div class="ig-row">
+                <UserRound :size="13" class="ig-ic"/>
+                <span class="ig-lbl">Người lập</span>
+                <span class="ig-val">{{ selectedReceipt.createdBy }}</span>
+              </div>
+            </div>
+
+            <!-- Beautiful Quote Note block -->
+            <div v-if="selectedReceipt.note" class="note-quote-box">
+              <FileText :size="13" class="note-quote-ic"/>
+              <div class="note-quote-content">
+                <span class="note-quote-title">Ghi chú</span>
+                <p class="note-quote-text">“{{ selectedReceipt.note }}”</p>
+              </div>
+            </div>
+
+            <!-- Financial Summary Card -->
+            <div class="financial-card">
+              <div class="gauge-section-compact">
+                <div class="val-summary">
+                  <div class="vs-main">
+                    <span class="vs-label">Tổng tiền phiếu</span>
+                    <span class="vs-val">{{ fmtTr(selectedReceipt.total) }}</span>
+                  </div>
+                  <div class="vs-bar-wrap">
+                    <div class="vs-bar">
+                      <div class="vs-fill" :style="{ width: revBarPct(selectedReceipt) + '%', background: revBarColor(selectedReceipt) }"></div>
+                    </div>
+                    <span class="vs-pct">{{ Math.round(revBarPct(selectedReceipt)) }}%</span>
+                  </div>
                 </div>
-                <span class="vs-pct">{{ Math.round(revBarPct(selectedReceipt)) }}% tháng</span>
-              </div>
-            </div>
 
-            <!-- Agent debt bar -->
-            <div class="debt-section">
-              <div class="debt-hd">
-                <span class="debt-lbl">Nợ đại lý</span>
-                <span class="debt-val" :class="debtClass(selectedReceipt.agentId)">
-                  {{ fmtMoney(getAgent(selectedReceipt.agentId)?.debt) }}
-                  / {{ fmtMoney(getAgent(selectedReceipt.agentId)?.limit) }}
-                </span>
-              </div>
-              <div class="debt-bar-wrap">
-                <div class="debt-bar">
-                  <div class="debt-fill" :style="{ width: agentDebtPct(selectedReceipt.agentId) + '%', background: debtBarColor(selectedReceipt.agentId) }"></div>
+                <!-- Agent debt bar -->
+                <div class="debt-section-compact">
+                  <div class="debt-hd">
+                    <span class="debt-lbl">Nợ đại lý</span>
+                    <span class="debt-val" :class="debtClass(selectedReceipt.agentId)">
+                      {{ fmtMoney(getAgent(selectedReceipt.agentId)?.debt) }}
+                      / {{ fmtMoney(getAgent(selectedReceipt.agentId)?.limit) }}
+                    </span>
+                  </div>
+                  <div class="debt-bar-wrap">
+                    <div class="debt-bar">
+                      <div class="debt-fill" :style="{ width: agentDebtPct(selectedReceipt.agentId) + '%', background: debtBarColor(selectedReceipt.agentId) }"></div>
+                    </div>
+                    <span class="debt-pct-lbl" :class="debtClass(selectedReceipt.agentId)">{{ Math.round(agentDebtPct(selectedReceipt.agentId)) }}%</span>
+                  </div>
                 </div>
-                <span class="debt-pct-lbl" :class="debtClass(selectedReceipt.agentId)">{{ Math.round(agentDebtPct(selectedReceipt.agentId)) }}%</span>
+              </div>
+
+              <div class="debt-status-bar" :class="selectedReceipt.status">
+                <Truck       v-if="selectedReceipt.status === 'delivered'" :size="12"/>
+                <Clock       v-else-if="selectedReceipt.status === 'pending'" :size="12"/>
+                <XCircle     v-else :size="12"/>
+                {{ STATUS_DESC[selectedReceipt.status] }}
               </div>
             </div>
 
-            <div class="debt-status-bar" :class="selectedReceipt.status">
-              <Truck       v-if="selectedReceipt.status === 'delivered'" :size="12"/>
-              <Clock       v-else-if="selectedReceipt.status === 'pending'" :size="12"/>
-              <XCircle     v-else :size="12"/>
-              {{ STATUS_DESC[selectedReceipt.status] }}
+            <!-- Items list (Natural flow height, scrolls within .ap-body) -->
+            <div class="items-section">
+              <p class="recent-title">Danh sách mặt hàng</p>
+              <div class="items-hd">
+                <span style="flex:2">Mặt hàng</span>
+                <span style="flex:.7;text-align:center">SL</span>
+                <span style="flex:1;text-align:right">Thành tiền</span>
+              </div>
+              <div class="item-row" v-for="item in selectedReceipt.items" :key="item.name">
+                <span class="item-name" style="flex:2">{{ item.name }}</span>
+                <span style="flex:.7;text-align:center;color:#64748b;font-size:12px">{{ item.qty.toLocaleString('vi-VN') }}</span>
+                <span style="flex:1;text-align:right;font-weight:700;font-size:12px;font-variant-numeric:tabular-nums">{{ fmtTr(item.qty * item.price) }}</span>
+              </div>
+              <div class="items-total">
+                <span>Tổng cộng</span>
+                <strong>{{ fmtTr(selectedReceipt.total) }}</strong>
+              </div>
             </div>
           </div>
 
-          <!-- Info grid -->
-          <div class="info-grid">
-            <div class="ig-row">
-              <Store :size="13" class="ig-ic"/>
-              <span class="ig-lbl">Đại lý</span>
-              <span class="ig-val">{{ selectedReceipt.agent }}</span>
+          <!-- Sticky Footer Actions (Only show when pending) -->
+          <div class="ap-ft" v-if="selectedReceipt.status === 'pending'">
+            <!-- Quick actions -->
+            <div class="quick-links-compact">
+              <button class="btn-p" style="flex:1;justify-content:center" @click="deliverReceipt(selectedReceipt)">
+                <Truck :size="14"/>Giao hàng
+              </button>
+              <button class="btn-danger-o" @click="cancelReceipt(selectedReceipt)">
+                <XCircle :size="14"/>Hủy phiếu
+              </button>
             </div>
-            <div class="ig-row">
-              <CalendarDays :size="13" class="ig-ic"/>
-              <span class="ig-lbl">Ngày xuất</span>
-              <span class="ig-val col-mono">{{ selectedReceipt.date }}</span>
-            </div>
-            <div class="ig-row">
-              <UserRound :size="13" class="ig-ic"/>
-              <span class="ig-lbl">Người lập</span>
-              <span class="ig-val">{{ selectedReceipt.createdBy }}</span>
-            </div>
-            <div class="ig-row" v-if="selectedReceipt.note">
-              <FileText :size="13" class="ig-ic"/>
-              <span class="ig-lbl">Ghi chú</span>
-              <span class="ig-val" style="font-style:italic;color:#64748b">{{ selectedReceipt.note }}</span>
-            </div>
-          </div>
-
-          <!-- Items list -->
-          <div class="items-section">
-            <p class="recent-title">Danh sách mặt hàng</p>
-            <div class="items-hd">
-              <span style="flex:2">Mặt hàng</span>
-              <span style="flex:.7;text-align:center">SL</span>
-              <span style="flex:1;text-align:right">Thành tiền</span>
-            </div>
-            <div class="item-row" v-for="item in selectedReceipt.items" :key="item.name">
-              <span class="item-name" style="flex:2">{{ item.name }}</span>
-              <span style="flex:.7;text-align:center;color:#64748b;font-size:12px">{{ item.qty.toLocaleString('vi-VN') }}</span>
-              <span style="flex:1;text-align:right;font-weight:700;font-size:12px;font-variant-numeric:tabular-nums">{{ fmtTr(item.qty * item.price) }}</span>
-            </div>
-            <div class="items-total">
-              <span>Tổng cộng</span>
-              <strong>{{ fmtTr(selectedReceipt.total) }}</strong>
-            </div>
-          </div>
-
-          <!-- Quick actions -->
-          <div class="quick-links" v-if="selectedReceipt.status === 'pending'">
-            <button class="btn-p" style="flex:1;justify-content:center" @click="deliverReceipt(selectedReceipt)">
-              <Truck :size="14"/>Xác nhận giao hàng
-            </button>
-            <button class="btn-danger-o" @click="cancelReceipt(selectedReceipt)">
-              <XCircle :size="14"/>Hủy
-            </button>
-          </div>
-          <div class="status-note" v-else-if="selectedReceipt.status === 'delivered'">
-            <Truck :size="13"/> Đã giao hàng thành công
-          </div>
-          <div class="status-note cancelled" v-else>
-            <XCircle :size="13"/> Phiếu xuất đã bị hủy
           </div>
         </template>
 
@@ -576,6 +581,7 @@
           <h4 class="modal-title">Xác nhận xóa phiếu xuất</h4>
           <p class="modal-desc">
             Bạn có chắc muốn xóa <strong>{{ deleteTarget.code }}</strong>?<br/>
+            <span style="color:#94a3b8">{{ deleteTarget.agent }}</span><br/>
             Hành động này không thể hoàn tác.
           </p>
           <div class="modal-actions">
@@ -1059,15 +1065,23 @@ const exportCSV = () => {
 .debt-warn { color:#f59e0b; }
 .debt-over { color:var(--c-danger); }
 
-.item-cnt-chip { font-size:11.5px; font-weight:600; color:var(--c-txt-3); background:var(--c-bg); border:1px solid var(--c-border); padding:2px 8px; border-radius:var(--r-pill); }
+.item-cnt-chip {
+  font-size: 11px;
+  font-weight: 700;
+  color: #6d28d9;
+  background: #f5f3ff;
+  border: 1px solid rgba(139, 92, 246, 0.2);
+  padding: 3px 9px;
+  border-radius: var(--r-pill);
+}
 .col-total { min-width:110px; }
 .total-num { font-weight:700; font-size:13px; font-variant-numeric:tabular-nums; }
 .sort-hd-r { display: flex !important; justify-content: flex-end; }
 
 .status-badge { display:inline-flex; align-items:center; padding:3px 9px; border-radius:var(--r-pill); font-size:11px; font-weight:700; white-space:nowrap; }
 .status-badge.pending   { background:#fef3c7; color:#92400e; border:1px solid rgba(245,158,11,.2); }
-.status-badge.delivered { background:var(--c-success-bg); color:#2563eb; border:1px solid rgba(91,157,250,.2); }
-.status-badge.cancelled { background:var(--c-bg); color:var(--c-txt-3); border:1px solid var(--c-border); }
+.status-badge.delivered { background:#ecfdf5; color:#059669; border:1px solid rgba(16, 185, 129, 0.2); }
+.status-badge.cancelled { background:#fef2f2; color:#ef4444; border:1px solid rgba(239, 68, 68, 0.2); }
 
 .col-actions { white-space:nowrap; vertical-align:middle; }
 .act-group { display:flex; align-items:center; gap:4px; }
@@ -1090,7 +1104,17 @@ const exportCSV = () => {
 .lc-foot   { padding:10px 20px; font-size:11px; color:var(--c-txt-3); border-top:1px solid var(--c-border-s); }
 
 /* ══ SIDE PANEL ══ */
-.side-panel { display:flex; flex-direction:column; width:360px; flex-shrink:0; max-height:calc(100vh - 200px); overflow:hidden; position:sticky; top:16px; }
+.side-panel {
+  display: flex;
+  flex-direction: column;
+  width: 380px;
+  flex-shrink: 0;
+  height: calc(100vh - 130px);
+  max-height: calc(100vh - 130px);
+  overflow: hidden;
+  position: sticky;
+  top: 16px;
+}
 
 .ap-hd { padding:18px 18px 14px; border-bottom:1px solid var(--c-border); display:flex; align-items:flex-start; gap:12px; }
 .ap-avatar {
@@ -1127,7 +1151,7 @@ const exportCSV = () => {
 .debt-status-bar { display:flex; align-items:center; gap:6px; font-size:11px; font-weight:700; padding:7px 12px; border-radius:var(--r-md); }
 .debt-status-bar.delivered { background:var(--c-success-bg); color:#2563eb; }
 .debt-status-bar.pending   { background:#fef3c7; color:#92400e; }
-.debt-status-bar.cancelled { background:var(--c-bg); color:var(--c-txt-3); }
+.debt-status-bar.cancelled { background:#fef2f2; color:#ef4444; }
 
 /* Info grid */
 .info-grid { padding:14px 18px; border-bottom:1px solid var(--c-border); display:flex; flex-direction:column; gap:9px; }
@@ -1137,7 +1161,7 @@ const exportCSV = () => {
 .ig-val { color:var(--c-txt-2); font-weight:500; flex:1; min-width:0; }
 
 /* Items section */
-.items-section { padding:14px 18px; flex:1; overflow-y:auto; border-bottom:1px solid var(--c-border); }
+.items-section { padding:14px 18px; border-bottom:1px solid var(--c-border); }
 .recent-title  { font-size:11px; font-weight:700; color:var(--c-txt-3); text-transform:uppercase; letter-spacing:.6px; margin:0 0 10px; }
 .items-hd  { display:flex; gap:8px; font-size:10px; font-weight:700; color:var(--c-txt-3); text-transform:uppercase; padding-bottom:6px; border-bottom:1px solid var(--c-border-s); margin-bottom:4px; }
 .item-row  { display:flex; align-items:center; gap:8px; padding:7px 0; border-bottom:1px solid var(--c-border-s); }
@@ -1154,6 +1178,153 @@ const exportCSV = () => {
 .status-note  { display:flex; align-items:center; gap:7px; padding:12px 18px; font-size:12.5px; font-weight:600; }
 .status-note:not(.cancelled) { color:var(--c-primary); }
 .status-note.cancelled { color:var(--c-txt-3); }
+
+/* ── Custom Tooltips ── */
+[data-tooltip] {
+  position: relative;
+}
+[data-tooltip]::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: 125%;
+  left: 50%;
+  transform: translateX(-50%) translateY(4px);
+  background: #0f172a;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 5px 9px;
+  border-radius: 6px;
+  white-space: nowrap;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 12px rgba(15,23,42,0.15);
+  pointer-events: none;
+  z-index: 100;
+}
+[data-tooltip]::before {
+  content: '';
+  position: absolute;
+  bottom: 115%;
+  left: 50%;
+  transform: translateX(-50%) translateY(4px);
+  border-width: 5px;
+  border-style: solid;
+  border-color: #0f172a transparent transparent transparent;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  pointer-events: none;
+  z-index: 100;
+}
+[data-tooltip]:hover::after,
+[data-tooltip]:hover::before {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(-50%) translateY(0);
+}
+
+/* ── Sidebar Redesign Extensions ── */
+.ap-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  scrollbar-width: thin;
+  scrollbar-color: #e2e8f0 transparent;
+}
+.ap-ft {
+  padding: 14px 18px;
+  border-top: 1px solid var(--c-border);
+  background: #ffffff;
+  position: sticky;
+  bottom: 0;
+  z-index: 10;
+}
+.note-quote-box {
+  display: flex;
+  gap: 10px;
+  padding: 10px 14px;
+  background: #f8fafc;
+  border-left: 3.5px solid var(--c-primary);
+  border-radius: 4px 8px 8px 4px;
+  border: 1px solid var(--c-border);
+  border-left-width: 3.5px;
+}
+.note-quote-ic {
+  color: var(--c-primary);
+  margin-top: 2px;
+  flex-shrink: 0;
+}
+.note-quote-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.note-quote-title {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--c-txt-2);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+.note-quote-text {
+  font-size: 12.5px;
+  color: var(--c-txt-2);
+  font-style: italic;
+  margin: 0;
+  line-height: 1.4;
+}
+.financial-card {
+  background: #ffffff;
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-card);
+  overflow: hidden;
+  box-shadow: var(--sh-card);
+}
+.gauge-section-compact {
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.debt-section-compact {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 10px 12px;
+  background: var(--c-bg);
+  border-radius: var(--r-md);
+  border: 1px solid var(--c-border);
+}
+.quick-links-compact {
+  display: flex;
+  gap: 8px;
+}
+.status-note-sticky {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 10px 14px;
+  font-size: 12.5px;
+  font-weight: 700;
+  border-radius: var(--r-md);
+  text-align: center;
+}
+.status-note-sticky.delivered {
+  background: var(--c-success-bg);
+  color: var(--c-primary);
+  border: 1px solid rgba(16, 185, 129, 0.15);
+}
+.status-note-sticky.cancelled {
+  background: #fef2f2;
+  color: #ef4444;
+  border: 1px solid rgba(239, 68, 68, 0.15);
+}
 
 /* ══ FORM ══ */
 .fc-hd { padding:16px 18px; border-bottom:1px solid var(--c-border); display:flex; justify-content:space-between; align-items:flex-start; gap:8px; }

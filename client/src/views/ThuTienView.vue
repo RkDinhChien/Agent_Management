@@ -454,10 +454,17 @@
     <Teleport to="body">
       <div v-if="deleteTarget" class="modal-bg" @click="deleteTarget = null">
         <div class="modal-box" @click.stop>
-          <div class="del-icon-wrap"><Trash2 :size="24"/></div>
+          <div class="del-avatar-wrap">
+            <div class="del-agent-avatar" :style="{ background: agentBrand(deleteTarget.agentId).bg }">
+              <img :src="agentBrand(deleteTarget.agentId).logo" class="del-avatar-img" :alt="deleteTarget.agent" @error="e => e.target.style.display='none'"/>
+              <span class="del-avatar-abbr">{{ avatarInit(deleteTarget.agent) }}</span>
+            </div>
+            <div class="del-trash-badge"><Trash2 :size="13"/></div>
+          </div>
           <h4 class="modal-title">Xác nhận xóa phiếu thu</h4>
           <p class="modal-desc">
             Bạn có chắc muốn xóa <strong>{{ deleteTarget.code }}</strong>?<br/>
+            <span style="color:#94a3b8">{{ deleteTarget.agent }}</span><br/>
             Hành động này không thể hoàn tác.
           </p>
           <div class="modal-actions">
@@ -1034,12 +1041,62 @@ const exportCSV = () => {
 @keyframes toastIn { from { opacity:0; transform:translateY(12px) scale(.97); } to { opacity:1; transform:translateY(0) scale(1); } }
 
 /* ══ MODAL ══ */
-.modal-bg { position:fixed; inset:0; z-index:200; background:rgba(15,23,42,.45); backdrop-filter:blur(4px); display:flex; align-items:center; justify-content:center; padding:20px; }
-.modal-box { width:min(420px,100%); background:var(--c-surface); border-radius:16px; border:1px solid var(--c-border); box-shadow:var(--sh-modal); padding:32px 28px 24px; display:flex; flex-direction:column; align-items:center; text-align:center; gap:10px; }
-.del-icon-wrap { width:52px; height:52px; border-radius:50%; background:var(--c-danger-bg); color:var(--c-danger); display:flex; align-items:center; justify-content:center; margin-bottom:4px; }
-.modal-title  { font-size:17px; font-weight:700; margin:0; }
-.modal-desc   { font-size:13px; color:var(--c-txt-2); margin:0; line-height:1.6; }
+.modal-bg {
+  --c-primary:#059669; --c-success-bg:#ECFDF5;
+  --c-danger:#EF4444; --c-danger-bg:#FEF2F2;
+  --c-surface:#ffffff; --c-border:rgba(15,23,42,.07);
+  --c-txt:#0f172a; --c-txt-2:#475569;
+  --r-md:8px; --t:.15s ease;
+  position:fixed; inset:0; z-index:200;
+  background:rgba(15,23,42,.5); backdrop-filter:blur(3px);
+  display:flex; align-items:center; justify-content:center; padding:20px;
+  font-family:'Inter','Be Vietnam Pro',ui-sans-serif,system-ui,sans-serif;
+}
+.modal-box {
+  width:min(420px,100%);
+  background:linear-gradient(170deg,#fff5f5 0%,#fffafa 45%,#ffffff 100%);
+  border-radius:20px; border:1px solid rgba(239,68,68,.13);
+  box-shadow:0 8px 40px rgba(239,68,68,.1),0 2px 14px rgba(15,23,42,.08);
+  padding:32px 28px 24px;
+  display:flex; flex-direction:column; align-items:center; text-align:center; gap:10px;
+}
+.del-avatar-wrap { position:relative; margin-bottom:4px; }
+.del-agent-avatar {
+  width:72px; height:72px; border-radius:18px;
+  position:relative; overflow:hidden;
+  box-shadow:0 4px 18px rgba(15,23,42,.14);
+}
+.del-avatar-img {
+  position:absolute; inset:0;
+  width:100%; height:100%;
+  object-fit:contain; padding:10px; box-sizing:border-box; z-index:2; background:white; display:block;
+}
+.del-avatar-abbr {
+  position:absolute; inset:0;
+  display:flex; align-items:center; justify-content:center;
+  color:#fff; font-size:18px; font-weight:800; letter-spacing:-.5px; z-index:0;
+}
+.del-trash-badge {
+  position:absolute; bottom:-7px; right:-7px;
+  width:28px; height:28px; border-radius:50%;
+  background:#fee2e2; border:2.5px solid #fff;
+  color:#ef4444;
+  display:flex; align-items:center; justify-content:center;
+  box-shadow:0 2px 6px rgba(239,68,68,.2);
+}
+.modal-title  { font-size:17px; font-weight:700; margin:0; color:#0f172a; }
+.modal-desc   { font-size:13px; color:#475569; margin:0; line-height:1.6; }
 .modal-actions { display:flex; gap:10px; margin-top:8px; }
+.modal-actions .btn-o {
+  background:transparent; color:#059669; border:1.5px solid rgba(5,150,105,.3);
+  border-radius:8px; padding:9px 20px; font-size:13px; font-weight:600; cursor:pointer; font-family:inherit;
+}
+.modal-actions .btn-o:hover { background:#ecfdf5; }
+.modal-actions .btn-danger {
+  background:#EF4444; color:#fff; border:none;
+  border-radius:8px; padding:9px 20px; font-size:13px; font-weight:600; cursor:pointer; font-family:inherit;
+}
+.modal-actions .btn-danger:hover { background:#dc2626; }
 
 /* ── Panel slide ── */
 .panel-enter-active { animation:panelIn .22s cubic-bezier(.4,0,.2,1); }
