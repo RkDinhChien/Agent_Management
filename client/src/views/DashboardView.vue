@@ -275,7 +275,10 @@
           <div class="lb-list">
             <div class="lb-row">
               <div class="lb-rank gold">1</div>
-              <img class="lb-av" src="https://i.pravatar.cc/80?img=11" alt="Tuấn Phát"/>
+              <div class="lb-av">
+                <img src="https://upload.wikimedia.org/wikipedia/commons/5/52/Philips_logo_new.svg" class="av-logo" alt="Philips" @error="e => e.target.style.display='none'"/>
+                <span class="av-init" style="background:#0066A1">T</span>
+              </div>
               <div class="lb-info">
                 <strong>Đại lý Tuấn Phát</strong>
                 <div class="lb-meta">
@@ -291,7 +294,10 @@
             </div>
             <div class="lb-row">
               <div class="lb-rank green">2</div>
-              <img class="lb-av" src="https://i.pravatar.cc/80?img=47" alt="Lan Anh"/>
+              <div class="lb-av">
+                <img src="https://upload.wikimedia.org/wikipedia/commons/8/8d/LG_logo_%282014%29.svg" class="av-logo" alt="LG" @error="e => e.target.style.display='none'"/>
+                <span class="av-init" style="background:#A50034">L</span>
+              </div>
               <div class="lb-info">
                 <strong>Đại lý Lan Anh</strong>
                 <div class="lb-meta">
@@ -307,7 +313,10 @@
             </div>
             <div class="lb-row last-row">
               <div class="lb-rank red">3</div>
-              <img class="lb-av" src="https://i.pravatar.cc/80?img=32" alt="Quốc Khánh"/>
+              <div class="lb-av">
+                <img src="/logos/panasonic.svg" class="av-logo" alt="Panasonic" @error="e => e.target.style.display='none'"/>
+                <span class="av-init" style="background:#003087">Q</span>
+              </div>
               <div class="lb-info">
                 <strong>Đại lý Quốc Khánh</strong>
                 <div class="lb-meta">
@@ -1036,9 +1045,12 @@ const lockAccount = (o) => {
 .lb-rank.green  { background: #dcfce7; color: #166534; }
 .lb-rank.red    { background: #fee2e2; color: #991b1b; }
 .lb-av {
-  width: 38px; height: 38px; border-radius: var(--r-pill);
-  object-fit: cover; border: 2px solid var(--c-border); flex-shrink: 0;
+  position: relative; width: 38px; height: 38px; border-radius: 8px; flex-shrink: 0;
+  border: 1px solid rgba(0,0,0,.12); box-shadow: 0 1px 4px rgba(0,0,0,.15);
+  overflow: hidden; background: white;
 }
+.av-logo { position:absolute; inset:0; width:100%; height:100%; object-fit:contain; object-position:center; padding:5px; box-sizing:border-box; z-index:2; background:white; display:block; }
+.av-init { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:14px; font-weight:800; color:white; letter-spacing:-.3px; }
 .lb-info { min-width: 0; display: flex; flex-direction: column; gap: 3px; }
 .lb-info strong { font-size: 12px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .lb-meta { display: flex; align-items: center; gap: 6px; }

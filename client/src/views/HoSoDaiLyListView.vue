@@ -93,10 +93,19 @@
         </g>
       </svg>
 
+      <svg class="ctx-wm" viewBox="0 0 100 90" fill="none" stroke="currentColor" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <circle cx="35" cy="28" r="16"/>
+        <path d="M8 85c0-15 12-27 27-27s27 12 27 27"/>
+        <circle cx="72" cy="22" r="11"/>
+        <path d="M54 85c0-10 8-18 18-18s18 8 18 18"/>
+        <line x1="50" y1="28" x2="62" y2="22" stroke-width="3" stroke-dasharray="3 3"/>
+      </svg>
+
+      <!-- Title row — no icon badge -->
       <div class="ctx-top">
-        <div>
-          <h1 class="ctx-title">Đại lý</h1>
-          <p class="ctx-sub">Quản lý thông tin và công nợ các đại lý phân phối</p>
+        <div class="ctx-title-block">
+          <p class="ctx-eyebrow">Nghiệp vụ · Quản lý đại lý</p>
+          <h1 class="ctx-title">Hồ Sơ Đại Lý</h1>
         </div>
         <div class="ctx-actions">
           <button class="btn-csv" @click="exportCSV"><Download :size="13"/> Xuất CSV</button>
@@ -106,33 +115,115 @@
 
       <div class="ctx-divider"></div>
 
+      <!-- ── KPI columns (inside banner, matching PhieuNhapView) ── -->
       <div class="ctx-stats">
+
+        <!-- Col 1: Tổng đại lý -->
         <div class="cs-col">
-          <strong class="cs-num">{{ agents.length }}</strong>
-          <span class="cs-lbl">Tổng đại lý</span>
+          <div class="cs-lbl-row">
+            <span class="cs-ic"><CheckCircle2 :size="11"/></span>
+            <span class="cs-lbl">Tổng đại lý tháng này</span>
+          </div>
+          <div class="cs-num-row">
+            <strong class="cs-num">{{ agents.length }}</strong>
+          </div>
+          <div class="cs-delta cs-up">↑ {{ newThisMonth }} so tháng trước</div>
         </div>
+
         <div class="cs-sep"></div>
-        <div class="cs-col cs-warn">
-          <strong class="cs-num cs-red">
-            {{ overLimitCount }}
-            <span class="cs-tag" v-if="overLimitCount > 0">cần xử lý</span>
-          </strong>
-          <span class="cs-lbl">Vượt hạn mức nợ</span>
-        </div>
-        <div class="cs-sep"></div>
+
+        <!-- Col 2: Tổng công nợ + spark bars -->
         <div class="cs-col">
-          <strong class="cs-num">{{ fmtMoneyShort(totalDebt) }}</strong>
-          <span class="cs-lbl">Tổng công nợ</span>
+          <div class="cs-lbl-row">
+            <span class="cs-ic"><Wallet :size="11"/></span>
+            <span class="cs-lbl">Tổng công nợ</span>
+          </div>
+          <div class="cs-num-row">
+            <strong class="cs-num">{{ fmtMoneyShort(totalDebt) }}</strong>
+          </div>
+          <div class="cs-delta cs-up">↑ 18% so tháng 4</div>
+          <div class="cs-spark-wrap">
+            <div
+              v-for="(h, i) in debtSparkBars" :key="i"
+              class="cs-spark-bar"
+              :class="{ 'cs-spark-last': i === debtSparkBars.length - 1 }"
+              :style="{ height: h + '%' }"
+            ></div>
+          </div>
         </div>
+
         <div class="cs-sep"></div>
+
+        <!-- Col 3: Vượt hạn mức + donut -->
+        <div class="cs-col cs-donut-col">
+          <div class="cs-lbl-row">
+            <span class="cs-ic"><AlertCircle :size="11"/></span>
+            <span class="cs-lbl">Công nợ đại lý</span>
+          </div>
+          <div class="cs-donut-row">
+            <svg viewBox="0 0 60 60" width="56" height="56" class="cs-donut-svg">
+              <!-- track -->
+              <circle cx="30" cy="30" r="22" fill="none" stroke="#f1f5f9" stroke-width="7" stroke-linecap="butt"/>
+              <!-- OK segment — green pastel -->
+              <circle cx="30" cy="30" r="22" fill="none" stroke="#34d399" stroke-width="7" stroke-linecap="round"
+                :stroke-dasharray="`${Math.max(0, okArc - 3)} ${138.2 - Math.max(0, okArc - 3)}`"
+                :stroke-dashoffset="138.2"
+                transform="rotate(-90 30 30)"
+                style="transition: stroke-dasharray .6s ease"/>
+              <!-- Gần giới hạn — amber pastel -->
+              <circle cx="30" cy="30" r="22" fill="none" stroke="#fbbf24" stroke-width="7" stroke-linecap="round"
+                :stroke-dasharray="`${Math.max(0, warnArc - 3)} ${138.2 - Math.max(0, warnArc - 3)}`"
+                :stroke-dashoffset="138.2 - okArc"
+                transform="rotate(-90 30 30)"
+                style="transition: stroke-dasharray .6s ease"/>
+              <!-- Vượt hạn mức — red pastel -->
+              <circle cx="30" cy="30" r="22" fill="none" stroke="#f87171" stroke-width="7" stroke-linecap="round"
+                :stroke-dasharray="`${Math.max(0, overArc - 3)} ${138.2 - Math.max(0, overArc - 3)}`"
+                :stroke-dashoffset="138.2 - okArc - warnArc"
+                transform="rotate(-90 30 30)"
+                style="transition: stroke-dasharray .6s ease"/>
+            </svg>
+            <div class="cs-donut-info">
+              <div class="cs-num-row">
+                <strong class="cs-num" :class="{ 'cs-red': overLimitCount > 0 }">{{ overLimitCount }}</strong>
+                <span v-if="overLimitCount > 0" class="cs-tag">cần xử lý</span>
+              </div>
+              <div class="cs-delta" :class="overLimitCount > 0 ? 'cs-down' : 'cs-up'">
+                {{ overLimitCount > 0 ? '↓ 1 so tháng 4' : 'Tất cả trong hạn mức' }}
+              </div>
+            </div>
+          </div>
+          <div class="cs-legend">
+            <span class="cs-leg"><i class="cs-dot ok"></i>OK · {{ okDebtCount }}</span>
+            <span class="cs-leg"><i class="cs-dot warn"></i>Gần giới hạn · {{ warnDebtCount }}</span>
+            <span class="cs-leg"><i class="cs-dot over"></i>Vượt · {{ overLimitCount }}</span>
+          </div>
+        </div>
+
+        <div class="cs-sep"></div>
+
+        <!-- Col 4: Mới tiếp nhận -->
         <div class="cs-col">
-          <strong class="cs-num">
-            {{ newThisMonth }}
+          <div class="cs-lbl-row">
+            <span class="cs-ic"><Calendar :size="11"/></span>
+            <span class="cs-lbl">Đại lý mới tiếp nhận</span>
+          </div>
+          <div class="cs-num-row">
+            <strong class="cs-num">{{ newThisMonth }}</strong>
             <span class="cs-tag cs-tag-green" v-if="newThisMonth > 0">tháng này</span>
-          </strong>
-          <span class="cs-lbl">Mới tiếp nhận</span>
+          </div>
+          <div class="cs-delta cs-up">↑ 1 so tháng 4</div>
         </div>
+
       </div>
+
+      <!-- Month progress bar -->
+      <div class="ctx-timeline">
+        <span class="ctl-label">Tháng {{ currentMonth }} · Ngày {{ dayOfMonth }}/{{ daysInMonth }}</span>
+        <div class="ctl-bar"><div class="ctl-fill" :style="{ width: monthProgressPct + '%' }"></div></div>
+        <span class="ctl-pct">{{ monthProgressPct }}% tiến độ tháng</span>
+      </div>
+
     </div>
 
     <!-- ══ Main layout ══ -->
@@ -169,9 +260,19 @@
         <!-- table -->
         <div class="table-wrap">
           <table class="dl-table">
+            <colgroup>
+              <col class="col-id">
+              <col class="col-name">
+              <col class="col-loai">
+              <col class="col-quan">
+              <col class="col-sdt">
+              <col class="col-date">
+              <col class="col-debt">
+              <col class="col-act">
+            </colgroup>
             <thead>
               <tr>
-                <th style="width:44px">
+                <th class="col-id">
                   <span class="sort-hd" @click="toggleSort('MaDaiLy')">
                     Mã <SortIcon field="MaDaiLy" :sortKey="sortKey" :sortDir="sortDir"/>
                   </span>
@@ -181,24 +282,24 @@
                     Tên đại lý <SortIcon field="TenDaiLy" :sortKey="sortKey" :sortDir="sortDir"/>
                   </span>
                 </th>
-                <th style="width:72px">Loại</th>
-                <th style="width:100px">
+                <th class="col-loai text-center">Loại</th>
+                <th class="col-quan">
                   <span class="sort-hd" @click="toggleSort('MaQuan')">
                     Quận <SortIcon field="MaQuan" :sortKey="sortKey" :sortDir="sortDir"/>
                   </span>
                 </th>
-                <th style="width:110px">SĐT</th>
-                <th style="width:108px">
+                <th class="col-sdt">SĐT</th>
+                <th class="col-date">
                   <span class="sort-hd" @click="toggleSort('NgayTiepNhan')">
                     Ngày tiếp nhận <SortIcon field="NgayTiepNhan" :sortKey="sortKey" :sortDir="sortDir"/>
                   </span>
                 </th>
-                <th style="width:130px" class="text-right">
-                  <span class="sort-hd" @click="toggleSort('TongNo')">
+                <th class="col-debt text-right">
+                  <span class="sort-hd sort-hd-r" @click="toggleSort('TongNo')">
                     Tổng nợ <SortIcon field="TongNo" :sortKey="sortKey" :sortDir="sortDir"/>
                   </span>
                 </th>
-                <th style="width:72px" class="text-center">Thao tác</th>
+                <th class="col-act text-center">Thao tác</th>
               </tr>
             </thead>
             <tbody>
@@ -209,26 +310,35 @@
                 :class="{ selected: selectedId === a.MaDaiLy }"
                 @click="viewAgent(a)"
               >
-                <td class="col-mono muted">#{{ a.MaDaiLy }}</td>
+                <td class="col-id col-mono muted">#{{ a.MaDaiLy }}</td>
                 <td class="col-name">
-                  <span class="a-name">{{ a.TenDaiLy }}</span>
-                  <span class="a-email">{{ a.Email }}</span>
+                  <div class="row-av-wrap">
+                    <span class="row-av">
+                      <img v-if="agentLogoUrl(a)"
+                           :key="agentLogoUrl(a)"
+                           :src="agentLogoUrl(a)"
+                           class="av-logo-img" :alt="a.TenDaiLy"
+                           @error="$event.target.style.display='none'"/>
+                      <span class="av-init" :style="{ background: agentBrand(a).bg }">{{ agentBrandAbbr(a) }}</span>
+                    </span>
+                    <div>
+                      <span class="a-name">{{ a.TenDaiLy }}</span>
+                      <span class="a-email">{{ a.Email }}</span>
+                    </div>
+                  </div>
                 </td>
-                <td>
+                <td class="col-loai text-center">
                   <span class="loai-chip" :class="a.MaLoaiDaiLy === 1 ? 'l1' : 'l2'">
                     {{ loaiLabel(a.MaLoaiDaiLy) }}
                   </span>
                 </td>
-                <td class="muted">{{ quanLabel(a.MaQuan) }}</td>
-                <td class="col-mono">{{ a.SDT }}</td>
-                <td class="col-mono muted">{{ fmtDate(a.NgayTiepNhan) }}</td>
-                <td class="col-debt-cell">
-                  <span class="debt-num" :class="{ 'over': isOverLimit(a) }">{{ fmtMoney(a.TongNo) }}</span>
-                  <div class="debt-bar">
-                    <div class="debt-fill" :style="{ width: debtPct(a) + '%', background: debtColor(a) }"></div>
-                  </div>
+                <td class="col-quan muted">{{ quanLabel(a.MaQuan) }}</td>
+                <td class="col-sdt col-mono">{{ a.SDT }}</td>
+                <td class="col-date col-mono muted">{{ fmtDate(a.NgayTiepNhan) }}</td>
+                <td class="col-debt col-debt-cell">
+                  <span class="debt-val" :class="debtStatusClass(a)">{{ fmtMoney(a.TongNo) }}</span>
                 </td>
-                <td class="col-actions">
+                <td class="col-act col-actions">
                   <button class="act-btn edit-btn" title="Sửa" @click.stop="editAgent(a)">
                     <Edit2 :size="13"/>
                   </button>
@@ -260,20 +370,33 @@
 
         <!-- ── VIEW mode: agent detail ── -->
         <template v-if="panelMode === 'view' && selectedAgent">
-          <div class="ap-hd">
-            <div class="ap-avatar">{{ selectedAgent.TenDaiLy.charAt(0) }}</div>
-            <div class="ap-title-block">
-              <h3 class="ap-name">{{ selectedAgent.TenDaiLy }}</h3>
-              <div class="ap-badges">
-                <span class="loai-chip" :class="selectedAgent.MaLoaiDaiLy === 1 ? 'l1' : 'l2'">
-                  {{ loaiLabel(selectedAgent.MaLoaiDaiLy) }}
+          <!-- ── Panel header ── -->
+          <div class="ap-header">
+            <div class="ap-header-ctrl">
+              <button class="ap-ctrl-btn" @click="editAgent(selectedAgent)" title="Sửa"><Edit2 :size="13"/></button>
+              <button class="ap-ctrl-btn" @click="closePanel" title="Đóng"><X :size="13"/></button>
+            </div>
+            <div class="ap-header-body">
+              <div class="ap-logo-wrap">
+                <img v-if="agentLogoUrl(selectedAgent)"
+                     :key="agentLogoUrl(selectedAgent)"
+                     :src="agentLogoUrl(selectedAgent)"
+                     class="ap-logo-img" :alt="selectedAgent.TenDaiLy"
+                     @error="$event.target.style.display='none'"/>
+                <span class="ap-logo-init" :style="{ background: agentBrand(selectedAgent).bg }">
+                  {{ agentBrandAbbr(selectedAgent) }}
                 </span>
-                <span class="dist-chip">{{ quanLabel(selectedAgent.MaQuan) }}</span>
+              </div>
+              <div class="ap-header-info">
+                <h3 class="ap-name">{{ selectedAgent.TenDaiLy }}</h3>
+                <div class="ap-badges">
+                  <span class="loai-chip" :class="selectedAgent.MaLoaiDaiLy === 1 ? 'l1' : 'l2'">
+                    {{ loaiLabel(selectedAgent.MaLoaiDaiLy) }}
+                  </span>
+                  <span class="dist-chip">{{ quanLabel(selectedAgent.MaQuan) }}</span>
+                </div>
               </div>
             </div>
-            <button class="act-btn edit-btn ap-edit-btn" @click="editAgent(selectedAgent)" title="Sửa">
-              <Edit2 :size="14"/>
-            </button>
           </div>
 
           <!-- Debt gauge -->
@@ -349,6 +472,24 @@
             </div>
           </div>
 
+          <!-- Map widget -->
+          <div class="map-section">
+            <div class="map-hd">
+              <MapPin :size="11" class="ig-ic"/>
+              <span class="map-lbl">Vị trí</span>
+            </div>
+            <div class="map-wrap">
+              <iframe
+                :src="agentMapUrl"
+                class="map-iframe"
+                frameborder="0"
+                allowfullscreen
+                loading="lazy"
+              />
+              <div class="map-addr-pill">{{ selectedAgent.DiaChi || quanLabel(selectedAgent.MaQuan) }}</div>
+            </div>
+          </div>
+
           <!-- Quick actions -->
           <div class="quick-links">
             <button class="ql-btn" @click="$router.push('/phieu-xuat')">
@@ -390,6 +531,28 @@
           </div>
 
           <div class="fc-body">
+            <div class="field full">
+              <label class="flabel">Hình ảnh đại lý</label>
+              <div class="img-upload-wrap">
+                <div class="img-preview-box">
+                  <img v-if="form.customImage" :src="form.customImage" class="img-preview-img"/>
+                  <span v-else class="img-preview-ph"><ImageIcon :size="26"/></span>
+                </div>
+                <div class="img-upload-side">
+                  <label class="img-upload-btn" for="agent-img-input">
+                    <Upload :size="13"/> Tải ảnh lên
+                  </label>
+                  <button v-if="form.customImage" type="button" class="img-remove-btn" @click="removeImage">
+                    <X :size="12"/> Xoá ảnh
+                  </button>
+                  <p class="img-hint">JPG, PNG, WebP · Tối đa 2MB</p>
+                </div>
+                <input id="agent-img-input" ref="imgInputRef" type="file"
+                       accept="image/jpeg,image/png,image/webp"
+                       class="img-file-hidden" @change="handleImageUpload"/>
+              </div>
+            </div>
+
             <div class="field full">
               <label class="flabel">Tên đại lý <span class="req">*</span></label>
               <input v-model="form.TenDaiLy" class="finp" placeholder="Nhập tên đại lý" :class="{ 'finp-err': errors.TenDaiLy }"/>
@@ -469,7 +632,18 @@
     <Teleport to="body">
       <div v-if="deleteTarget" class="modal-bg" @click="deleteTarget = null">
         <div class="modal-box" @click.stop>
-          <div class="del-icon-wrap"><Trash2 :size="24"/></div>
+          <!-- Agent logo avatar -->
+          <div class="del-avatar-wrap">
+            <div class="del-agent-avatar" :style="{ background: agentBrand(deleteTarget).grad }">
+              <img v-if="agentLogoUrl(deleteTarget)"
+                   :key="agentLogoUrl(deleteTarget)"
+                   :src="agentLogoUrl(deleteTarget)"
+                   class="del-avatar-img"
+                   @error="$event.target.style.display='none'"/>
+              <span class="del-avatar-abbr">{{ agentBrandAbbr(deleteTarget) }}</span>
+            </div>
+            <div class="del-trash-badge"><Trash2 :size="13"/></div>
+          </div>
           <h4 class="modal-title">Xác nhận xóa đại lý</h4>
           <p class="modal-desc">
             Bạn có chắc muốn xóa <strong>{{ deleteTarget.TenDaiLy }}</strong>?<br/>
@@ -487,14 +661,16 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, computed, useTemplateRef } from 'vue';
+const imgInputRef = useTemplateRef('imgInputRef');
 import {
   Search, Edit2, Trash2, Plus, Download, X, Info,
-  AlertCircle,
+  AlertCircle, Upload, ImageIcon,
   Phone, Mail, MapPin, Calendar, Hash,
   PackageMinus, Wallet, ChevronRight,
   CheckCircle2, SearchX
 } from 'lucide-vue-next';
+
 
 /* ─── Sort icon helper component ─── */
 const SortIcon = {
@@ -558,12 +734,31 @@ const deleteTarget = ref(null);
 
 /* ─── Form ─── */
 const today = new Date().toISOString().split('T')[0];
-const emptyForm = () => ({ TenDaiLy: '', MaLoaiDaiLy: '', MaQuan: '', SDT: '', DiaChi: '', Email: '', NgayTiepNhan: '', TongNo: 0 });
+const emptyForm = () => ({ TenDaiLy: '', MaLoaiDaiLy: '', MaQuan: '', SDT: '', DiaChi: '', Email: '', NgayTiepNhan: '', TongNo: 0, brandIndex: null, customImage: null });
+
+const handleImageUpload = (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  if (file.size > 2 * 1024 * 1024) { alert('Ảnh tối đa 2MB'); return; }
+  const reader = new FileReader();
+  reader.onload = (ev) => { form.value.customImage = ev.target.result; };
+  reader.readAsDataURL(file);
+};
+const removeImage = () => {
+  form.value.customImage = null;
+  if (imgInputRef.value) imgInputRef.value.value = '';
+};
 const form   = ref(emptyForm());
 const errors = ref({});
 
 /* ─── KPI ─── */
 const overLimitCount = computed(() => agents.value.filter(a => isOverLimit(a)).length);
+const warnDebtCount  = computed(() => agents.value.filter(a => { const p = debtPct(a); return p >= 80 && p <= 100; }).length);
+const okDebtCount    = computed(() => agents.value.length - overLimitCount.value - warnDebtCount.value);
+const C_DONUT = 138.2;
+const okArc   = computed(() => agents.value.length ? (okDebtCount.value / agents.value.length) * C_DONUT : 0);
+const warnArc = computed(() => agents.value.length ? (warnDebtCount.value / agents.value.length) * C_DONUT : 0);
+const overArc = computed(() => agents.value.length ? (overLimitCount.value / agents.value.length) * C_DONUT : 0);
 const totalDebt      = computed(() => agents.value.reduce((s, a) => s + a.TongNo, 0));
 const newThisMonth   = computed(() => {
   const now = new Date();
@@ -572,6 +767,60 @@ const newThisMonth   = computed(() => {
     return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
   }).length;
 });
+
+/* ─── KPI extras: debt sparkline bars + donut + month progress ─── */
+const debtSparkBars = computed(() => {
+  const raw = [28.5, 32.1, 35.8, 38.2, 40.1, totalDebt.value / 1_000_000];
+  const max = Math.max(...raw);
+  return raw.map(v => Math.max(Math.round((v / max) * 100), 12));
+});
+
+
+/* ─── Month progress ─── */
+const _now            = new Date();
+const currentMonth    = _now.getMonth() + 1;
+const dayOfMonth      = _now.getDate();
+const daysInMonth     = computed(() => new Date(_now.getFullYear(), _now.getMonth() + 1, 0).getDate());
+const monthProgressPct = computed(() => Math.round((dayOfMonth / daysInMonth.value) * 100));
+
+/* ─── Map ─── */
+const DISTRICT_COORDS = {
+  1: [10.7769, 106.7009],
+  2: [10.7832, 106.6832],
+  3: [10.7547, 106.6595],
+  4: [10.7715, 106.6677],
+  5: [10.8024, 106.7135],
+  6: [10.8380, 106.6687],
+};
+const agentMapUrl = computed(() => {
+  if (!selectedAgent.value) return '';
+  const [lat, lng] = DISTRICT_COORDS[selectedAgent.value.MaQuan] ?? [10.776, 106.700];
+  const d = 0.009;
+  return `https://www.openstreetmap.org/export/embed.html?bbox=${(lng-d).toFixed(4)},${(lat-d).toFixed(4)},${(lng+d).toFixed(4)},${(lat+d).toFixed(4)}&layer=mapnik&marker=${lat},${lng}`;
+});
+
+/* ─── Brand palette — real electrical/electronics brands via SimpleIcons CDN ─── */
+const BRANDS = [
+  { abbr: 'PHI', bg: '#0066A1', grad: 'linear-gradient(135deg,#00375a,#0066A1,#0085cc)',
+    logo: 'https://upload.wikimedia.org/wikipedia/commons/5/52/Philips_logo_new.svg' },
+  { abbr: 'PAN', bg: '#003087', grad: 'linear-gradient(135deg,#001a4a,#003087,#0058e6)',
+    logo: '/logos/panasonic.svg' },
+  { abbr: 'SAM', bg: '#1428A0', grad: 'linear-gradient(135deg,#0a1660,#1428A0,#2a3eb1)',
+    logo: 'https://upload.wikimedia.org/wikipedia/commons/b/b4/Samsung_wordmark.svg' },
+  { abbr: 'LGE', bg: '#A50034', grad: 'linear-gradient(135deg,#63001f,#A50034,#cc0040)',
+    logo: 'https://upload.wikimedia.org/wikipedia/commons/8/8d/LG_logo_%282014%29.svg' },
+  { abbr: 'SIE', bg: '#009999', grad: 'linear-gradient(135deg,#006060,#009999,#00c8c8)',
+    logo: 'https://upload.wikimedia.org/wikipedia/commons/5/5f/Siemens-logo.svg' },
+  { abbr: 'SCH', bg: '#1b7a30', grad: 'linear-gradient(135deg,#0d4a1e,#1b7a30,#3dcd58)',
+    logo: 'https://upload.wikimedia.org/wikipedia/commons/9/95/Schneider_Electric_2007.svg' },
+  { abbr: 'ĐQG', bg: '#C8001A', grad: 'linear-gradient(135deg,#7f0010,#C8001A,#e83347)',
+    logo: 'https://iconape.com/wp-content/png_logo_vector/dien-quang-logo.png' },
+  { abbr: 'RĐ',  bg: '#d97706', grad: 'linear-gradient(135deg,#78350f,#d97706,#fbbf24)',
+    logo: 'https://cdn.haitrieu.com/wp-content/uploads/2022/08/logo-rang-dong.png' },
+];
+const agentBrand     = (a) => BRANDS[a.brandIndex ?? (a.MaDaiLy - 1) % BRANDS.length];
+const agentBrandAbbr = (a) => agentBrand(a).abbr;
+const agentLogoUrl   = (a) => a?.customImage ?? agentBrand(a).logo ?? null;
 
 /* ─── Helpers ─── */
 const loaiLabel = (id) => loaiOptions.find(l => l.id === id)?.ten ?? '—';
@@ -630,6 +879,8 @@ const viewAgent = (a) => {
   panelMode.value  = 'view';
   errors.value     = {};
 };
+
+const closePanel = () => { selectedId.value = null; panelMode.value = 'view'; };
 
 const startAdd = () => {
   selectedId.value = null;
@@ -729,110 +980,129 @@ const exportCSV = () => {
   border: 1px solid rgba(16,185,129,.14);
   border-radius: var(--r-card);
   box-shadow: 0 2px 16px rgba(5,150,105,.07), 0 1px 3px rgba(15,23,42,.04);
-  margin-bottom: 18px;
-  overflow: hidden;
-  position: relative;
+  margin-bottom: 18px; overflow: hidden; position: relative;
 }
-
-/* subtle dot grid */
 .ctx-card::before {
-  content: '';
-  position: absolute;
-  inset: 0;
+  content: ''; position: absolute; inset: 0;
   background-image: radial-gradient(rgba(5,150,105,.1) 1px, transparent 1px);
   background-size: 22px 22px;
-  pointer-events: none;
-  z-index: 0;
+  pointer-events: none; z-index: 0;
 }
-
-/* emerald top border */
 .ctx-card::after {
-  content: '';
-  position: absolute;
+  content: ''; position: absolute;
   top: 0; left: 0; right: 0; height: 2.5px;
   background: linear-gradient(90deg, transparent, #34d399 25%, #059669 50%, #34d399 75%, transparent);
   z-index: 1;
 }
-
-/* decorative SVG */
 .ctx-deco {
-  position: absolute;
-  right: 0; top: 0;
-  width: 260px; height: 100%;
-  pointer-events: none;
-  z-index: 0;
+  position: absolute; right: 0; top: 0;
+  width: 200px; height: 100%;
+  pointer-events: none; z-index: 0; opacity: .7;
 }
+.ctx-wm { position:absolute; right:220px; top:22px; width:90px; height:90px; color:#059669; opacity:.06; pointer-events:none; z-index:0; }
 
-.ctx-top {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 20px 26px 18px;
-  gap: 16px;
-  position: relative;
-  z-index: 2;
+/* ══ EYEBROW + TITLE ══ */
+.ctx-title-block { display: flex; flex-direction: column; gap: 2px; }
+.ctx-eyebrow {
+  margin: 0; font-size: 10.5px; font-weight: 700;
+  color: var(--c-primary); text-transform: uppercase; letter-spacing: 1px;
+  display: flex; align-items: center; gap: 7px;
 }
-.ctx-title { font-size: 22px; font-weight: 800; margin: 0; letter-spacing: -.6px; color: var(--c-txt); }
-.ctx-sub   { font-size: 12px; color: var(--c-txt-3); margin: 4px 0 0; }
+.ctx-eyebrow::before {
+  content: ''; display: inline-block;
+  width: 18px; height: 2.5px;
+  background: linear-gradient(90deg, #10b981, #059669);
+  border-radius: 2px; flex-shrink: 0;
+}
+.ctx-title { font-size: 24px; font-weight: 800; margin: 0; letter-spacing: -.7px; color: var(--c-txt); }
+.ctx-top {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 20px 26px 18px; gap: 16px; position: relative; z-index: 2;
+}
 .ctx-actions { display: flex; gap: 8px; align-items: center; flex-shrink: 0; }
 
 .ctx-divider { height: 1px; background: rgba(16,185,129,.1); position: relative; z-index: 2; }
 
+/* ── KPI columns inside banner ── */
 .ctx-stats {
-  display: flex;
-  align-items: stretch;
-  position: relative;
-  z-index: 2;
+  display: flex; align-items: stretch;
+  position: relative; z-index: 2;
 }
 .cs-col {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  padding: 18px 26px;
-  transition: background var(--t);
+  flex: 1; display: flex; flex-direction: column; gap: 5px;
+  padding: 14px 24px 16px; transition: background var(--t);
 }
-.cs-col:hover { background: rgba(5,150,105,.04); }
-.cs-warn { background: rgba(245,158,11,.04); }
-.cs-warn:hover { background: rgba(245,158,11,.09); }
+.cs-col:hover { background: rgba(5,150,105,.03); }
+
+/* Label + icon inline row */
+.cs-lbl-row { display: flex; align-items: center; gap: 5px; margin-bottom: 2px; }
+.cs-ic {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 18px; height: 18px; border-radius: 5px; flex-shrink: 0;
+  background: rgba(5,150,105,.09); color: #059669;
+}
 
 .cs-sep {
-  width: 1px;
-  background: rgba(16,185,129,.12);
-  flex-shrink: 0;
-  margin: 12px 0;
+  width: 1px; background: rgba(16,185,129,.12);
+  flex-shrink: 0; margin: 14px 0;
 }
-
+.cs-num-row { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
 .cs-num {
-  font-size: 30px;
-  font-weight: 900;
-  letter-spacing: -1.2px;
-  color: var(--c-txt);
-  line-height: 1;
-  display: flex;
-  align-items: baseline;
-  gap: 7px;
-  font-variant-numeric: tabular-nums;
+  font-size: 30px; font-weight: 900; letter-spacing: -1.2px;
+  color: var(--c-txt); line-height: 1; font-variant-numeric: tabular-nums;
 }
-.cs-red { color: #D97706; }
-
+.cs-red   { color: #D97706 !important; }
+.cs-delta { font-size: 11px; font-weight: 600; }
+.cs-up    { color: #059669; }
+.cs-down  { color: #D97706; }
+.cs-lbl   { font-size: 11px; color: var(--c-txt-3); font-weight: 600; letter-spacing: .2px; }
 .cs-tag {
-  font-size: 10px; font-weight: 700;
-  padding: 2px 7px; border-radius: var(--r-pill);
+  font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: var(--r-pill);
   background: #fffbeb; color: #B45309;
-  border: 1px solid rgba(245,158,11,.25);
-  letter-spacing: .2px; vertical-align: middle;
+  border: 1px solid rgba(245,158,11,.25); letter-spacing: .2px; line-height: 1.4;
 }
-.cs-tag-green {
-  background: var(--c-success-bg); color: var(--c-primary);
-  border-color: rgba(16,185,129,.18);
-}
+.cs-tag-green { background: var(--c-success-bg); color: var(--c-primary); border-color: rgba(16,185,129,.18); }
 
-.cs-lbl {
-  font-size: 11px;
-  color: var(--c-txt-3);
-  font-weight: 600;
-  letter-spacing: .2px;
+/* Debt spark bars */
+.cs-spark-wrap { display: flex; align-items: flex-end; gap: 3px; height: 28px; margin: 4px 0 2px; }
+.cs-spark-bar { flex: 1; background: #e2e8f0; border-radius: 2px 2px 0 0; transition: height .3s; }
+.cs-spark-last { background: #10b981 !important; }
+
+/* Donut column */
+.cs-donut-col { gap: 4px; }
+.cs-donut-row { display: flex; align-items: center; gap: 12px; }
+.cs-donut-svg { flex-shrink: 0; filter: drop-shadow(0 2px 6px rgba(0,0,0,.07)); }
+.cs-donut-info { display: flex; flex-direction: column; gap: 4px; }
+.cs-legend { display: flex; gap: 12px; }
+.cs-leg { font-size: 10.5px; color: var(--c-txt-3); font-weight: 600; display: flex; align-items: center; gap: 4px; }
+.cs-dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+.cs-dot.ok   { background: #34d399; }
+.cs-dot.warn { background: #fbbf24; }
+.cs-dot.over { background: #f87171; }
+
+/* Month progress bar */
+.ctx-timeline {
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 24px 14px; position: relative; z-index: 2;
+}
+.ctl-label { font-size: 11px; font-weight: 600; color: var(--c-txt-3); white-space: nowrap; }
+.ctl-bar { flex: 1; height: 4px; background: rgba(16,185,129,.12); border-radius: 99px; overflow: hidden; }
+.ctl-fill { height: 100%; background: linear-gradient(90deg,#34d399,#059669); border-radius: 99px; transition: width .6s ease; }
+.ctl-pct { font-size: 11px; font-weight: 700; color: var(--c-primary); white-space: nowrap; }
+
+/* ══ MAP ══ */
+.map-section { padding: 12px 18px; border-bottom: 1px solid rgba(180,130,30,.12); }
+.map-hd { display: flex; align-items: center; gap: 5px; margin-bottom: 8px; }
+.map-lbl { font-size: 10.5px; font-weight: 700; color: var(--c-txt-3); text-transform: uppercase; letter-spacing: .5px; }
+.map-wrap { position: relative; border-radius: var(--r-md); overflow: hidden; height: 120px; border: 1px solid var(--c-border); }
+.map-iframe { width: 100%; height: 100%; display: block; border: none; }
+.map-addr-pill {
+  position: absolute; bottom: 7px; left: 50%; transform: translateX(-50%);
+  background: rgba(255,255,255,.92); backdrop-filter: blur(6px);
+  border: 1px solid rgba(0,0,0,.08); border-radius: var(--r-pill);
+  padding: 3px 10px; font-size: 10px; font-weight: 600; color: var(--c-txt-2);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 90%;
+  box-shadow: 0 2px 8px rgba(0,0,0,.1);
 }
 
 /* ══ MAIN LAYOUT ══ */
@@ -877,14 +1147,26 @@ const exportCSV = () => {
 
 /* ══ TABLE ══ */
 .table-wrap { overflow-x: auto; }
-.dl-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.dl-table { width: 100%; border-collapse: collapse; font-size: 13px; table-layout: fixed; }
+col.col-id   { width: 48px; }
+col.col-name { width: 200px; }
+col.col-loai { width: 72px; }
+col.col-quan { width: 96px; }
+col.col-sdt  { width: 112px; }
+col.col-date { width: 112px; }
+col.col-debt { width: 130px; }
+col.col-act  { width: 88px; }
+/* fix specificity: .dl-table th { text-align:left } beats .text-right/.text-center */
+.dl-table .text-right  { text-align: right !important; }
+.dl-table .text-center { text-align: center !important; }
+.dl-table td.col-name  { overflow: hidden; }
 .dl-table thead tr { background: var(--c-bg); border-bottom: 1px solid var(--c-border); }
 .dl-table th {
-  padding: 10px 14px; text-align: left;
+  padding: 10px 14px; text-align: left; vertical-align: middle;
   font-size: 10.5px; font-weight: 700; text-transform: uppercase;
   letter-spacing: .5px; color: var(--c-txt-3); white-space: nowrap;
 }
-.dl-table td { padding: 10px 14px; border-bottom: 1px solid var(--c-border-s); vertical-align: middle; }
+.dl-table td { padding: 11px 14px; border-bottom: 1px solid var(--c-border-s); vertical-align: middle; }
 .agent-row { cursor: pointer; transition: background var(--t); }
 .agent-row:hover { background: rgba(15,23,42,.02); }
 .agent-row.selected { background: var(--c-success-bg); }
@@ -892,21 +1174,56 @@ const exportCSV = () => {
 
 .sort-hd { display: inline-flex; align-items: center; gap: 4px; cursor: pointer; user-select: none; }
 .sort-hd:hover { color: var(--c-txt-2); }
+.sort-hd-r { flex-direction: row-reverse; }
+
+/* ── Brand picker ── */
+/* Image upload */
+.img-upload-wrap { display: flex; align-items: center; gap: 16px; margin-top: 4px; }
+.img-preview-box {
+  width: 72px; height: 72px; border-radius: 14px; flex-shrink: 0;
+  border: 1.5px dashed var(--c-border); background: var(--c-bg);
+  display: flex; align-items: center; justify-content: center; overflow: hidden;
+}
+.img-preview-img { width: 100%; height: 100%; object-fit: cover; border-radius: 12px; }
+.img-preview-ph { color: var(--c-txt-3); display: flex; }
+.img-upload-side { display: flex; flex-direction: column; gap: 6px; }
+.img-upload-btn {
+  display: inline-flex; align-items: center; gap: 5px; cursor: pointer;
+  padding: 6px 12px; border-radius: var(--r-md);
+  border: 1.5px solid var(--c-primary); color: var(--c-primary);
+  font-size: 12px; font-weight: 600; background: var(--c-success-bg);
+  transition: background var(--t), box-shadow var(--t);
+}
+.img-upload-btn:hover { background: rgba(5,150,105,.12); box-shadow: 0 0 0 3px rgba(5,150,105,.1); }
+.img-remove-btn {
+  display: inline-flex; align-items: center; gap: 4px; cursor: pointer;
+  padding: 5px 10px; border-radius: var(--r-md);
+  border: 1.5px solid rgba(239,68,68,.3); color: #EF4444;
+  font-size: 11px; font-weight: 600; background: #FEF2F2;
+  transition: background var(--t);
+}
+.img-remove-btn:hover { background: #fee2e2; }
+.img-hint { margin: 0; font-size: 10.5px; color: var(--c-txt-3); }
+.img-file-hidden { display: none; }
 .sort-arrow { display: inline-flex; align-items: center; }
 
-.col-name { min-width: 150px; }
-.a-name   { display: block; font-weight: 600; }
-.a-email  { display: block; font-size: 11px; color: var(--c-txt-3); margin-top: 1px; }
+.col-name { overflow: hidden; }
+.a-name   { display: block; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.a-email  { display: block; font-size: 11px; color: var(--c-txt-3); margin-top: 1px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .col-mono { font-variant-numeric: tabular-nums; font-size: 12px; }
-.muted    { color: var(--c-txt-3); }
+.muted    { color: #64748b; }
 .text-right { text-align: right; }
 .text-center { text-align: center; }
 
 .col-debt-cell { text-align: right; }
-.debt-num { font-weight: 700; font-size: 12px; font-variant-numeric: tabular-nums; display: block; }
-.debt-num.over { color: var(--c-danger); }
-.debt-bar { height: 3px; background: #f1f5f9; border-radius: 2px; margin-top: 5px; overflow: hidden; min-width: 60px; }
-.debt-fill { height: 100%; border-radius: 2px; transition: width .4s ease; }
+.debt-val {
+  display: inline-block; padding: 3px 9px; border-radius: 999px;
+  font-size: 11.5px; font-weight: 700; font-variant-numeric: tabular-nums;
+  white-space: nowrap; border: 1px solid transparent;
+}
+.debt-val.status-ok   { background: rgba(5,150,105,.10);  color: #059669; border-color: rgba(5,150,105,.22); }
+.debt-val.status-warn { background: rgba(217,119,6,.11);  color: #d97706; border-color: rgba(217,119,6,.24); }
+.debt-val.status-over { background: rgba(220,38,38,.10);  color: #dc2626; border-color: rgba(220,38,38,.22); }
 
 .loai-chip { display: inline-block; font-size: 10px; font-weight: 700; padding: 3px 8px; border-radius: var(--r-pill); white-space: nowrap; }
 .loai-chip.l1 { background: var(--c-success-bg); color: #065f46; border: 1px solid rgba(16,185,129,.2); }
@@ -925,33 +1242,102 @@ const exportCSV = () => {
 .lc-foot { padding: 10px 20px; font-size: 11px; color: var(--c-txt-3); border-top: 1px solid var(--c-border-s); }
 
 /* ══ SIDE PANEL ══ */
-.side-panel { display: flex; flex-direction: column; min-height: 500px; width: 360px; flex-shrink: 0; }
+.side-panel {
+  display: flex;
+  flex-direction: column;
+  min-height: 500px;
+  width: 360px;
+  flex-shrink: 0;
+  background: linear-gradient(180deg, #fbfdff 0%, #fffaf5 100%);
+}
 
-/* — Agent detail — */
-.ap-hd {
-  padding: 18px 18px 14px;
+/* — Brand banner — */
+/* Panel header — light, no gradient */
+.ap-header {
+  padding: 16px 18px 14px;
   border-bottom: 1px solid var(--c-border);
-  display: flex; align-items: flex-start; gap: 12px;
+  background: rgba(255,255,255,.72);
+  border-radius: var(--r-card) var(--r-card) 0 0;
+  position: relative;
+  flex-shrink: 0;
 }
-.ap-avatar {
-  width: 44px; height: 44px; border-radius: 50%; flex-shrink: 0;
-  background: linear-gradient(135deg, #059669, #10b981);
-  color: #fff; font-size: 18px; font-weight: 800;
+.ap-header-ctrl {
+  position: absolute; top: 12px; right: 12px;
+  display: flex; gap: 5px;
+}
+.ap-ctrl-btn {
+  width: 26px; height: 26px; border-radius: 50%;
+  border: 1px solid var(--c-border); background: var(--c-bg);
+  cursor: pointer; color: var(--c-txt-2);
   display: flex; align-items: center; justify-content: center;
+  transition: background var(--t);
 }
-.ap-title-block { flex: 1; min-width: 0; }
-.ap-name   { font-size: 15px; font-weight: 700; margin: 0 0 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ap-ctrl-btn:hover { background: #e2e8f0; }
+.ap-header-body { display: flex; align-items: center; gap: 12px; }
+/* Logo container */
+.ap-logo-wrap {
+  width: 56px; height: 56px; flex-shrink: 0;
+  border: 1px solid var(--c-border); border-radius: 12px;
+  background: #fff; overflow: hidden; position: relative;
+  box-shadow: 0 1px 4px rgba(0,0,0,.06);
+}
+.ap-logo-img {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+  object-fit: contain; padding: 8px; box-sizing: border-box;
+  background: #fff; z-index: 2;
+}
+.ap-logo-init {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px; font-weight: 900; color: #fff; z-index: 1;
+}
+.ap-header-info { flex: 1; min-width: 0; }
+.ap-name {
+  font-size: 15px; font-weight: 700; color: var(--c-txt-1);
+  margin: 0 0 6px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
 .ap-badges { display: flex; gap: 5px; flex-wrap: wrap; }
+
+/* Table avatar */
+.row-av-wrap { display: flex; align-items: center; gap: 9px; }
+.row-av {
+  width: 38px; height: 38px; border-radius: 8px; flex-shrink: 0;
+  border: 1px solid rgba(0,0,0,.12);
+  display: flex; align-items: center; justify-content: center;
+  overflow: hidden; position: relative;
+  box-shadow: 0 1px 4px rgba(0,0,0,.15);
+}
+/* Fallback abbreviation — white text on brand-color bg (set inline on container) */
+.av-init {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 900; color: rgba(255,255,255,.9);
+  letter-spacing: -.3px; z-index: 1;
+}
+/* Logo — real colors on white background, hides fallback beneath */
+.av-logo-img {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+  object-fit: contain;
+  padding: 5px; box-sizing: border-box;
+  background: #fff;
+  z-index: 2;
+}
 .dist-chip { font-size: 10px; font-weight: 600; color: var(--c-txt-3); background: var(--c-bg); border: 1px solid var(--c-border); border-radius: var(--r-pill); padding: 3px 8px; }
-.ap-edit-btn { flex-shrink: 0; }
 
 /* — Gauge section — */
-.gauge-section { padding: 16px 18px; border-bottom: 1px solid var(--c-border); }
+.gauge-section {
+  padding: 16px 18px;
+  border-bottom: 1px solid var(--c-border);
+  background: rgba(255,255,255,.46);
+}
 .gauge-wrap { display: flex; align-items: center; gap: 16px; margin-bottom: 10px; }
 .gauge-svg  { width: 72px; height: 72px; flex-shrink: 0; }
 .gauge-info { flex: 1; display: flex; flex-direction: column; gap: 6px; }
 .gi-row { display: flex; justify-content: space-between; font-size: 12px; }
-.gi-row .gi-lbl { color: var(--c-txt-3); }
+.gi-row .gi-lbl { color: #64748b; }
 .gi-row strong { font-weight: 700; font-variant-numeric: tabular-nums; }
 .red   { color: var(--c-danger)  !important; }
 .green { color: var(--c-success) !important; }
@@ -966,15 +1352,29 @@ const exportCSV = () => {
 .status-over { background: var(--c-danger-bg);  color: #991b1b; }
 
 /* — Info grid — */
-.info-grid { padding: 14px 18px; border-bottom: 1px solid var(--c-border); display: flex; flex-direction: column; gap: 9px; }
+.info-grid {
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--c-border);
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  background: rgba(255,255,255,.38);
+}
 .ig-row { display: flex; align-items: center; gap: 8px; font-size: 12px; }
-.ig-ic  { color: var(--c-txt-3); flex-shrink: 0; }
-.ig-lbl { color: var(--c-txt-3); width: 58px; flex-shrink: 0; }
-.ig-val { color: var(--c-txt-2); font-weight: 500; flex: 1; min-width: 0; }
+.ig-ic  { color: #64748b; flex-shrink: 0; }
+.ig-lbl { color: #64748b; width: 58px; flex-shrink: 0; font-weight: 600; }
+.ig-val { color: var(--c-txt); font-weight: 600; flex: 1; min-width: 0; }
 .ellipsis { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 /* — Quick links — */
-.quick-links { padding: 12px 18px; border-bottom: 1px solid var(--c-border); display: flex; flex-direction: column; gap: 6px; }
+.quick-links {
+  padding: 12px 18px;
+  border-bottom: 1px solid var(--c-border);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  background: rgba(255,255,255,.32);
+}
 .ql-btn {
   display: flex; align-items: center; gap: 8px;
   padding: 9px 12px; border-radius: var(--r-md);
@@ -987,7 +1387,7 @@ const exportCSV = () => {
 .ql-btn:hover .ql-arrow { color: var(--c-primary); }
 
 /* — Recent activity — */
-.recent-section { padding: 14px 18px; flex: 1; }
+.recent-section { padding: 14px 18px; flex: 1; background: rgba(255,255,255,.24); }
 .recent-title { font-size: 11px; font-weight: 700; color: var(--c-txt-3); text-transform: uppercase; letter-spacing: .6px; margin: 0 0 10px; }
 .recent-list { display: flex; flex-direction: column; gap: 8px; }
 .recent-row { display: flex; align-items: center; gap: 10px; }
@@ -1075,22 +1475,71 @@ const exportCSV = () => {
 }
 .btn-csv:hover { background: #fff; box-shadow: var(--sh-card); color: var(--c-txt); }
 
-/* ══ MODAL ══ */
+/* ══ MODAL — variables redeclared here because <Teleport> moves element outside .dl ══ */
 .modal-bg {
+  --c-primary:   #059669; --c-primary-d: #047857;
+  --c-success-bg:#ECFDF5;
+  --c-danger:    #EF4444; --c-danger-bg: #FEF2F2;
+  --c-surface:   #ffffff; --c-bg:        #f8fafc;
+  --c-border:    rgba(15,23,42,.07);
+  --c-txt:       #0f172a; --c-txt-2:     #475569;
+  --r-md: 8px; --r-pill: 999px;
+  --sh-modal: 0 20px 60px rgba(15,23,42,.18);
+  --t: .15s ease;
   position: fixed; inset: 0; z-index: 200;
-  background: rgba(15,23,42,.45); backdrop-filter: blur(4px);
+  background: rgba(15,23,42,.5); backdrop-filter: blur(3px);
   display: flex; align-items: center; justify-content: center; padding: 20px;
 }
 .modal-box {
-  width: min(420px,100%); background: var(--c-surface);
-  border-radius: 16px; border: 1px solid var(--c-border);
-  box-shadow: var(--sh-modal); padding: 32px 28px 24px;
+  width: min(420px,100%);
+  background: linear-gradient(170deg, #fff5f5 0%, #fffafa 45%, #ffffff 100%);
+  border-radius: 20px; border: 1px solid rgba(239,68,68,.13);
+  box-shadow: 0 8px 40px rgba(239,68,68,.1), 0 2px 14px rgba(15,23,42,.08);
+  padding: 32px 28px 24px;
   display: flex; flex-direction: column; align-items: center; text-align: center; gap: 10px;
 }
-.del-icon-wrap { width: 52px; height: 52px; border-radius: 50%; background: var(--c-danger-bg); color: var(--c-danger); display: flex; align-items: center; justify-content: center; margin-bottom: 4px; }
-.modal-title  { font-size: 17px; font-weight: 700; margin: 0; }
-.modal-desc   { font-size: 13px; color: var(--c-txt-2); margin: 0; line-height: 1.6; }
+.del-avatar-wrap {
+  position: relative; margin-bottom: 4px;
+}
+.del-agent-avatar {
+  width: 76px; height: 76px; border-radius: 18px;
+  overflow: hidden; position: relative;
+  box-shadow: 0 4px 18px rgba(15,23,42,.14);
+}
+.del-avatar-img {
+  position: absolute; inset: 10px;
+  width: calc(100% - 20px); height: calc(100% - 20px);
+  object-fit: contain;
+  background: white; border-radius: 10px;
+  z-index: 2;
+}
+.del-avatar-abbr {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 22px; font-weight: 800; color: rgba(255,255,255,.88); letter-spacing: -0.5px;
+  z-index: 0;
+}
+.del-trash-badge {
+  position: absolute; bottom: -7px; right: -7px;
+  width: 28px; height: 28px; border-radius: 50%;
+  background: #fee2e2; border: 2.5px solid #fff;
+  color: #ef4444;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 2px 6px rgba(239,68,68,.2);
+}
+.modal-title  { font-size: 17px; font-weight: 700; margin: 0; color: #0f172a; }
+.modal-desc   { font-size: 13px; color: #475569; margin: 0; line-height: 1.6; }
 .modal-actions { display: flex; gap: 10px; margin-top: 8px; }
+.modal-actions .btn-o {
+  background: transparent; color: #059669; border: 1.5px solid rgba(5,150,105,.3);
+  border-radius: 8px; padding: 9px 20px; font-size: 13px; font-weight: 600; cursor: pointer;
+}
+.modal-actions .btn-o:hover { background: #ECFDF5; }
+.modal-actions .btn-danger {
+  background: #EF4444; color: #fff; border: none;
+  border-radius: 8px; padding: 9px 20px; font-size: 13px; font-weight: 600; cursor: pointer;
+}
+.modal-actions .btn-danger:hover { background: #dc2626; }
 
 /* ── Panel slide transition ── */
 .panel-enter-active { animation: panelIn .22s cubic-bezier(.4,0,.2,1); }

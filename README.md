@@ -88,6 +88,13 @@ cd client
 npm run dev
 ```
 
+
+## Thông tin nhanh
+
+- Branch hiện tại: `main`
+- Nếu bạn gặp lỗi khi chạy dev server (ví dụ: process bị kill với exit code 137), thử khởi động lại Node/Vite và đảm bảo không có tiến trình cũ đang chiếm cổng, hoặc tăng bộ nhớ cho tiến trình nếu cần.
+
+
 ## 👥 Thành viên nhóm
 
 | STT | Họ tên | MSSV | Vai trò |
