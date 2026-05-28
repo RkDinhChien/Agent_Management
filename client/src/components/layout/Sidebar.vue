@@ -203,7 +203,12 @@ const handleLogout = () => { authStore.logout(); router.push('/login'); };
 .l-aura :deep(svg) { stroke-width: 1.75; }
 .atmos-link:hover { background: rgba(0,0,0,0.02); color: #0f172a; }
 
-.atmos-link.active { background: rgba(16, 185, 129, 0.1); color: #059669; }
+.atmos-link.active {
+  background: rgba(16, 185, 129, 0.14);
+  color: #047857;
+  font-weight: 700;
+}
+.atmos-link.active .l-aura { color: #047857; }
 .is-collapsed .atmos-link { justify-content: center; padding: 8px; }
 .is-collapsed .l-aura { width: 44px; height: 44px; }
 

@@ -576,7 +576,12 @@ onMounted(fetchData);
 .dl-flex { display: flex; gap: 20px; align-items: flex-start; }
 .dl-card { background: white; border-radius: 16px; border: 1px solid #e2e8f0; box-shadow: 0 2px 12px rgba(0,0,0,.07); overflow: hidden; }
 .list-card { flex: 1; min-width: 0; }
-.side-panel { width: 320px; flex-shrink: 0; padding: 20px; }
+.side-panel {
+  width: 320px;
+  flex-shrink: 0;
+  padding: 20px;
+  background: linear-gradient(180deg,#f8fcff 0%,#f7fff9 100%);
+}
 
 /* toolbar */
 .lc-hd { padding: 16px 20px 14px; border-bottom: 1px solid #f1f5f9; display: flex; flex-direction: column; gap: 10px; }
@@ -649,7 +654,7 @@ onMounted(fetchData);
 .ap-close { background: #f8fafc; border: 1px solid #e2e8f0; color: #94a3b8; width: 28px; height: 28px; border-radius: 8px; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; }
 
 .info-grid { display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; }
-.ig-item { display: flex; align-items: flex-start; gap: 8px; background: #f8fafc; padding: 9px 12px; border-radius: 10px; }
+.ig-item { display: flex; align-items: flex-start; gap: 8px; background: rgba(255,255,255,.72); padding: 9px 12px; border-radius: 10px; border: 1px solid rgba(226,232,240,.72); }
 .ig-ic { color: #059669; flex-shrink: 0; margin-top: 2px; }
 .ig-ic-warn { color: #f59e0b; }
 .ig-item small { display: block; font-size: 0.6rem; font-weight: 800; color: #94a3b8; letter-spacing: .4px; }

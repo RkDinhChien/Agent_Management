@@ -1242,14 +1242,21 @@ col.col-act  { width: 88px; }
 .lc-foot { padding: 10px 20px; font-size: 11px; color: var(--c-txt-3); border-top: 1px solid var(--c-border-s); }
 
 /* ══ SIDE PANEL ══ */
-.side-panel { display: flex; flex-direction: column; min-height: 500px; width: 360px; flex-shrink: 0; background: #fdf8f0; }
+.side-panel {
+  display: flex;
+  flex-direction: column;
+  min-height: 500px;
+  width: 360px;
+  flex-shrink: 0;
+  background: linear-gradient(180deg, #fbfdff 0%, #fffaf5 100%);
+}
 
 /* — Brand banner — */
 /* Panel header — light, no gradient */
 .ap-header {
   padding: 16px 18px 14px;
-  border-bottom: 1px solid rgba(180,130,30,.15);
-  background: linear-gradient(140deg, #fde8b4 0%, #fef3d0 55%, #fdf8f0 100%);
+  border-bottom: 1px solid var(--c-border);
+  background: rgba(255,255,255,.72);
   border-radius: var(--r-card) var(--r-card) 0 0;
   position: relative;
   flex-shrink: 0;
@@ -1321,7 +1328,11 @@ col.col-act  { width: 88px; }
 .dist-chip { font-size: 10px; font-weight: 600; color: var(--c-txt-3); background: var(--c-bg); border: 1px solid var(--c-border); border-radius: var(--r-pill); padding: 3px 8px; }
 
 /* — Gauge section — */
-.gauge-section { padding: 16px 18px; border-bottom: 1px solid rgba(180,130,30,.12); }
+.gauge-section {
+  padding: 16px 18px;
+  border-bottom: 1px solid var(--c-border);
+  background: rgba(255,255,255,.46);
+}
 .gauge-wrap { display: flex; align-items: center; gap: 16px; margin-bottom: 10px; }
 .gauge-svg  { width: 72px; height: 72px; flex-shrink: 0; }
 .gauge-info { flex: 1; display: flex; flex-direction: column; gap: 6px; }
@@ -1341,7 +1352,14 @@ col.col-act  { width: 88px; }
 .status-over { background: var(--c-danger-bg);  color: #991b1b; }
 
 /* — Info grid — */
-.info-grid { padding: 14px 18px; border-bottom: 1px solid rgba(180,130,30,.12); display: flex; flex-direction: column; gap: 9px; }
+.info-grid {
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--c-border);
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  background: rgba(255,255,255,.38);
+}
 .ig-row { display: flex; align-items: center; gap: 8px; font-size: 12px; }
 .ig-ic  { color: #64748b; flex-shrink: 0; }
 .ig-lbl { color: #64748b; width: 58px; flex-shrink: 0; font-weight: 600; }
@@ -1349,7 +1367,14 @@ col.col-act  { width: 88px; }
 .ellipsis { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 /* — Quick links — */
-.quick-links { padding: 12px 18px; border-bottom: 1px solid rgba(180,130,30,.12); display: flex; flex-direction: column; gap: 6px; }
+.quick-links {
+  padding: 12px 18px;
+  border-bottom: 1px solid var(--c-border);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  background: rgba(255,255,255,.32);
+}
 .ql-btn {
   display: flex; align-items: center; gap: 8px;
   padding: 9px 12px; border-radius: var(--r-md);
@@ -1362,7 +1387,7 @@ col.col-act  { width: 88px; }
 .ql-btn:hover .ql-arrow { color: var(--c-primary); }
 
 /* — Recent activity — */
-.recent-section { padding: 14px 18px; flex: 1; }
+.recent-section { padding: 14px 18px; flex: 1; background: rgba(255,255,255,.24); }
 .recent-title { font-size: 11px; font-weight: 700; color: var(--c-txt-3); text-transform: uppercase; letter-spacing: .6px; margin: 0 0 10px; }
 .recent-list { display: flex; flex-direction: column; gap: 8px; }
 .recent-row { display: flex; align-items: center; gap: 10px; }

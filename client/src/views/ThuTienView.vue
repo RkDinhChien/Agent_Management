@@ -179,13 +179,13 @@
         <div class="table-wrap">
           <table class="dl-table">
             <colgroup>
-              <col style="width:12%"/>
+              <col style="width:11%"/>
               <col style="width:10%"/>
-              <col/>
-              <col style="width:12%"/>
-              <col style="width:11%"/>
-              <col style="width:11%"/>
+              <col style="width:25%"/>
               <col style="width:13%"/>
+              <col style="width:14%"/>
+              <col style="width:13%"/>
+              <col style="width:14%"/>
             </colgroup>
             <thead>
               <tr>
@@ -229,15 +229,26 @@
                   <span class="total-num">{{ fmtTr(r.amount) }}</span>
                 </td>
                 <td>
-                  <span class="method-badge">{{ r.method }}</span>
+                  <span class="method-text" :class="methodClass(r.method)">
+                    <component :is="methodIcon(r.method)" :size="14" stroke-width="2.2" class="method-icon" />
+                    {{ r.method }}
+                  </span>
                 </td>
                 <td>
                   <span class="status-badge" :class="r.status">{{ STATUS[r.status] }}</span>
                 </td>
                 <td class="col-actions">
-                  <button class="act-btn view-btn" title="Xem" @click.stop="openView(r)"><Eye :size="13"/></button>
-                  <button v-if="r.status === 'pending'" class="act-btn ok-btn" title="Xác nhận" @click.stop="confirmReceipt(r)"><CheckCircle :size="13"/></button>
-                  <button class="act-btn del-btn" title="Xóa" @click.stop="askDelete(r)"><Trash2 :size="13"/></button>
+                  <div class="action-group">
+                    <button class="act-btn view-btn" title="Xem" @click.stop="openView(r)"><Eye :size="13"/></button>
+                    <button
+                      class="act-btn ok-btn"
+                      :class="{ invisible: r.status !== 'pending' }"
+                      :disabled="r.status !== 'pending'"
+                      title="Xác nhận"
+                      @click.stop="confirmReceipt(r)"
+                    ><CheckCircle :size="13"/></button>
+                    <button class="act-btn del-btn" title="Xóa" @click.stop="askDelete(r)"><Trash2 :size="13"/></button>
+                  </div>
                 </td>
               </tr>
               <tr v-if="!sortedList.length">
@@ -267,29 +278,39 @@
               <span class="av-init" :style="{ background: agentBrand(selectedReceipt.agentId).bg }">{{ avatarInit(selectedReceipt.agent) }}</span>
             </div>
             <div class="ap-title-block">
+              <span class="ap-eyebrow">Chi tiết phiếu thu</span>
               <h3 class="ap-name">{{ selectedReceipt.code }}</h3>
               <div class="ap-badges">
                 <span class="status-badge" :class="selectedReceipt.status">{{ STATUS[selectedReceipt.status] }}</span>
-                <span class="dist-chip">{{ selectedReceipt.method }}</span>
+                <span class="method-text panel-method" :class="methodClass(selectedReceipt.method)">
+                  <component :is="methodIcon(selectedReceipt.method)" :size="13" stroke-width="2.2" class="method-icon" />
+                  {{ selectedReceipt.method }}
+                </span>
               </div>
             </div>
-            <div style="display:flex;gap:5px">
-              <button class="act-btn" style="background:rgba(15,23,42,.04);color:var(--c-txt-3)" title="Đóng" @click="closePanel"><X :size="14"/></button>
-            </div>
+            <button class="panel-close" title="Đóng" @click="closePanel"><X :size="16"/></button>
           </div>
 
           <!-- Amount display section -->
           <div class="gauge-section">
             <div class="amt-display">
-              <span class="amt-label">Số tiền thu</span>
-              <div class="amt-value">{{ fmtTr(selectedReceipt.amount) }}</div>
-              <div class="amt-sub">{{ (selectedReceipt.amount * 1_000_000).toLocaleString('vi-VN') }} đồng</div>
+              <div>
+                <span class="amt-label">Số tiền thu</span>
+                <div class="amt-value">{{ fmtTr(selectedReceipt.amount) }}</div>
+              </div>
+              <div class="amt-side">
+                <span>{{ selectedReceipt.date }}</span>
+                <strong>{{ (selectedReceipt.amount * 1_000_000).toLocaleString('vi-VN') }}đ</strong>
+              </div>
             </div>
 
             <!-- Debt remain bar -->
             <div class="debt-section">
               <div class="debt-hd">
-                <span class="debt-lbl">Nợ còn lại sau thu</span>
+                <div>
+                  <span class="debt-lbl">Nợ còn lại sau thu</span>
+                  <small>{{ selectedReceipt.agent }}</small>
+                </div>
                 <span class="debt-val" :class="debtRemainClass(selectedReceipt)">
                   {{ fmtMoney(Math.max(0, debtAfterPayment(selectedReceipt))) }}
                   / {{ fmtMoney(getAgent(selectedReceipt.agentId)?.limit) }}
@@ -330,7 +351,12 @@
             <div class="ig-row">
               <Wallet :size="13" class="ig-ic"/>
               <span class="ig-lbl">Phương thức</span>
-              <span class="ig-val">{{ selectedReceipt.method }}</span>
+              <span class="ig-val">
+                <span class="method-text info-method" :class="methodClass(selectedReceipt.method)">
+                  <component :is="methodIcon(selectedReceipt.method)" :size="13" stroke-width="2.2" class="method-icon" />
+                  {{ selectedReceipt.method }}
+                </span>
+              </span>
             </div>
             <div class="ig-row" v-if="selectedReceipt.note">
               <FileText :size="13" class="ig-ic"/>
@@ -483,7 +509,7 @@ import { ref, computed, reactive } from 'vue';
 import {
   Search, Plus, Download, X, Eye, XCircle, CheckCircle,
   Trash2, PackageOpen, CalendarDays, UserRound, FileText,
-  Clock, Wallet, Building2,
+  Clock, Wallet, Building2, Banknote, CreditCard, Smartphone,
 } from 'lucide-vue-next';
 
 /* ── Sort icon ── */
@@ -618,6 +644,16 @@ const monthName      = ['Tháng 1','Tháng 2','Tháng 3','Tháng 4','Tháng 5','
 const getAgent     = (id) => agents.find(a => a.id === id);
 const fmtTr        = (v) => v >= 1 ? `${Number(v).toFixed(1)} Tr` : `${(Number(v) * 1000).toFixed(0)} K`;
 const fmtMoney     = (v) => ((v || 0) / 1_000_000).toFixed(1) + ' Tr';
+const methodClass  = (method) => {
+  if (method === 'Chuyển khoản') return 'method-transfer';
+  if (method === 'Ví điện tử') return 'method-wallet';
+  return 'method-cash';
+};
+const methodIcon = (method) => {
+  if (method === 'Chuyển khoản') return CreditCard;
+  if (method === 'Ví điện tử') return Smartphone;
+  return Banknote;
+};
 
 const agentDebtPct = (id) => {
   const a = getAgent(id); if (!a) return 0;
@@ -856,7 +892,7 @@ const exportCSV = () => {
 .dl-table thead tr { background:var(--c-bg); border-bottom:1px solid var(--c-border); }
 .dl-table th { padding:10px 14px; text-align:left; font-size:10.5px; font-weight:700; text-transform:uppercase; letter-spacing:.5px; color:var(--c-txt-3); white-space:nowrap; overflow:hidden; }
 .dl-table td { padding:11px 14px; border-bottom:1px solid var(--c-border-s); vertical-align:middle; }
-.sort-hd-r { display:flex !important; justify-content:flex-end; }
+.sort-hd-r { display:flex !important; justify-content:flex-end; width:100%; }
 .tt-row { cursor:pointer; transition:background var(--t); }
 .tt-row:hover { background:rgba(15,23,42,.02); }
 .tt-row.selected { background:var(--c-success-bg); }
@@ -884,15 +920,55 @@ const exportCSV = () => {
 .debt-warn { color:#f59e0b; }
 .debt-over { color:var(--c-danger); }
 
-.method-badge { font-size:11px; font-weight:600; color:var(--c-txt-2); background:var(--c-bg); border:1px solid var(--c-border); padding:2px 8px; border-radius:var(--r-pill); white-space:nowrap; }
-.total-num { font-weight:700; font-size:13px; font-variant-numeric:tabular-nums; }
+.total-num {
+  display:inline-block;
+  min-width:64px;
+  text-align:right;
+  font-weight:800;
+  font-size:13px;
+  color:var(--c-txt);
+  font-variant-numeric:tabular-nums;
+}
+
+.method-text {
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  min-width:104px;
+  justify-content:flex-start;
+  font-size:12px;
+  font-weight:650;
+  color:var(--c-txt-2);
+  white-space:nowrap;
+}
+.method-icon {
+  flex-shrink:0;
+}
+.method-cash,
+.method-transfer,
+.method-wallet { color:#475569; }
+.method-cash .method-icon { color:#10b981; }
+.method-transfer .method-icon { color:#3b82f6; }
+.method-wallet .method-icon { color:#8b5cf6; }
 
 .status-badge { display:inline-flex; align-items:center; padding:3px 9px; border-radius:var(--r-pill); font-size:11px; font-weight:700; white-space:nowrap; }
 .status-badge.confirmed { background:var(--c-success-bg); color:#047857; border:1px solid rgba(155,114,245,.2); }
 .status-badge.pending   { background:#fef3c7; color:#92400e; border:1px solid rgba(245,158,11,.2); }
 
 .col-actions { text-align:center; white-space:nowrap; }
+.action-group {
+  display:grid;
+  grid-template-columns:repeat(3, 28px);
+  justify-content:center;
+  align-items:center;
+  gap:3px;
+  width:100%;
+}
 .act-btn  { width:28px; height:28px; display:inline-flex; align-items:center; justify-content:center; border:none; border-radius:var(--r-sm); cursor:pointer; transition:background var(--t); }
+.act-btn.invisible {
+  visibility:hidden;
+  pointer-events:none;
+}
 .view-btn { background:rgba(155,114,245,.08); color:var(--c-primary); }
 .view-btn:hover { background:rgba(155,114,245,.18); }
 .ok-btn   { background:rgba(16,185,129,.1); color:#059669; }
@@ -906,54 +982,92 @@ const exportCSV = () => {
 .lc-foot   { padding:10px 20px; font-size:11px; color:var(--c-txt-3); border-top:1px solid var(--c-border-s); }
 
 /* ══ SIDE PANEL ══ */
-.side-panel { display:flex; flex-direction:column; width:360px; flex-shrink:0; max-height:calc(100vh - 200px); position:sticky; top:16px; overflow:hidden; }
+.side-panel {
+  display:flex;
+  flex-direction:column;
+  width:380px;
+  flex-shrink:0;
+  position:sticky;
+  top:16px;
+  overflow:visible;
+  background:linear-gradient(180deg,#fbfdff 0%,#fffaf5 100%);
+}
 
-.ap-hd { padding:18px 18px 14px; border-bottom:1px solid var(--c-border); display:flex; align-items:flex-start; gap:12px; }
+.ap-hd { padding:18px; border-bottom:1px solid var(--c-border); display:flex; align-items:flex-start; gap:12px; background:#fff; }
 .ap-avatar {
-  position: relative; width: 44px; height: 44px; border-radius: 10px; flex-shrink: 0;
+  position: relative; width: 54px; height: 54px; border-radius: 12px; flex-shrink: 0;
   border: 1px solid rgba(0,0,0,.12); box-shadow: 0 2px 6px rgba(0,0,0,.15);
   overflow: hidden; background: white;
 }
 .ap-title-block { flex:1; min-width:0; }
-.ap-name   { font-size:15px; font-weight:700; margin:0 0 5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.ap-badges { display:flex; gap:5px; flex-wrap:wrap; }
-.dist-chip { font-size:10px; font-weight:600; color:var(--c-txt-3); background:var(--c-bg); border:1px solid var(--c-border); border-radius:var(--r-pill); padding:3px 8px; }
+.ap-eyebrow { display:block; font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.3px; color:var(--c-txt-3); margin-bottom:2px; }
+.ap-name   { font-size:20px; font-weight:700; margin:0 0 8px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; letter-spacing:0; }
+.ap-badges { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+.panel-method { min-width:0; font-size:11px; color:var(--c-txt-2); }
+.panel-close {
+  width:34px;
+  height:34px;
+  border:none;
+  border-radius:10px;
+  background:#f6f8fb;
+  color:var(--c-txt-3);
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  cursor:pointer;
+  transition:background var(--t), color var(--t);
+}
+.panel-close:hover { background:#edf2f7; color:var(--c-txt-2); }
 
 /* Gauge section */
-.gauge-section { padding:14px 18px; border-bottom:1px solid var(--c-border); display:flex; flex-direction:column; gap:10px; overflow-y:auto; flex:1; }
+.gauge-section { padding:16px 18px; border-bottom:1px solid var(--c-border); display:flex; flex-direction:column; gap:12px; overflow:visible; flex:none; }
 
 /* Amount display */
-.amt-display { text-align:center; padding:16px; background:var(--c-success-bg); border-radius:var(--r-md); border:1px solid rgba(155,114,245,.1); }
-.amt-label { font-size:10px; font-weight:700; color:var(--c-txt-3); text-transform:uppercase; letter-spacing:.5px; display:block; margin-bottom:6px; }
-.amt-value { font-size:32px; font-weight:900; color:var(--c-primary); letter-spacing:-1.5px; font-variant-numeric:tabular-nums; line-height:1; }
-.amt-sub   { font-size:11px; color:#8b5cf6; font-weight:600; margin-top:4px; }
+.amt-display {
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-end;
+  gap:14px;
+  padding:16px;
+  background:#f3fbf8;
+  border-radius:14px;
+  border:1px solid rgba(16,185,129,.12);
+}
+.amt-label { font-size:10px; font-weight:700; color:var(--c-txt-3); text-transform:uppercase; letter-spacing:.3px; display:block; margin-bottom:6px; }
+.amt-value { font-size:34px; font-weight:800; color:var(--c-primary); letter-spacing:0; font-variant-numeric:tabular-nums; line-height:1; }
+.amt-side { display:flex; flex-direction:column; align-items:flex-end; gap:3px; text-align:right; }
+.amt-side span { font-size:11px; color:var(--c-txt-3); font-weight:600; }
+.amt-side strong { font-size:12px; color:#2563eb; font-weight:700; font-variant-numeric:tabular-nums; white-space:nowrap; }
 
 /* Debt section in panel */
-.debt-section { display:flex; flex-direction:column; gap:5px; padding:10px 12px; background:var(--c-bg); border-radius:var(--r-md); border:1px solid var(--c-border); }
+.debt-section { display:flex; flex-direction:column; gap:8px; padding:12px 14px; background:#fffdf8; border-radius:12px; border:1px solid rgba(245,158,11,.14); box-shadow:0 1px 2px rgba(15,23,42,.03); }
 .debt-hd { display:flex; justify-content:space-between; align-items:center; }
-.debt-lbl { font-size:11px; color:var(--c-txt-3); font-weight:600; text-transform:uppercase; letter-spacing:.3px; }
-.debt-val { font-size:12px; font-weight:700; font-variant-numeric:tabular-nums; }
+.debt-hd small { display:block; font-size:11px; color:var(--c-txt-3); font-weight:600; margin-top:2px; max-width:170px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.debt-lbl { font-size:11px; color:var(--c-txt-2); font-weight:700; text-transform:uppercase; letter-spacing:.2px; }
+.debt-val { font-size:12px; font-weight:650; font-variant-numeric:tabular-nums; }
 .debt-bar-wrap { display:flex; align-items:center; gap:8px; }
-.debt-bar { flex:1; height:5px; background:#e2e8f0; border-radius:3px; overflow:hidden; }
+.debt-bar { flex:1; height:7px; background:#e2e8f0; border-radius:99px; overflow:hidden; }
 .debt-fill { height:100%; border-radius:3px; transition:width .5s; }
 .debt-pct-lbl { font-size:10px; font-weight:700; white-space:nowrap; }
 
-.debt-status-bar { display:flex; align-items:center; gap:6px; font-size:11px; font-weight:700; padding:7px 12px; border-radius:var(--r-md); }
-.debt-status-bar.confirmed { background:var(--c-success-bg); color:#047857; }
-.debt-status-bar.pending   { background:#fef3c7; color:#92400e; }
+.debt-status-bar { display:flex; align-items:center; gap:7px; font-size:12px; font-weight:700; padding:10px 12px; border-radius:12px; }
+.debt-status-bar.confirmed { background:#f0fdf6; color:#047857; }
+.debt-status-bar.pending   { background:#fff7ed; color:#a16207; }
 
 /* Info grid */
-.info-grid { padding:14px 18px; border-bottom:1px solid var(--c-border); display:flex; flex-direction:column; gap:9px; }
-.ig-row { display:flex; align-items:flex-start; gap:8px; font-size:12px; }
+.info-grid { padding:14px 18px; border-bottom:1px solid var(--c-border); display:flex; flex-direction:column; gap:0; }
+.ig-row { display:grid; grid-template-columns:22px 95px 1fr; align-items:start; gap:8px; font-size:12.5px; padding:9px 0; border-bottom:1px solid var(--c-border-s); }
+.ig-row:last-child { border-bottom:none; }
 .ig-ic  { color:var(--c-txt-3); flex-shrink:0; margin-top:1px; }
-.ig-lbl { color:var(--c-txt-3); width:72px; flex-shrink:0; }
-.ig-val { color:var(--c-txt-2); font-weight:500; flex:1; min-width:0; }
+.ig-lbl { color:var(--c-txt-3); font-weight:600; }
+.ig-val { color:var(--c-txt-2); font-weight:550; min-width:0; line-height:1.45; }
+.info-method { min-width:0; font-size:12px; color:var(--c-txt-2); }
 
 /* Quick actions */
-.quick-links  { padding:14px 18px; display:flex; gap:8px; border-bottom:1px solid var(--c-border); }
+.quick-links  { padding:14px 18px; display:flex; gap:8px; background:#fff; border-top:1px solid var(--c-border); }
 .btn-danger-o { display:inline-flex; align-items:center; gap:6px; padding:9px 14px; border-radius:var(--r-md); border:1.5px solid rgba(239,68,68,.25); background:#fef2f2; color:#dc2626; font-size:13px; font-weight:700; cursor:pointer; font-family:inherit; transition:all var(--t); }
 .btn-danger-o:hover { background:#fee2e2; }
-.status-note  { display:flex; align-items:center; gap:7px; padding:12px 18px; font-size:12.5px; font-weight:600; color:var(--c-primary); }
+.status-note  { display:flex; align-items:center; gap:7px; padding:14px 18px; font-size:12.5px; font-weight:650; color:var(--c-primary); background:#fff; border-top:1px solid var(--c-border); }
 
 /* ══ FORM ══ */
 .fc-hd { padding:16px 18px; border-bottom:1px solid var(--c-border); display:flex; justify-content:space-between; align-items:flex-start; gap:8px; }

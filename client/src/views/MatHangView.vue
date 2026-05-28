@@ -180,13 +180,13 @@
         <div class="table-wrap">
           <table class="dl-table">
             <colgroup>
-              <col style="width:10%"/>
+              <col style="width:12%"/>
               <col/>
               <col style="width:7%"/>
               <col style="width:11%"/>
               <col style="width:11%"/>
-              <col style="width:14%"/>
-              <col style="width:12%"/>
+              <col style="width:15%"/>
+              <col style="width:13%"/>
             </colgroup>
             <thead>
               <tr>
@@ -199,10 +199,10 @@
                   <span class="sort-hd sort-hd-r" @click="toggleSort('buyPrice')">Giá nhập <SortIcon field="buyPrice" :sk="sk" :sd="sd"/></span>
                 </th>
                 <th class="text-right">Giá xuất (+2%)</th>
-                <th>
-                  <span class="sort-hd" @click="toggleSort('stock')">Tồn kho <SortIcon field="stock" :sk="sk" :sd="sd"/></span>
+                <th class="text-right">
+                  <span class="sort-hd sort-hd-r" @click="toggleSort('stock')">Tồn kho <SortIcon field="stock" :sk="sk" :sd="sd"/></span>
                 </th>
-                <th class="text-center">Thao tác</th>
+                <th class="text-center col-actions-head">Thao tác</th>
               </tr>
             </thead>
             <tbody>
@@ -230,16 +230,21 @@
                 <td class="text-right">
                   <span class="price-num sell-price">{{ fmtPrice(r.sellPrice) }}</span>
                 </td>
-                <td>
-                  <div class="stock-cell">
-                    <span class="stock-num" :class="stockClass(r)">{{ r.stock.toLocaleString('vi-VN') }}</span>
+                <td class="text-right">
+                  <div class="stock-cell" :class="stockClass(r)">
+                    <div class="stock-head">
+                      <span class="stock-num">{{ r.stock.toLocaleString('vi-VN') }}</span>
+                      <span class="stock-state">{{ stockLabelShort(r) }}</span>
+                    </div>
                     <div class="stock-mini-bar"><div class="stock-mini-fill" :style="{width: stockPct(r)+'%', background: stockColor(r)}"></div></div>
                   </div>
                 </td>
                 <td class="col-actions">
-                  <button class="act-btn view-btn" title="Xem" @click.stop="openView(r)"><Eye :size="13"/></button>
-                  <button class="act-btn edit-btn" title="Sửa" @click.stop="openEdit(r)"><Edit2 :size="13"/></button>
-                  <button class="act-btn del-btn" title="Xóa" @click.stop="askDelete(r)"><Trash2 :size="13"/></button>
+                  <div class="action-group">
+                    <button class="act-btn view-btn" title="Xem" @click.stop="openView(r)"><Eye :size="13"/></button>
+                    <button class="act-btn edit-btn" title="Sửa" @click.stop="openEdit(r)"><Edit2 :size="13"/></button>
+                    <button class="act-btn del-btn" title="Xóa" @click.stop="askDelete(r)"><Trash2 :size="13"/></button>
+                  </div>
                 </td>
               </tr>
               <tr v-if="!sortedList.length">
@@ -298,7 +303,7 @@
             </div>
             <div class="ps-sub-row" style="margin-top:4px;padding-top:6px;border-top:1px solid var(--c-border)">
               <span style="color:var(--c-txt-3)">Lợi nhuận/đơn vị</span>
-              <span style="font-weight:800;color:var(--c-primary)">{{ fmtPrice(selectedProduct.sellPrice - selectedProduct.buyPrice) }}</span>
+              <span style="font-weight:800;color:#2e7d32">{{ fmtPrice(selectedProduct.sellPrice - selectedProduct.buyPrice) }}</span>
             </div>
           </div>
 
@@ -341,12 +346,12 @@
             <div class="ig-row">
               <BarChart2 :size="13" class="ig-ic"/>
               <span class="ig-lbl">Giá nhập</span>
-              <span class="ig-val" style="font-weight:700;color:var(--c-primary)">{{ fmtPrice(selectedProduct.buyPrice) }}</span>
+              <span class="ig-val" style="font-weight:700;color:var(--c-txt-2)">{{ fmtPrice(selectedProduct.buyPrice) }}</span>
             </div>
             <div class="ig-row">
               <BarChart2 :size="13" class="ig-ic"/>
               <span class="ig-lbl">Giá xuất</span>
-              <span class="ig-val" style="font-weight:700;color:#047857">{{ fmtPrice(selectedProduct.sellPrice) }}</span>
+              <span class="ig-val" style="font-weight:700;color:#2e7d32">{{ fmtPrice(selectedProduct.sellPrice) }}</span>
             </div>
           </div>
 
@@ -637,10 +642,11 @@ const monthName        = ['Tháng 1','Tháng 2','Tháng 3','Tháng 4','Tháng 5'
 
 /* ── Stock helpers ── */
 const stockPct   = (p) => Math.min(p.stock / maxStock.value * 100, 100);
-const stockColor = (p) => p.stock === 0 ? '#ef4444' : p.stock <= 100 ? '#f59e0b' : '#10b981';
+const stockColor = (p) => p.stock === 0 ? '#dc2626' : p.stock <= 100 ? '#d97706' : '#2e7d32';
 const stockClass = (p) => p.stock === 0 ? 'stock-out' : p.stock <= 100 ? 'stock-low' : 'stock-ok';
 const stockLabel = (p) => p.stock === 0 ? 'Hết hàng' : p.stock <= 100 ? 'Sắp hết hàng' : 'Đủ hàng';
-const fmtPrice   = (v) => Number(v).toFixed(4) + ' Tr';
+const stockLabelShort = (p) => p.stock === 0 ? 'Hết' : p.stock <= 100 ? 'Thấp' : 'Đủ';
+const fmtPrice   = (v) => `${Math.round(Number(v) * 1_000_000).toLocaleString('vi-VN')}đ`;
 
 /* ── Filtered & sorted list ── */
 const filteredList = computed(() => {
@@ -824,8 +830,8 @@ const exportCSV = () => {
 
 /* ── Delta ── */
 .cs-delta { font-size:10.5px; font-weight:600; margin-top:-3px; }
-.cs-up    { color:#10b981; }
-.cs-ok    { color:#10b981; }
+.cs-up    { color:#2e7d32; }
+.cs-ok    { color:#2e7d32; }
 .cs-down  { color:var(--c-danger); }
 
 /* ── Sparkline ── */
@@ -897,7 +903,22 @@ const exportCSV = () => {
 .col-mono { font-variant-numeric:tabular-nums; font-size:12px; }
 .muted    { color:var(--c-txt-3); }
 
-.mh-code { font-size:12px; font-weight:700; color:var(--c-primary); background:var(--c-success-bg); padding:3px 8px; border-radius:6px; font-variant-numeric:tabular-nums; }
+.mh-code {
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-width:62px;
+  white-space:nowrap;
+  font-size:12px;
+  font-weight:700;
+  color:#475569;
+  background:#f8fafc;
+  border:1px solid #e2e8f0;
+  padding:3px 7px;
+  border-radius:6px;
+  font-variant-numeric:tabular-nums;
+  box-sizing:border-box;
+}
 .mh-name-cell { display:flex; align-items:center; gap:10px; min-width:0; }
 .mh-name-cell > div { min-width:0; }
 .mh-name { font-size:13px; font-weight:600; display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
@@ -905,35 +926,74 @@ const exportCSV = () => {
 .prod-thumb { position:relative; width:44px; height:44px; border-radius:8px; flex-shrink:0; overflow:hidden; background:white; border:1px solid rgba(0,0,0,.08); box-shadow:0 1px 4px rgba(0,0,0,.10); }
 .prod-img   { position:absolute; inset:0; width:100%; height:100%; object-fit:contain; padding:4px; box-sizing:border-box; z-index:2; background:white; display:block; }
 .prod-init  { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:14px; font-weight:800; color:white; }
-.price-num { font-weight:700; font-size:12px; font-variant-numeric:tabular-nums; color:var(--c-txt-2); }
-.sell-price { color:#047857; }
+.price-num { display:inline-block; min-width:74px; font-weight:700; font-size:12px; font-variant-numeric:tabular-nums; color:var(--c-txt-2); text-align:right; }
+.sell-price { color:#2e7d32; }
 
 /* ── Stock cell ── */
-.stock-cell { display:flex; flex-direction:column; gap:3px; }
-.stock-num { font-size:13px; font-weight:700; font-variant-numeric:tabular-nums; }
-.stock-ok  { color:#059669; }
-.stock-low { color:#d97706; }
-.stock-out { color:var(--c-danger); }
-.stock-mini-bar { height:3px; background:#f1f5f9; border-radius:2px; overflow:hidden; min-width:60px; }
-.stock-mini-fill { height:100%; border-radius:2px; transition:width .4s; }
+.stock-cell {
+  width:116px;
+  margin-left:auto;
+  padding:7px 9px;
+  border:1px solid #e2e8f0;
+  border-radius:10px;
+  background:#fff;
+  box-sizing:border-box;
+}
+.stock-cell.stock-ok { background:#f4fbf5; border-color:#dcefe1; }
+.stock-cell.stock-low { background:#fff8ed; border-color:#fde4bd; }
+.stock-cell.stock-out { background:#fff5f5; border-color:#fecaca; }
+.stock-head { display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:6px; }
+.stock-num { font-size:13px; font-weight:800; font-variant-numeric:tabular-nums; color:#334155; }
+.stock-cell.stock-ok .stock-num  { color:#2e7d32; }
+.stock-cell.stock-low .stock-num { color:#d97706; }
+.stock-cell.stock-out .stock-num { color:var(--c-danger); }
+.stock-state {
+  min-width:30px;
+  text-align:center;
+  font-size:10px;
+  line-height:1.5;
+  font-weight:700;
+  border-radius:var(--r-pill);
+  padding:1px 6px;
+  background:#f1f5f9;
+  color:#64748b;
+}
+.stock-cell.stock-ok .stock-state { background:#dff3e5; color:#2e7d32; }
+.stock-cell.stock-low .stock-state { background:#ffedd5; color:#c2410c; }
+.stock-cell.stock-out .stock-state { background:#fee2e2; color:#b91c1c; }
+.stock-mini-bar { width:100%; height:4px; background:#e8edf4; border-radius:99px; overflow:hidden; }
+.stock-mini-fill { height:100%; border-radius:99px; transition:width .4s; }
 
-.col-actions { text-align:center; white-space:nowrap; }
-.act-btn  { width:28px; height:28px; display:inline-flex; align-items:center; justify-content:center; border:none; border-radius:var(--r-sm); cursor:pointer; transition:background var(--t); }
+.col-actions-head { width:96px; }
+.col-actions { text-align:center; white-space:nowrap; padding-left:8px !important; padding-right:8px !important; }
+.action-group { width:94px; margin:0 auto; display:grid; grid-template-columns:repeat(3, 28px); gap:5px; align-items:center; justify-content:center; }
+.act-btn  { width:28px; height:28px; display:inline-flex; align-items:center; justify-content:center; border:none; border-radius:var(--r-sm); cursor:pointer; transition:background var(--t), transform var(--t); }
+.act-btn:hover { transform:translateY(-1px); }
 .view-btn { background:rgba(13,148,136,.08); color:var(--c-primary); }
 .view-btn:hover { background:rgba(13,148,136,.18); }
-.edit-btn { background:rgba(79,70,229,.08); color:var(--c-info); }
-.edit-btn:hover { background:rgba(79,70,229,.18); }
+.edit-btn { background:rgba(37,99,235,.08); color:#2563eb; }
+.edit-btn:hover { background:rgba(37,99,235,.16); }
 .del-btn  { background:rgba(239,68,68,.08); color:var(--c-danger); }
 .del-btn:hover { background:rgba(239,68,68,.18); }
 
 .empty-row { text-align:center; padding:40px 0; color:var(--c-txt-3); }
 .empty-ic  { margin:0 auto 8px; display:block; opacity:.35; }
-.lc-foot   { padding:10px 20px; font-size:11px; color:var(--c-txt-3); border-top:1px solid var(--c-border-s); }
+.lc-foot   { padding:10px 20px; font-size:11.5px; font-weight:600; color:#64748b; border-top:1px solid var(--c-border-s); }
 
 /* ══ SIDE PANEL ══ */
-.side-panel { display:flex; flex-direction:column; width:360px; flex-shrink:0; max-height:calc(100vh - 200px); position:sticky; top:16px; overflow:hidden; }
+.side-panel {
+  display:flex;
+  flex-direction:column;
+  width:360px;
+  flex-shrink:0;
+  max-height:calc(100vh - 200px);
+  position:sticky;
+  top:16px;
+  overflow:hidden;
+  background:linear-gradient(180deg,#fbfdff 0%,#fffaf4 100%);
+}
 
-.ap-hd { padding:18px 18px 14px; border-bottom:1px solid var(--c-border); display:flex; align-items:flex-start; gap:12px; }
+.ap-hd { padding:18px 18px 14px; border-bottom:1px solid var(--c-border); display:flex; align-items:flex-start; gap:12px; background:rgba(255,255,255,.72); }
 .ap-avatar { position:relative; width:64px; height:64px; border-radius:12px; flex-shrink:0; overflow:hidden; background:white; border:1px solid rgba(0,0,0,.10); box-shadow:0 2px 8px rgba(0,0,0,.12); }
 .ap-title-block { flex:1; min-width:0; }
 .ap-name   { font-size:15px; font-weight:700; margin:0 0 6px; overflow:hidden; text-overflow:ellipsis; }
@@ -941,17 +1001,36 @@ const exportCSV = () => {
 .dist-chip { font-size:10px; font-weight:600; color:var(--c-txt-3); background:var(--c-bg); border:1px solid var(--c-border); border-radius:var(--r-pill); padding:3px 8px; }
 
 /* ── Price section ── */
-.price-section { padding:14px 18px; border-bottom:1px solid var(--c-border); display:flex; flex-direction:column; gap:10px; }
+.price-section {
+  margin:14px 18px 0;
+  padding:14px;
+  border:1px solid #bfdbfe;
+  border-radius:14px;
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+  background:linear-gradient(135deg, rgba(239,246,255,.86), rgba(240,253,250,.76));
+}
 .ps-row { display:flex; justify-content:space-between; align-items:baseline; }
 .ps-lbl { font-size:11px; color:var(--c-txt-3); font-weight:600; text-transform:uppercase; letter-spacing:.4px; }
-.ps-val { font-size:22px; font-weight:900; color:var(--c-primary); font-variant-numeric:tabular-nums; }
-.ps-sub-row { display:flex; justify-content:space-between; font-size:12px; }
+.ps-val { font-size:23px; font-weight:800; color:#047857; font-variant-numeric:tabular-nums; letter-spacing:0; }
+.ps-sub-row { display:flex; justify-content:space-between; align-items:center; gap:10px; font-size:12px; }
+.ps-sub-row + .ps-sub-row { padding-top:8px; border-top:1px solid rgba(148,163,184,.18); }
 
 /* ── Stock section ── */
-.stock-section { padding:14px 18px; border-bottom:1px solid var(--c-border); display:flex; flex-direction:column; gap:8px; }
-.ss-num { font-size:26px; font-weight:900; font-variant-numeric:tabular-nums; }
+.stock-section {
+  margin:12px 18px 0;
+  padding:14px;
+  border:1px solid #fed7aa;
+  border-radius:14px;
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+  background:linear-gradient(135deg, rgba(255,251,235,.88), rgba(255,255,255,.68));
+}
+.ss-num { font-size:25px; font-weight:800; font-variant-numeric:tabular-nums; letter-spacing:0; }
 .ss-bar-wrap { display:flex; align-items:center; gap:8px; }
-.ss-bar { flex:1; height:8px; background:#f1f5f9; border-radius:4px; overflow:hidden; }
+.ss-bar { flex:1; height:5px; background:#eef2f7; border-radius:99px; overflow:hidden; }
 .ss-fill { height:100%; border-radius:4px; transition:width .5s; }
 .ss-chip { font-size:10.5px; font-weight:700; padding:3px 9px; border-radius:var(--r-pill); }
 .ss-chip.stock-ok  { background:rgba(5,150,105,.1); color:#065f46; }
@@ -959,26 +1038,35 @@ const exportCSV = () => {
 .ss-chip.stock-out { background:var(--c-danger-bg); color:#991b1b; }
 
 /* ── Info grid ── */
-.info-grid { padding:14px 18px; border-bottom:1px solid var(--c-border); display:flex; flex-direction:column; gap:9px; }
+.info-grid {
+  margin-top:12px;
+  padding:14px 18px;
+  border-top:1px solid var(--c-border);
+  border-bottom:1px solid var(--c-border);
+  display:flex;
+  flex-direction:column;
+  gap:9px;
+  background:rgba(255,255,255,.42);
+}
 .ig-row { display:flex; align-items:flex-start; gap:8px; font-size:12px; }
 .ig-ic  { color:var(--c-txt-3); flex-shrink:0; margin-top:1px; }
 .ig-lbl { color:var(--c-txt-3); width:52px; flex-shrink:0; }
 .ig-val { color:var(--c-txt-2); font-weight:500; flex:1; min-width:0; }
 
 /* ── Quick links ── */
-.quick-links { padding:14px 18px; display:flex; gap:8px; border-bottom:1px solid var(--c-border); }
+.quick-links { padding:14px 18px; display:flex; gap:8px; border-bottom:1px solid var(--c-border); background:rgba(255,255,255,.36); }
 .btn-danger-o { display:inline-flex; align-items:center; gap:6px; padding:9px 14px; border-radius:var(--r-md); border:1.5px solid rgba(239,68,68,.25); background:#fef2f2; color:#dc2626; font-size:13px; font-weight:700; cursor:pointer; font-family:inherit; transition:all var(--t); }
 .btn-danger-o:hover { background:#fee2e2; }
 
 /* ══ FORM ══ */
-.fc-hd { padding:16px 18px; border-bottom:1px solid var(--c-border); display:flex; justify-content:space-between; align-items:flex-start; gap:8px; }
+.fc-hd { padding:16px 18px; border-bottom:1px solid var(--c-border); display:flex; justify-content:space-between; align-items:flex-start; gap:8px; background:rgba(255,255,255,.72); }
 .fc-title { font-size:15px; font-weight:700; margin:0; }
 .fc-sub   { font-size:11px; color:var(--c-txt-3); display:block; margin-top:2px; }
 .mode-chip { font-size:10px; font-weight:700; padding:3px 9px; border-radius:var(--r-pill); flex-shrink:0; }
 .mode-chip.add       { background:var(--c-success-bg); color:#065f46; border:1px solid rgba(13,148,136,.2); }
-.mode-chip.edit-chip { background:rgba(79,70,229,.08); color:#3730a3; border:1px solid rgba(79,70,229,.2); }
+.mode-chip.edit-chip { background:#eff6ff; color:#1d4ed8; border:1px solid #bfdbfe; }
 
-.fc-body { flex:1; padding:16px 18px; display:flex; flex-direction:column; gap:13px; overflow-y:auto; scrollbar-width:thin; scrollbar-color:#e2e8f0 transparent; }
+.fc-body { flex:1; padding:16px 18px; display:flex; flex-direction:column; gap:13px; overflow-y:auto; scrollbar-width:thin; scrollbar-color:#e2e8f0 transparent; background:rgba(255,255,255,.34); }
 .field     { display:flex; flex-direction:column; gap:5px; flex:1; min-width:0; }
 .field.full { width:100%; }
 .field-row  { display:grid; grid-template-columns:1fr 1fr; gap:10px; }

@@ -1114,9 +1114,10 @@ const exportCSV = () => {
   overflow: hidden;
   position: sticky;
   top: 16px;
+  background:linear-gradient(180deg,#f7fbff 0%,#f8fff9 100%);
 }
 
-.ap-hd { padding:18px 18px 14px; border-bottom:1px solid var(--c-border); display:flex; align-items:flex-start; gap:12px; }
+.ap-hd { padding:18px 18px 14px; border-bottom:1px solid var(--c-border); display:flex; align-items:flex-start; gap:12px; background:rgba(255,255,255,.72); }
 .ap-avatar {
   position: relative; width: 44px; height: 44px; border-radius: 10px; flex-shrink: 0;
   border: 1px solid rgba(0,0,0,.12); box-shadow: 0 2px 6px rgba(0,0,0,.15);
@@ -1128,7 +1129,7 @@ const exportCSV = () => {
 .dist-chip { font-size:10px; font-weight:600; color:var(--c-txt-3); background:var(--c-bg); border:1px solid var(--c-border); border-radius:var(--r-pill); padding:3px 8px; }
 
 /* Gauge section */
-.gauge-section { padding:14px 18px; border-bottom:1px solid var(--c-border); display:flex; flex-direction:column; gap:10px; }
+.gauge-section { padding:14px 18px; border-bottom:1px solid var(--c-border); display:flex; flex-direction:column; gap:10px; background:rgba(255,255,255,.48); }
 .val-summary { display:flex; flex-direction:column; gap:8px; }
 .vs-main  { display:flex; justify-content:space-between; align-items:baseline; }
 .vs-label { font-size:11px; color:var(--c-txt-3); font-weight:600; text-transform:uppercase; letter-spacing:.4px; }
@@ -1154,7 +1155,7 @@ const exportCSV = () => {
 .debt-status-bar.cancelled { background:#fef2f2; color:#ef4444; }
 
 /* Info grid */
-.info-grid { padding:14px 18px; border-bottom:1px solid var(--c-border); display:flex; flex-direction:column; gap:9px; }
+.info-grid { padding:14px 18px; border-bottom:1px solid var(--c-border); display:flex; flex-direction:column; gap:9px; background:rgba(255,255,255,.4); }
 .ig-row { display:flex; align-items:flex-start; gap:8px; font-size:12px; }
 .ig-ic  { color:var(--c-txt-3); flex-shrink:0; margin-top:1px; }
 .ig-lbl { color:var(--c-txt-3); width:52px; flex-shrink:0; }

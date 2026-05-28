@@ -931,7 +931,7 @@ const exportPrint = () => {
 
 /* ══ SIDE PANEL ══ */
 .side-panel {
-  background: white; border-radius: 12px;
+  background: linear-gradient(180deg,#fbfdff 0%,#fffaf5 100%); border-radius: 12px;
   border: 1px solid rgba(15,23,42,.07);
   box-shadow: 0 1px 3px rgba(15,23,42,.05), 0 1px 2px rgba(15,23,42,.04);
   overflow-y: auto; max-height: 76vh;
@@ -939,6 +939,7 @@ const exportPrint = () => {
 .sp-header {
   display: flex; align-items: center; gap: 12px;
   padding: 20px 20px 16px; border-bottom: 1px solid #f1f5f9;
+  background: rgba(255,255,255,.72);
 }
 .ap-avatar {
   position: relative; width: 44px; height: 44px; border-radius: 10px; flex-shrink: 0;
@@ -1004,10 +1005,10 @@ const exportPrint = () => {
 .sp-divider { height: 1px; background: #f1f5f9; margin: 16px 0 0; }
 .sp-info-grid {
   display: grid; grid-template-columns: 1fr 1fr;
-  gap: 1px; background: #f8fafc; margin: 0;
+  gap: 1px; background: rgba(226,232,240,.72); margin: 0;
 }
 .sig-item {
-  background: white; padding: 12px 20px;
+  background: rgba(255,255,255,.76); padding: 12px 20px;
 }
 .sig-label { font-size: .62rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; margin-bottom: 3px; }
 .sig-val   { font-size: .82rem; font-weight: 700; color: #1e293b; }
