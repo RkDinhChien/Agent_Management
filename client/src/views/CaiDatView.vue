@@ -314,7 +314,8 @@
 </template>
 
 <script setup>
-import { ref, reactive } from 'vue';
+import { ref, reactive, onMounted } from 'vue';
+import api from '../services/api';
 import {
   SlidersHorizontal, Users, Ruler, MapPin,
   Plus, Save, X, Pencil, Trash2,
@@ -337,11 +338,18 @@ const paramSaved = ref(false);
 const saveParams = () => { paramSaved.value = true; setTimeout(() => paramSaved.value = false, 2500); };
 
 /* ── Loại đại lý ── */
-const loais = ref([
-  { id: 1, ten: 'Loại 1', hanMucNo: 10_000_000 },
-  { id: 2, ten: 'Loại 2', hanMucNo: 5_000_000  },
-]);
-let loaiNextId = 3;
+const loais = ref([]);
+let loaiNextId = 100;
+
+const loadLoais = async () => {
+  try {
+    const res = await api.get('/loai-dai-ly');
+    loais.value = res.data || res || [];
+    loaiNextId = Math.max(...loais.value.map(l => l.id), 0) + 1;
+  } catch (err) {
+    console.warn('Failed to load loai-dai-ly', err?.response?.status || err.message);
+  }
+};
 const loaiForm = reactive({ id: null, ten: '', hanMucNo: '' });
 const resetLoai  = () => { loaiForm.id = null; loaiForm.ten = ''; loaiForm.hanMucNo = ''; };
 const editLoai   = (l) => { loaiForm.id = l.id; loaiForm.ten = l.ten; loaiForm.hanMucNo = l.hanMucNo; };
@@ -358,11 +366,18 @@ const submitLoai = () => {
 };
 
 /* ── Đơn vị tính ── */
-const dvts = ref([
-  { id: 1, ten: 'Cái' }, { id: 2, ten: 'Bộ' }, { id: 3, ten: 'Mét' },
-  { id: 4, ten: 'Hộp' }, { id: 5, ten: 'Cuộn' },
-]);
-let dvtNextId = 6;
+const dvts = ref([]);
+let dvtNextId = 100;
+
+const loadDvts = async () => {
+  try {
+    const res = await api.get('/don-vi-tinh');
+    dvts.value = res.data || res || [];
+    dvtNextId = Math.max(...dvts.value.map(d => d.id), 0) + 1;
+  } catch (err) {
+    console.warn('Failed to load don-vi-tinh', err?.response?.status || err.message);
+  }
+};
 const dvtForm = reactive({ id: null, ten: '' });
 const resetDvt  = () => { dvtForm.id = null; dvtForm.ten = ''; };
 const editDvt   = (d) => { dvtForm.id = d.id; dvtForm.ten = d.ten; };
@@ -379,11 +394,24 @@ const submitDvt = () => {
 };
 
 /* ── Quận ── */
-const quans = ref([
-  { id: 1, ten: 'Quận 1' }, { id: 2, ten: 'Quận 3' }, { id: 3, ten: 'Quận 5' },
-  { id: 4, ten: 'Quận 10' }, { id: 5, ten: 'Bình Thạnh' }, { id: 6, ten: 'Gò Vấp' },
-]);
-let quanNextId = 7;
+const quans = ref([]);
+let quanNextId = 100;
+
+const loadQuans = async () => {
+  try {
+    const res = await api.get('/quan');
+    quans.value = res.data || res || [];
+    quanNextId = Math.max(...quans.value.map(q => q.id), 0) + 1;
+  } catch (err) {
+    console.warn('Failed to load quan', err?.response?.status || err.message);
+  }
+};
+
+onMounted(() => {
+  loadLoais();
+  loadDvts();
+  loadQuans();
+});
 const quanForm = reactive({ id: null, ten: '' });
 const resetQuan  = () => { quanForm.id = null; quanForm.ten = ''; };
 const editQuan   = (q) => { quanForm.id = q.id; quanForm.ten = q.ten; };

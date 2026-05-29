@@ -18,7 +18,7 @@ const LoaiDaiLy = sequelize.define('LoaiDaiLy', {
   },
 }, {
   tableName: 'LOAIDAILY',
-  timestamps: true,
+  timestamps: false,
 });
 
 module.exports = LoaiDaiLy;

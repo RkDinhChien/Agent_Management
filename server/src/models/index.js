@@ -55,8 +55,8 @@ DonViTinh.hasMany(MatHang, { foreignKey: 'MaDVT', as: 'matHangs' });
 MatHang.belongsTo(DonViTinh, { foreignKey: 'MaDVT', as: 'dvt' });
 
 // Phiếu nhập hàng <-> Chi tiết phiếu nhập
-PhieuNhapHang.hasMany(ChiTiet_PhieuNhap, { foreignKey: 'MaPN', as: 'chiTiets' });
-ChiTiet_PhieuNhap.belongsTo(PhieuNhapHang, { foreignKey: 'MaPN', as: 'phieuNhap' });
+PhieuNhapHang.hasMany(ChiTiet_PhieuNhap, { foreignKey: 'MaPhieuNhap', as: 'chiTiets' });
+ChiTiet_PhieuNhap.belongsTo(PhieuNhapHang, { foreignKey: 'MaPhieuNhap', as: 'phieuNhap' });
 
 // Chi tiết phiếu nhập <-> Mặt hàng
 MatHang.hasMany(ChiTiet_PhieuNhap, { foreignKey: 'MaMatHang', as: 'chiTietNhaps' });
@@ -67,8 +67,8 @@ DaiLy.hasMany(PhieuXuatHang, { foreignKey: 'MaDaiLy', as: 'phieuXuats' });
 PhieuXuatHang.belongsTo(DaiLy, { foreignKey: 'MaDaiLy', as: 'daiLy' });
 
 // Phiếu xuất hàng <-> Chi tiết phiếu xuất
-PhieuXuatHang.hasMany(ChiTiet_PhieuXuat, { foreignKey: 'MaPX', as: 'chiTiets' });
-ChiTiet_PhieuXuat.belongsTo(PhieuXuatHang, { foreignKey: 'MaPX', as: 'phieuXuat' });
+PhieuXuatHang.hasMany(ChiTiet_PhieuXuat, { foreignKey: 'MaPhieuXuat', as: 'chiTiets' });
+ChiTiet_PhieuXuat.belongsTo(PhieuXuatHang, { foreignKey: 'MaPhieuXuat', as: 'phieuXuat' });
 
 // Chi tiết phiếu xuất <-> Mặt hàng
 MatHang.hasMany(ChiTiet_PhieuXuat, { foreignKey: 'MaMatHang', as: 'chiTietXuats' });

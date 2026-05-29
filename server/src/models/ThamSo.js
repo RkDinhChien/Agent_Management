@@ -16,7 +16,7 @@ const ThamSo = sequelize.define('ThamSo', {
   },
 }, {
   tableName: 'THAMSO',
-  timestamps: true,
+  timestamps: false,
 });
 
 module.exports = ThamSo;

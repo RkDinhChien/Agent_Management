@@ -31,7 +31,7 @@ const BaoCaoCongNo = sequelize.define('BaoCaoCongNo', {
   },
 }, {
   tableName: 'BAOCAOCONGNO',
-  timestamps: true,
+  timestamps: false,
 });
 
 module.exports = BaoCaoCongNo;

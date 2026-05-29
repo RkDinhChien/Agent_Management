@@ -459,7 +459,8 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
+import api from '../services/api';
 import {
   Download, Printer, BarChart2, CircleDollarSign, PieChart, AlertTriangle,
   TrendingUp, TrendingDown, CheckCircle, Search, X, Landmark
@@ -505,30 +506,26 @@ const AGENT_CLR = [
 const agentColor = (id) => AGENT_CLR[id % AGENT_CLR.length];
 const initials   = (name) => name.split(' ').slice(-2).map(w => w[0]).join('').toUpperCase().slice(0,2);
 
-// ── mock data ────────────────────────────────────────────────────
-const dsRows = ref([
-  { id:1, name:'Đại lý Tuấn Phát',    district:'Quận 1',  slPhieuXuat:18, tongTriGia:42.5, tyLe:18.2, history:[28,31,35,38,40,42.5] },
-  { id:2, name:'Đại lý Minh Châu',    district:'Quận 3',  slPhieuXuat:14, tongTriGia:36.2, tyLe:15.5, history:[22,25,29,31,34,36.2] },
-  { id:3, name:'Đại lý Hồng Phúc',    district:'Quận 5',  slPhieuXuat:12, tongTriGia:31.8, tyLe:13.6, history:[18,20,24,27,30,31.8] },
-  { id:4, name:'Đại lý Thắng Lợi',    district:'Quận 7',  slPhieuXuat:11, tongTriGia:28.4, tyLe:12.2, history:[16,19,22,24,26,28.4] },
-  { id:5, name:'Đại lý Nam Phát',      district:'Quận 8',  slPhieuXuat:10, tongTriGia:24.6, tyLe:10.5, history:[14,16,18,21,23,24.6] },
-  { id:6, name:'Đại lý Vạn Thành',    district:'Quận 10', slPhieuXuat: 9, tongTriGia:22.1, tyLe: 9.5, history:[12,14,16,18,20,22.1] },
-  { id:7, name:'Đại lý Phú Quý',      district:'Quận 11', slPhieuXuat: 8, tongTriGia:19.3, tyLe: 8.3, history:[10,12,14,16,17,19.3] },
-  { id:8, name:'Đại lý Tiến Đạt',     district:'Quận 12', slPhieuXuat: 7, tongTriGia:15.5, tyLe: 6.6, history:[ 8, 9,11,12,14,15.5] },
-  { id:9, name:'Đại lý Bình Minh',    district:'Bình Thạnh', slPhieuXuat:6, tongTriGia:13.2, tyLe:5.6, history:[ 6, 7, 9,10,12,13.2] },
-]);
+// ── Data from API ────────────────────────────────────────────────────
+const dsRows = ref([]);
+const debtRows = ref([]);
 
-const debtRows = ref([
-  { id:1, name:'Đại lý Tuấn Phát',    district:'Quận 1',  noDau: 8.5, phatSinh:42.5, daThu:38.0, noCuoi:13.0, hanMuc:15.0 },
-  { id:2, name:'Đại lý Minh Châu',    district:'Quận 3',  noDau: 6.2, phatSinh:36.2, daThu:28.0, noCuoi:14.4, hanMuc:12.0 },
-  { id:3, name:'Đại lý Hồng Phúc',    district:'Quận 5',  noDau: 4.8, phatSinh:31.8, daThu:32.0, noCuoi: 4.6, hanMuc:10.0 },
-  { id:4, name:'Đại lý Thắng Lợi',    district:'Quận 7',  noDau: 3.5, phatSinh:28.4, daThu:25.0, noCuoi: 6.9, hanMuc:10.0 },
-  { id:5, name:'Đại lý Nam Phát',      district:'Quận 8',  noDau: 2.1, phatSinh:24.6, daThu:24.0, noCuoi: 2.7, hanMuc: 8.0 },
-  { id:6, name:'Đại lý Vạn Thành',    district:'Quận 10', noDau: 5.0, phatSinh:22.1, daThu:18.0, noCuoi: 9.1, hanMuc: 8.0 },
-  { id:7, name:'Đại lý Phú Quý',      district:'Quận 11', noDau: 1.8, phatSinh:19.3, daThu:19.0, noCuoi: 2.1, hanMuc: 7.0 },
-  { id:8, name:'Đại lý Tiến Đạt',     district:'Quận 12', noDau: 0.6, phatSinh:15.5, daThu:15.0, noCuoi: 1.1, hanMuc: 6.0 },
-  { id:9, name:'Đại lý Bình Minh',    district:'Bình Thạnh', noDau:0.3, phatSinh:13.2, daThu:13.0, noCuoi:0.5, hanMuc:5.0 },
-]);
+const loadReports = async () => {
+  try {
+    const [dsRes, cnRes] = await Promise.all([
+      api.get('/bao-cao/doanh-so'),
+      api.get('/bao-cao/cong-no'),
+    ]);
+    dsRows.value = dsRes.data || dsRes || [];
+    debtRows.value = cnRes.data || cnRes || [];
+  } catch (err) {
+    console.warn('Failed to load reports', err?.response?.status || err.message);
+  }
+};
+
+onMounted(() => {
+  loadReports();
+});
 
 // ── KPI computeds ─────────────────────────────────────────────────
 const totalRevenue   = computed(() => dsRows.value.reduce((s,r) => s + r.tongTriGia, 0));

@@ -22,7 +22,7 @@ const BaoCaoDoanhSo = sequelize.define('BaoCaoDoanhSo', {
   },
 }, {
   tableName: 'BAOCAODOANHSO',
-  timestamps: true,
+  timestamps: false,
 });
 
 module.exports = BaoCaoDoanhSo;

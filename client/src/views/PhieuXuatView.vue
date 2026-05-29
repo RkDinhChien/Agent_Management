@@ -666,14 +666,20 @@ const products = [
 ];
 
 /* ── Mock data ── */
-const receipts = ref([
-  { id:1, code:'PX-2026-001', date:'05/05/2026', rawDate:'2026-05-05', agent:'Đại lý Tuấn Phát',   agentId:1, createdBy:'Nguyễn Admin',  items:[{name:'Bóng đèn LED 9W',qty:200,price:.1224},{name:'Đèn LED panel 12W',qty:80,price:.2856}],      total:51.3, status:'delivered', note:'' },
-  { id:2, code:'PX-2026-002', date:'08/05/2026', rawDate:'2026-05-08', agent:'Đại lý Lan Anh',      agentId:2, createdBy:'Trần Kế Toán', items:[{name:'Công tắc điện Sino',qty:150,price:.0816},{name:'Ổ cắm 3 chấu',qty:200,price:.0663}],           total:25.5, status:'pending',   note:'Giao buổi sáng' },
-  { id:3, code:'PX-2026-003', date:'10/05/2026', rawDate:'2026-05-10', agent:'Đại lý Quốc Khánh',   agentId:3, createdBy:'Nguyễn Admin',  items:[{name:'Cầu dao MCB 20A',qty:60,price:.459}],                                                          total:27.5, status:'delivered', note:'' },
-  { id:4, code:'PX-2026-004', date:'13/05/2026', rawDate:'2026-05-13', agent:'Đại lý Minh Châu',    agentId:4, createdBy:'Lê Kho Vận',   items:[{name:'Đèn huỳnh quang T8',qty:300,price:.0969},{name:'Dây điện CVV 1.5mm',qty:500,price:.0224}],        total:40.3, status:'pending',   note:'Giao theo lô' },
-  { id:5, code:'PX-2026-005', date:'15/05/2026', rawDate:'2026-05-15', agent:'Đại lý Hoa Phượng',   agentId:5, createdBy:'Nguyễn Admin',  items:[{name:'Bóng đèn LED 9W',qty:100,price:.1224}],                                                         total:12.2, status:'cancelled', note:'Khách hủy đơn' },
-  { id:6, code:'PX-2026-006', date:'18/05/2026', rawDate:'2026-05-18', agent:'Đại lý Tuấn Phát',    agentId:1, createdBy:'Trần Kế Toán', items:[{name:'Relay nhiệt LS 10A',qty:30,price:.3876},{name:'Cầu dao MCB 20A',qty:25,price:.459}],               total:23.1, status:'pending',   note:'Ưu tiên giao sáng' },
-]);
+const receipts = ref([]);
+
+const loadReceipts = async () => {
+  try {
+    const res = await api.get('/phieu-xuat');
+    receipts.value = res.data || res || [];
+  } catch (err) {
+    console.warn('Failed to load receipts', err?.response?.status || err.message);
+  }
+};
+
+onMounted(() => {
+  loadReceipts();
+});
 
 /* ── State ── */
 const searchQ      = ref('');

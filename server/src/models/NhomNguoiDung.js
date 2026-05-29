@@ -14,7 +14,7 @@ const NhomNguoiDung = sequelize.define('NhomNguoiDung', {
   },
 }, {
   tableName: 'NHOMNGUOIDUNG',
-  timestamps: true,
+  timestamps: false,
 });
 
 module.exports = NhomNguoiDung;

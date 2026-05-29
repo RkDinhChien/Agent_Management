@@ -13,7 +13,7 @@ const DonViTinh = sequelize.define('DonViTinh', {
   },
 }, {
   tableName: 'DONVITINH',
-  timestamps: true,
+  timestamps: false,
 });
 
 module.exports = DonViTinh;

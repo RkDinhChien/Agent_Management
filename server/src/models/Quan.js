@@ -13,7 +13,7 @@ const Quan = sequelize.define('Quan', {
   },
 }, {
   tableName: 'QUAN',
-  timestamps: true,
+  timestamps: false,
 });
 
 module.exports = Quan;

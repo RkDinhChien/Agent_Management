@@ -19,11 +19,8 @@ INSERT INTO CHUCNANG (TenChucNang, TenManHinh) VALUES
   ('Lập phiếu thu tiền', 'ThuTienView'),
   ('Báo cáo doanh số', 'BaoCaoView'),
   ('Báo cáo công nợ', 'BaoCaoView'),
-  ('Quản lý loại đại lý', ''),
-  ('Quản lý quận', ''),
-  ('Quản lý mặt hàng', ''),
-  ('Quản lý đơn vị tính', ''),
-  ('Cài đặt quy định', 'CaiDatView');
+  ('Cài đặt quy định', 'CaiDatView'),
+  ('Phân quyền', 'PhanQuyenView');
 
 -- Phân quyền: Admin có toàn quyền
 INSERT INTO PHANQUYEN (MaNhom, MaChucNang) VALUES
@@ -34,8 +31,8 @@ INSERT INTO PHANQUYEN (MaNhom, MaChucNang) VALUES
   (2, 1), (2, 2), (2, 3), (2, 4), (2, 5), (2, 6), (2, 7);
 
 -- Tài khoản admin mặc định (password: admin123 - đã hash bcrypt)
-INSERT INTO NGUOIDUNG (TenDangNhap, MatKhau, HoTen, Email, MaNhom) VALUES
-  ('admin', '$2a$10$rQkXKB5pIqkExmhJ5hGSO.gVVxZqAHfPGYqKPqYqAuFbJfuCxYn2a', 'Quản trị viên', 'admin@quanlydaily.com', 1);
+INSERT INTO NGUOIDUNG (TenDangNhap, MatKhau, MaNhom) VALUES
+  ('admin', '$2a$10$rQkXKB5pIqkExmhJ5hGSO.gVVxZqAHfPGYqKPqYqAuFbJfuCxYn2a', 1);
 
 -- ============================================================
 -- INSERT DỮ LIỆU

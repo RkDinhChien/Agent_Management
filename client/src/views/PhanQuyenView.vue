@@ -284,7 +284,8 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, watch } from 'vue';
+import { ref, reactive, computed, watch, onMounted } from 'vue';
+import api from '../services/api';
 import {
   Users, UserCheck, ShieldCheck, Plus, Save, X, Pencil, Trash2,
   Eye, EyeOff, CheckSquare, XSquare,
@@ -300,12 +301,19 @@ const TABS = [
 const tab = ref('nhom');
 
 /* ════════════════════ NHÓM NGƯỜI DÙNG ════════════════════ */
-const nhoms = ref([
-  { id: 1, ten: 'Admin' },
-  { id: 2, ten: 'Quản lý' },
-  { id: 3, ten: 'Nhân viên' },
-]);
-let nhomNextId = 4;
+const nhoms = ref([]);
+let nhomNextId = 100;
+
+const loadNhomNguoiDung = async () => {
+  try {
+    const res = await api.get('/nhom-nguoi-dung');
+    nhoms.value = res.data || res || [];
+    nhomNextId = Math.max(...nhoms.value.map(n => n.id), 0) + 1;
+  } catch (err) {
+    console.warn('Failed to load nhom-nguoi-dung', err?.response?.status || err.message);
+  }
+};
+let nhomNextIdLocal = nhomNextId;
 const nhomForm = reactive({ id: null, ten: '' });
 
 const resetNhom  = () => { nhomForm.id = null; nhomForm.ten = ''; };
@@ -317,19 +325,26 @@ const submitNhom = () => {
     const n = nhoms.value.find(n => n.id === nhomForm.id);
     if (n) n.ten = nhomForm.ten.trim();
   } else {
-    nhoms.value.push({ id: nhomNextId++, ten: nhomForm.ten.trim() });
+    nhoms.value.push({ id: nhomNextIdLocal++, ten: nhomForm.ten.trim() });
   }
   resetNhom();
 };
 const nhomLabel = (id) => nhoms.value.find(n => n.id === id)?.ten ?? '—';
 
 /* ════════════════════ NGƯỜI DÙNG ════════════════════ */
-const nguoiDungs = ref([
-  { id: 1, ten: 'admin',           mk: '123456', nhomId: 1 },
-  { id: 2, ten: 'nguyen.quanly',   mk: '123456', nhomId: 2 },
-  { id: 3, ten: 'tran.nhanvien',   mk: '123456', nhomId: 3 },
-]);
-let ndNextId = 4;
+const nguoiDungs = ref([]);
+let ndNextId = 100;
+
+const loadNguoiDung = async () => {
+  try {
+    const res = await api.get('/nguoi-dung');
+    nguoiDungs.value = res.data || res || [];
+    ndNextId = Math.max(...nguoiDungs.value.map(u => u.id), 0) + 1;
+  } catch (err) {
+    console.warn('Failed to load nguoi-dung', err?.response?.status || err.message);
+  }
+};
+let ndNextIdLocal = ndNextId;
 const ndForm  = reactive({ id: null, ten: '', mk: '', nhomId: '' });
 const showPw  = ref(false);
 
@@ -342,10 +357,15 @@ const submitNd = () => {
     const u = nguoiDungs.value.find(u => u.id === ndForm.id);
     if (u) { u.ten = ndForm.ten.trim(); u.mk = ndForm.mk; u.nhomId = Number(ndForm.nhomId); }
   } else {
-    nguoiDungs.value.push({ id: ndNextId++, ten: ndForm.ten.trim(), mk: ndForm.mk, nhomId: Number(ndForm.nhomId) });
+    nguoiDungs.value.push({ id: ndNextIdLocal++, ten: ndForm.ten.trim(), mk: ndForm.mk, nhomId: Number(ndForm.nhomId) });
   }
   resetNd();
 };
+
+onMounted(() => {
+  loadNhomNguoiDung();
+  loadNguoiDung();
+});
 
 /* ════════════════════ PHÂN QUYỀN ════════════════════ */
 const chucNangs = [

@@ -26,7 +26,7 @@ const MatHang = sequelize.define('MatHang', {
   },
 }, {
   tableName: 'MATHANG',
-  timestamps: true,
+  timestamps: false,
 });
 
 module.exports = MatHang;

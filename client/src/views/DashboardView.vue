@@ -400,7 +400,8 @@
 </template>
 
 <script setup>
-import { computed, ref } from 'vue';
+import { computed, ref, onMounted } from 'vue';
+import api from '../services/api';
 import {
   BarChart2, LineChart, ArrowUpRight, ArrowDownRight, Edit2,
   Users, Truck, Store, Plus, FileText, Package, Award
@@ -408,17 +409,26 @@ import {
 import CardShell from '../components/CardShell.vue';
 
 /* ─── Data ─── */
-const districtOptions = ['Quận 1', 'Quận 3', 'Quận 5', 'Quận 10'];
-const debtOffenders = [
-  { name: 'Đại lý Tuấn Phát',  district: 'Quận 1',  overLimit: 120, note: 'Đã chạm ngưỡng 3 ngày liên tiếp. Cần xử lý ngay.' },
-  { name: 'Đại lý Lan Anh',    district: 'Quận 3',  overLimit: 95,  note: 'Cần xác nhận kế hoạch thanh toán trước cuối tuần.' },
-  { name: 'Đại lý Quốc Khánh', district: 'Quận 5',  overLimit: 82,  note: 'Đang có đơn hàng mới phát sinh thêm.' },
-  { name: 'Đại lý Minh Châu',  district: 'Quận 10', overLimit: 64,  note: 'Nên nhắc trước hạn 48 giờ.' },
-];
+const districtOptions = ref([]);
+
+const loadDistricts = async () => {
+  try {
+    const res = await api.get('/quan');
+    districtOptions.value = (res.data || res || []).map(q => q.ten);
+  } catch (err) {
+    console.warn('Failed to load quan', err?.response?.status || err.message);
+  }
+};
+
+onMounted(() => {
+  loadDashboard();
+  loadDistricts();
+});
+const debtOffenders = ref([]);
 
 /* ─── State ─── */
 const selectedDistrict = ref('Tất cả quận');
-const activeOffender   = ref(debtOffenders[0]);
+const activeOffender   = ref(null);
 const modalOpen        = ref(false);
 const actionFeedback   = ref('');
 

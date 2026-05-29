@@ -22,7 +22,7 @@ const PhieuThuTien = sequelize.define('PhieuThuTien', {
   },
 }, {
   tableName: 'PHIEUTHUTIEN',
-  timestamps: true,
+  timestamps: false,
 });
 
 module.exports = PhieuThuTien;

@@ -625,15 +625,21 @@ const products = [
   'Dây điện CVV 1.5mm', 'Relay nhiệt LS 10A',
 ];
 
-/* ── Mock data ── */
-const receipts = ref([
-  { id:1, code:'PN-2026-001', date:'10/05/2026', rawDate:'2026-05-10', ncc:'Công ty Philips VN', createdBy:'Nguyễn Admin', items:[{name:'Bóng đèn LED 9W',qty:500,price:.12},{name:'Đèn LED panel 12W',qty:200,price:.28}], total:116, status:'approved', note:'' },
-  { id:2, code:'PN-2026-002', date:'12/05/2026', rawDate:'2026-05-12', ncc:'NCC Điện tử ABC',    createdBy:'Trần Kế Toán', items:[{name:'Công tắc điện Sino',qty:300,price:.08},{name:'Ổ cắm 3 chấu',qty:400,price:.065}], total:50, status:'pending', note:'Hàng về trong 2 ngày' },
-  { id:3, code:'PN-2026-003', date:'14/05/2026', rawDate:'2026-05-14', ncc:'Siemens Vietnam',    createdBy:'Nguyễn Admin', items:[{name:'Cầu dao MCB 20A',qty:150,price:.45}], total:67.5, status:'pending', note:'' },
-  { id:4, code:'PN-2026-004', date:'15/05/2026', rawDate:'2026-05-15', ncc:'Panasonic Distribution', createdBy:'Lê Kho Vận', items:[{name:'Đèn huỳnh quang T8',qty:600,price:.095},{name:'Dây điện CVV 1.5mm',qty:1000,price:.022}], total:79, status:'approved', note:'' },
-  { id:5, code:'PN-2026-005', date:'17/05/2026', rawDate:'2026-05-17', ncc:'Công ty Philips VN', createdBy:'Nguyễn Admin', items:[{name:'Bóng đèn LED 9W',qty:300,price:.12}], total:36, status:'cancelled', note:'Hủy do hết hàng phía NCC' },
-  { id:6, code:'PN-2026-006', date:'18/05/2026', rawDate:'2026-05-18', ncc:'Toshiba Việt Nam',   createdBy:'Trần Kế Toán', items:[{name:'Relay nhiệt LS 10A',qty:80,price:.38},{name:'Cầu dao MCB 20A',qty:60,price:.45}], total:57.4, status:'pending', note:'Đặt bổ sung theo yêu cầu kho' },
-]);
+/* ── Data from API ── */
+const receipts = ref([]);
+
+const loadReceipts = async () => {
+  try {
+    const res = await api.get('/phieu-nhap');
+    receipts.value = res.data || res || [];
+  } catch (err) {
+    console.warn('Failed to load receipts', err?.response?.status || err.message);
+  }
+};
+
+onMounted(() => {
+  loadReceipts();
+});
 
 /* ── State ── */
 const searchQ      = ref('');

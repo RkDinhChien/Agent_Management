@@ -550,14 +550,20 @@ const agents = [
 ];
 
 /* ── Mock data ── */
-const receipts = ref([
-  { id:1, code:'PT-2026-001', date:'05/05/2026', rawDate:'2026-05-05', agent:'Đại lý Tuấn Phát',   agentId:1, amount:2.5,  method:'Tiền mặt',     collector:'Nguyễn Admin', note:'',            status:'confirmed' },
-  { id:2, code:'PT-2026-002', date:'10/05/2026', rawDate:'2026-05-10', agent:'Đại lý Hoa Phượng',  agentId:5, amount:5.0,  method:'Chuyển khoản', collector:'Trần Kế Toán', note:'MB Bank',     status:'confirmed' },
-  { id:3, code:'PT-2026-003', date:'12/05/2026', rawDate:'2026-05-12', agent:'Đại lý Quốc Khánh',  agentId:3, amount:1.8,  method:'Tiền mặt',     collector:'Nguyễn Admin', note:'',            status:'confirmed' },
-  { id:4, code:'PT-2026-004', date:'15/05/2026', rawDate:'2026-05-15', agent:'Đại lý Lan Anh',     agentId:2, amount:1.5,  method:'Ví điện tử',   collector:'Nguyễn Admin', note:'MoMo',        status:'confirmed' },
-  { id:5, code:'PT-2026-005', date:'17/05/2026', rawDate:'2026-05-17', agent:'Đại lý Bảo Châu',    agentId:8, amount:3.8,  method:'Chuyển khoản', collector:'Trần Kế Toán', note:'Vietcombank', status:'pending'   },
-  { id:6, code:'PT-2026-006', date:'18/05/2026', rawDate:'2026-05-18', agent:'Đại lý Phú Quý',     agentId:7, amount:1.2,  method:'Tiền mặt',     collector:'Nguyễn Admin', note:'',            status:'confirmed' },
-]);
+const receipts = ref([]);
+
+const loadReceipts = async () => {
+  try {
+    const res = await api.get('/phieu-thu');
+    receipts.value = res.data || res || [];
+  } catch (err) {
+    console.warn('Failed to load receipts', err?.response?.status || err.message);
+  }
+};
+
+onMounted(() => {
+  loadReceipts();
+});
 
 /* ── State ── */
 const searchQ      = ref('');

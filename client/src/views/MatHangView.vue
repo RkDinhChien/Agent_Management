@@ -571,16 +571,20 @@ const PROD_CATS = {
 }
 const prodCatColor = (cat) => PROD_CATS[cat] ?? '#64748b'
 
-const products = ref([
-  { id:1, code:'MH-001', name:'Bóng đèn LED 9W',    dvt:'Cái',  category:'Đèn LED',       buyPrice:0.120,  sellPrice:0.1224, stock:850,  img:'LED_A19_Bulb.jpg' },
-  { id:2, code:'MH-002', name:'Đèn LED panel 12W',  dvt:'Cái',  category:'Đèn LED',       buyPrice:0.280,  sellPrice:0.2856, stock:320,  img:'LED_panel_lamp.jpg' },
-  { id:3, code:'MH-003', name:'Đèn huỳnh quang T8', dvt:'Bộ',   category:'Đèn',           buyPrice:0.095,  sellPrice:0.0969, stock:540,  img:'Fluorescent_tube_2.jpg' },
-  { id:4, code:'MH-004', name:'Công tắc điện Sino',  dvt:'Cái',  category:'Thiết bị điện', buyPrice:0.080,  sellPrice:0.0816, stock:1200, img:'Light_switch.jpg' },
-  { id:5, code:'MH-005', name:'Ổ cắm 3 chấu',        dvt:'Cái',  category:'Thiết bị điện', buyPrice:0.065,  sellPrice:0.0663, stock:95,   img:'Schuko_outlet.jpg' },
-  { id:6, code:'MH-006', name:'Cầu dao MCB 20A',     dvt:'Cái',  category:'Thiết bị điện', buyPrice:0.450,  sellPrice:0.459,  stock:210,  img:'Merlin_gerin_mcb.jpg' },
-  { id:7, code:'MH-007', name:'Dây điện CVV 1.5mm',  dvt:'Mét',  category:'Dây cáp',       buyPrice:0.022,  sellPrice:0.0224, stock:4500, img:'Stranded_wire.jpg' },
-  { id:8, code:'MH-008', name:'Relay nhiệt LS 10A',  dvt:'Cái',  category:'Thiết bị điện', buyPrice:0.380,  sellPrice:0.3876, stock:68,   img:'Thermal_overload_relay.jpg' },
-]);
+const products = ref([]);
+
+const loadProducts = async () => {
+  try {
+    const res = await api.get('/mat-hang');
+    products.value = res.data || res || [];
+  } catch (err) {
+    console.warn('Failed to load products', err?.response?.status || err.message);
+  }
+};
+
+onMounted(() => {
+  loadProducts();
+});
 
 /* ── Product image URLs — verified Wikimedia Commons thumbnails ── */
 const prodImgUrls = reactive({

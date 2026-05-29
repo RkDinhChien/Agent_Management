@@ -661,8 +661,9 @@
 </template>
 
 <script setup>
-import { ref, computed, useTemplateRef } from 'vue';
+import { ref, computed, useTemplateRef, onMounted } from 'vue';
 const imgInputRef = useTemplateRef('imgInputRef');
+import api from '../services/api';
 import {
   Search, Edit2, Trash2, Plus, Download, X, Info,
   AlertCircle, Upload, ImageIcon,
@@ -683,31 +684,40 @@ const SortIcon = {
   </span>`,
 };
 
-/* ─── Reference data ─── */
-const loaiOptions = [
-  { id: 1, ten: 'Loại 1', noToiDa: 10_000_000 },
-  { id: 2, ten: 'Loại 2', noToiDa: 5_000_000 },
-];
-const quanOptions = [
-  { id: 1, ten: 'Quận 1' },
-  { id: 2, ten: 'Quận 3' },
-  { id: 3, ten: 'Quận 5' },
-  { id: 4, ten: 'Quận 10' },
-  { id: 5, ten: 'Bình Thạnh' },
-  { id: 6, ten: 'Gò Vấp' },
-];
+/* ─── Reference data (loaded from API) ─── */
+const loaiOptions = ref([]);
+const quanOptions = ref([]);
 
-/* ─── Mock data ─── */
-const agents = ref([
-  { MaDaiLy: 1, TenDaiLy: 'Đại lý Tuấn Phát',   MaLoaiDaiLy: 1, MaQuan: 1, SDT: '0901234567', DiaChi: '12 Nguyễn Huệ, Q.1',              Email: 'tuanphat@gmail.com',   NgayTiepNhan: '2024-01-15', TongNo: 8_500_000 },
-  { MaDaiLy: 2, TenDaiLy: 'Đại lý Lan Anh',      MaLoaiDaiLy: 2, MaQuan: 2, SDT: '0912345678', DiaChi: '45 Lê Lợi, Q.3',                  Email: 'lananh@gmail.com',     NgayTiepNhan: '2024-02-20', TongNo: 3_200_000 },
-  { MaDaiLy: 3, TenDaiLy: 'Đại lý Quốc Khánh',  MaLoaiDaiLy: 1, MaQuan: 3, SDT: '0923456789', DiaChi: '78 Trần Hưng Đạo, Q.5',           Email: 'quockhanh@gmail.com',  NgayTiepNhan: '2024-03-10', TongNo: 6_700_000 },
-  { MaDaiLy: 4, TenDaiLy: 'Đại lý Minh Châu',   MaLoaiDaiLy: 2, MaQuan: 4, SDT: '0934567890', DiaChi: '101 Nguyễn Trãi, Q.10',           Email: 'minhchau@gmail.com',   NgayTiepNhan: '2024-04-05', TongNo: 1_800_000 },
-  { MaDaiLy: 5, TenDaiLy: 'Đại lý Hoa Phượng',  MaLoaiDaiLy: 1, MaQuan: 5, SDT: '0945678901', DiaChi: '23 Đinh Tiên Hoàng, Bình Thạnh',  Email: 'hoaphuong@gmail.com',  NgayTiepNhan: '2026-05-03', TongNo: 9_100_000 },
-  { MaDaiLy: 6, TenDaiLy: 'Đại lý Thanh Bình',  MaLoaiDaiLy: 2, MaQuan: 6, SDT: '0956789012', DiaChi: '55 Phan Văn Trị, Gò Vấp',         Email: 'thanhbinh@gmail.com',  NgayTiepNhan: '2026-05-10', TongNo: 5_800_000 },
-  { MaDaiLy: 7, TenDaiLy: 'Đại lý Phú Quý',     MaLoaiDaiLy: 1, MaQuan: 1, SDT: '0967890123', DiaChi: '9 Hai Bà Trưng, Q.1',             Email: 'phuquy@gmail.com',     NgayTiepNhan: '2024-07-22', TongNo: 2_300_000 },
-  { MaDaiLy: 8, TenDaiLy: 'Đại lý Bảo Châu',    MaLoaiDaiLy: 2, MaQuan: 3, SDT: '0978901234', DiaChi: '33 Võ Văn Tần, Q.3',             Email: 'baochau@gmail.com',    NgayTiepNhan: '2024-09-15', TongNo: 4_900_000 },
-]);
+/* ─── Agents (loaded from API) ─── */
+const agents = ref([]);
+
+// Load lists from server
+const loadLookups = async () => {
+  try {
+    const [loaiRes, quanRes] = await Promise.all([
+      api.get('/loai-dai-ly'),
+      api.get('/quan'),
+    ]);
+    loaiOptions.value = loaiRes.data || loaiRes || [];
+    quanOptions.value = quanRes.data || quanRes || [];
+  } catch (err) {
+    console.warn('Failed to load lookups', err?.response?.status || err.message);
+  }
+};
+
+const loadAgents = async () => {
+  try {
+    const res = await api.get('/dai-ly');
+    agents.value = res.data || res || [];
+  } catch (err) {
+    console.warn('Failed to load agents', err?.response?.status || err.message);
+  }
+};
+
+onMounted(() => {
+  loadLookups();
+  loadAgents();
+});
 
 /* ─── Filter & sort state ─── */
 const searchQ     = ref('');

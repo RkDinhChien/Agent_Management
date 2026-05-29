@@ -38,7 +38,7 @@ const DaiLy = sequelize.define('DaiLy', {
   },
 }, {
   tableName: 'DAILY',
-  timestamps: true,
+  timestamps: false,
 });
 
 module.exports = DaiLy;
