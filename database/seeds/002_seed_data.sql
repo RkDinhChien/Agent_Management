@@ -7,8 +7,8 @@ USE quan_ly_dai_ly;
 
 -- Nhóm người dùng
 INSERT INTO NHOMNGUOIDUNG (TenNhom) VALUES
-  ('Admin'),
-  ('Nhân viên');
+  ('Admin');
+
 
 -- Chức năng hệ thống
 INSERT INTO CHUCNANG (TenChucNang, TenManHinh) VALUES
@@ -26,13 +26,10 @@ INSERT INTO CHUCNANG (TenChucNang, TenManHinh) VALUES
 INSERT INTO PHANQUYEN (MaNhom, MaChucNang) VALUES
   (1, 1), (1, 2), (1, 3), (1, 4), (1, 5), (1, 6), (1, 7), (1, 8);
 
--- Phân quyền: Nhân viên chỉ lập phiếu và tra cứu
-INSERT INTO PHANQUYEN (MaNhom, MaChucNang) VALUES
-  (2, 1), (2, 2), (2, 3), (2, 4), (2, 5), (2, 6), (2, 7);
 
 -- Tài khoản admin mặc định (password: admin123 - đã hash bcrypt)
 INSERT INTO NGUOIDUNG (TenDangNhap, MatKhau, MaNhom) VALUES
-  ('admin', '$2a$10$rQkXKB5pIqkExmhJ5hGSO.gVVxZqAHfPGYqKPqYqAuFbJfuCxYn2a', 1);
+  ('admin', '$2b$10$QHnckkacG1dHmFB2/6/I..hESZwMp5Hxxkp9VeJN6Pv71RHTComem', 1);
 
 -- ============================================================
 -- INSERT DỮ LIỆU

@@ -78,47 +78,51 @@
       <!-- KPI Row — cs-col pattern (integrated in dark banner) -->
       <div class="ctx-stats">
 
-        <!-- KPI 1: Tổng doanh thu + sparkline -->
         <div class="cs-col">
           <div class="cs-lbl-row">
             <span class="cs-ic"><BarChart2 :size="11"/></span>
             <span class="cs-lbl">Tổng doanh thu</span>
           </div>
           <strong class="cs-num">
-            {{ fmtM(totalRevenue) }}
-            <span style="font-size:14px;font-weight:600;color:#94a3b8">Tr đ</span>
+            {{ fmtSummary(totalRevenue) }}
           </strong>
-          <span class="cs-delta" :class="revDelta >= 0 ? 'cs-up' : 'cs-down'">
-            <TrendingUp v-if="revDelta>=0" :size="10"/>
+          <span class="cs-delta" v-if="revDelta !== 0" :class="revDelta >= 0 ? 'cs-up' : 'cs-down'">
+            <TrendingUp v-if="revDelta >= 0" :size="10"/>
             <TrendingDown v-else :size="10"/>
-            {{ Math.abs(revDelta) }}% so tháng trước
+            {{ Math.abs(revDelta).toFixed(1) }}% so với tháng trước
+          </span>
+          <span class="cs-delta cs-up" v-else>
+            Không thay đổi so với tháng trước
           </span>
           <div class="spark-wrap">
             <div v-for="(h,i) in revSpark" :key="i"
                  class="spark-bar" :class="{ 'spark-active': i === revSpark.length-1 }"
                  :style="{ height: (h/maxRevSpark*100)+'%' }"></div>
           </div>
-          <span class="cs-lbl" style="margin-top:2px">Doanh số tháng này</span>
+          <span class="cs-lbl" style="margin-top:2px">Số liệu tháng {{ filterMonth }}/{{ filterYear }}</span>
         </div>
         <div class="cs-sep"></div>
 
-        <!-- KPI 2: Tổng thu tiền + sparkline -->
         <div class="cs-col">
           <div class="cs-lbl-row">
             <span class="cs-ic"><CircleDollarSign :size="11"/></span>
             <span class="cs-lbl">Tổng thu tiền</span>
           </div>
           <strong class="cs-num">
-            {{ fmtM(totalCollected) }}
-            <span style="font-size:14px;font-weight:600;color:#94a3b8">Tr đ</span>
+            {{ fmtSummary(totalCollected) }}
           </strong>
-          <span class="cs-delta cs-up"><TrendingUp :size="10"/> {{ collectDelta }}% so tháng trước</span>
+          <span class="cs-delta cs-up" v-if="collectDelta !== 0">
+            <TrendingUp :size="10"/> {{ Math.abs(collectDelta).toFixed(1) }}% so với tháng trước
+          </span>
+          <span class="cs-delta cs-up" v-else>
+            Tương đương tháng trước
+          </span>
           <div class="spark-wrap">
             <div v-for="(h,i) in colSpark" :key="i"
                  class="spark-bar" :class="{ 'spark-active': i === colSpark.length-1 }"
                  :style="{ height: (h/maxColSpark*100)+'%' }"></div>
           </div>
-          <span class="cs-lbl" style="margin-top:2px">Thực thu xác nhận</span>
+          <span class="cs-lbl" style="margin-top:2px">Thực thu ghi nhận</span>
         </div>
         <div class="cs-sep"></div>
 
@@ -132,7 +136,7 @@
               <strong class="cs-num" style="display:block;margin-bottom:2px">
                 {{ collectRatePct }}<span style="font-size:14px;font-weight:600;color:#94a3b8">%</span>
               </strong>
-              <span class="cs-delta cs-up">{{ fmtM(totalCollected) }} / {{ fmtM(totalDebt) }} Tr</span>
+              <span class="cs-delta cs-up">{{ fmtVND(totalCollected) }} / {{ fmtVND(totalDebt) }}</span>
             </div>
           </div>
           <div class="donut-legend">
@@ -171,11 +175,11 @@
       <!-- Month progress -->
       <div class="ctx-timeline">
         <div class="ctl-row">
-          <span class="ctl-label">T{{ filterMonth }}/{{ filterYear }} · Nhìn vào số liệu, hiểu xu hướng, ra quyết định chuẩn xác</span>
-          <span class="ctl-pct">{{ fmtM(totalRevenue) }} Tr doanh thu</span>
+          <span class="ctl-label">Tháng {{ filterMonth }} · Ngày {{ _now.getDate() }}/{{ new Date(_now.getFullYear(), filterMonth, 0).getDate() }}</span>
+          <span class="ctl-pct">{{ monthProgressPct }}% tiến độ tháng</span>
         </div>
         <div class="ctl-track">
-          <div class="ctl-fill" :style="{ width: Math.min(totalRevenue/300*100,100) + '%' }"></div>
+          <div class="ctl-fill" :style="{ width: monthProgressPct + '%' }"></div>
         </div>
       </div>
     </div>
@@ -192,7 +196,7 @@
         </button>
       </div>
       <span class="stab-meta" v-if="reportTab==='doanh-so'">
-        {{ filteredDs.length }} đại lý &nbsp;·&nbsp; T{{ filterMonth }}/{{ filterYear }} &nbsp;·&nbsp; Tổng <strong>{{ fmtM(totalRevenue) }} Tr đ</strong>
+        {{ filteredDs.length }} đại lý &nbsp;·&nbsp; T{{ filterMonth }}/{{ filterYear }} &nbsp;·&nbsp; Tổng <strong>{{ fmtVND(totalRevenue) }}</strong>
       </span>
       <span class="stab-meta" v-else>
         {{ filteredCn.length }} đại lý &nbsp;·&nbsp;
@@ -215,7 +219,7 @@
       </div>
       <div class="dov-sep"></div>
       <div class="dov-cell">
-        <span class="dov-num">{{ fmtM(totalDebt) }} <span style="font-size:.8rem;font-weight:600">Tr đ</span></span>
+        <span class="dov-num">{{ fmtVND(totalDebt) }}</span>
         <span class="dov-lbl">Tổng nợ cuối kỳ</span>
       </div>
       <div class="dov-sep"></div>
@@ -282,7 +286,7 @@
                   </div>
                 </td>
                 <td class="num">{{ r.slPhieuXuat }}</td>
-                <td class="num fw-700">{{ fmtM(r.tongTriGia) }} Tr</td>
+                <td class="num fw-700">{{ fmtVND(r.tongTriGia) }}</td>
                 <td class="num">
                   <div class="pct-bar-wrap">
                     <div class="pct-bar" :style="{ width: r.tyLe+'%', background: 'var(--c-primary)' }"></div>
@@ -331,10 +335,10 @@
                     </div>
                   </div>
                 </td>
-                <td class="num">{{ fmtM(r.noDau) }} Tr</td>
-                <td class="num text-amber">+{{ fmtM(r.phatSinh) }} Tr</td>
-                <td class="num text-green">-{{ fmtM(r.daThu) }} Tr</td>
-                <td class="num fw-700" :class="r.noCuoi > r.hanMuc ? 'text-red' : ''">{{ fmtM(r.noCuoi) }} Tr</td>
+                <td class="num">{{ fmtVND(r.noDau) }}</td>
+                <td class="num text-amber">+{{ fmtVND(r.phatSinh) }}</td>
+                <td class="num text-green">-{{ fmtVND(r.daThu) }}</td>
+                <td class="num fw-700" :class="r.noCuoi > r.hanMuc ? 'text-red' : ''">{{ fmtVND(r.noCuoi) }}</td>
                 <td class="num">
                   <span class="no-badge" :class="debtStatusClass(r)">{{ debtStatusLabel(r) }}</span>
                 </td>
@@ -352,10 +356,10 @@
             {{ reportTab==='doanh-so' ? filteredDs.length : filteredCn.length }} đại lý
           </span>
           <span class="foot-total" v-if="reportTab==='doanh-so'">
-            Tổng: <strong>{{ fmtM(totalRevenue) }} Tr đ</strong>
+            Tổng doanh số: <strong>{{ fmtVND(totalRevenue) }}</strong>
           </span>
           <span class="foot-total" v-else>
-            Nợ cuối kỳ: <strong :class="overDebtAgents > 0 ? 'text-red' : ''">{{ fmtM(totalDebt) }} Tr đ</strong>
+            Tổng nợ cuối kỳ: <strong :class="overDebtAgents > 0 ? 'text-red' : ''">{{ fmtVND(totalDebt) }}</strong>
           </span>
         </div>
       </div>
@@ -380,7 +384,7 @@
             <div class="sp-section-label">Doanh số tháng {{ filterMonth }}/{{ filterYear }}</div>
             <dl class="dl-flex">
               <dt>Số phiếu xuất</dt><dd>{{ selected.slPhieuXuat }} phiếu</dd>
-              <dt>Tổng trị giá</dt><dd class="fw-700">{{ fmtM(selected.tongTriGia) }} Triệu đ</dd>
+              <dt>Tổng trị giá</dt><dd class="fw-700">{{ fmtVND(selected.tongTriGia) }}</dd>
               <dt>Tỉ lệ doanh thu</dt><dd>{{ selected.tyLe }}%</dd>
             </dl>
             <!-- Tỉ lệ bar -->
@@ -389,28 +393,17 @@
               <div class="ds-bar" :style="{ width: selected.tyLe+'%', background: agentColor(selected.id) }"></div>
               <span class="ds-bar-pct">{{ selected.tyLe }}%</span>
             </div>
-            <!-- Monthly breakdown -->
-            <div class="sp-section-label" style="margin-top:16px;">6 tháng gần nhất (Triệu đ)</div>
-            <div class="mini-spark">
-              <div v-for="(v,i) in selected.history" :key="i" class="ms-col">
-                <div class="ms-bar-wrap">
-                  <div class="ms-bar" :style="{ height: (v/Math.max(...selected.history)*100)+'%', background: i===5 ? 'var(--c-primary)' : '#e2e8f0' }"></div>
-                </div>
-                <div class="ms-label">T{{ filterMonth - 5 + i < 1 ? filterMonth - 5 + i + 12 : filterMonth - 5 + i }}</div>
-                <div class="ms-val">{{ v }}</div>
-              </div>
-            </div>
           </template>
 
           <!-- Công nợ detail -->
           <template v-if="selected.tab === 'cong-no'">
             <div class="sp-section-label">Báo cáo công nợ tháng {{ filterMonth }}/{{ filterYear }}</div>
             <dl class="dl-flex">
-              <dt>Nợ đầu kỳ</dt><dd>{{ fmtM(selected.noDau) }} Tr đ</dd>
-              <dt>Phát sinh thêm</dt><dd class="text-amber">+{{ fmtM(selected.phatSinh) }} Tr đ</dd>
-              <dt>Đã thu trong kỳ</dt><dd class="text-green">-{{ fmtM(selected.daThu) }} Tr đ</dd>
-              <dt>Nợ cuối kỳ</dt><dd class="fw-700" :class="selected.noCuoi > selected.hanMuc ? 'text-red':''">{{ fmtM(selected.noCuoi) }} Tr đ</dd>
-              <dt>Hạn mức nợ</dt><dd>{{ fmtM(selected.hanMuc) }} Tr đ</dd>
+              <dt>Nợ đầu kỳ</dt><dd>{{ fmtVND(selected.noDau) }}</dd>
+              <dt>Phát sinh thêm</dt><dd class="text-amber">+{{ fmtVND(selected.phatSinh) }}</dd>
+              <dt>Đã thu trong kỳ</dt><dd class="text-green">-{{ fmtVND(selected.daThu) }}</dd>
+              <dt>Nợ cuối kỳ</dt><dd class="fw-700" :class="selected.noCuoi > selected.hanMuc ? 'text-red':''">{{ fmtVND(selected.noCuoi) }}</dd>
+              <dt>Hạn mức nợ</dt><dd>{{ fmtVND(selected.hanMuc) }}</dd>
             </dl>
             <!-- Debt bar -->
             <div class="sp-section-label" style="margin-top:16px;">Mức độ nợ / hạn mức</div>
@@ -422,10 +415,10 @@
               <span :class="selected.noCuoi > selected.hanMuc ? 'text-red' : ''">
                 {{ Math.round(selected.noCuoi/selected.hanMuc*100) }}% hạn mức
               </span>
-              <span>{{ fmtM(selected.hanMuc) }} Tr</span>
+              <span>{{ fmtVND(selected.hanMuc) }}</span>
             </div>
             <div class="debt-over-hint" v-if="selected.noCuoi > selected.hanMuc">
-              <AlertTriangle :size="13"/> Vượt hạn mức {{ fmtM(selected.noCuoi - selected.hanMuc) }} Tr đ — cần ưu tiên thu hồi
+              <AlertTriangle :size="13"/> Vượt hạn mức {{ fmtVND(selected.noCuoi - selected.hanMuc) }} — cần ưu tiên thu hồi
             </div>
           </template>
 
@@ -459,7 +452,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, watch } from 'vue';
 import api from '../services/api';
 import {
   Download, Printer, BarChart2, CircleDollarSign, PieChart, AlertTriangle,
@@ -512,18 +505,52 @@ const debtRows = ref([]);
 
 const loadReports = async () => {
   try {
+    console.log(`[BaoCao] Loading reports for T${filterMonth.value}/${filterYear.value}`);
     const [dsRes, cnRes] = await Promise.all([
-      api.get('/bao-cao/doanh-so'),
-      api.get('/bao-cao/cong-no'),
+      api.get(`/bao-cao/doanh-so?thang=${filterMonth.value}&nam=${filterYear.value}`),
+      api.get(`/bao-cao/cong-no?thang=${filterMonth.value}&nam=${filterYear.value}`),
     ]);
-    dsRows.value = dsRes.data || dsRes || [];
-    debtRows.value = cnRes.data || cnRes || [];
+    
+    console.log('[BaoCao] DS Response:', dsRes.data);
+    console.log('[BaoCao] CN Response:', cnRes.data);
+
+    // Map Doanh so
+    const dsResult = dsRes.data?.data;
+    const rawDs = dsResult?.chiTiet || [];
+    dsRows.value = rawDs.map(r => ({
+      id: r.MaDaiLy,
+      name: r.TenDaiLy,
+      district: r.Quan || 'Quận',
+      slPhieuXuat: r.SoPhieuXuat || r.SoLuongPhieuXuat || 0,
+      tongTriGia: parseFloat(r.TongTriGia) || 0,
+      tyLe: parseFloat(r.TiLe) || 0
+    }));
+
+    // Map Cong no
+    const cnResult = cnRes.data?.data;
+    const rawCn = cnResult?.chiTiet || [];
+    debtRows.value = rawCn.map(r => ({
+      id: r.MaDaiLy,
+      name: r.TenDaiLy,
+      district: r.Quan || 'Quận',
+      noDau: parseFloat(r.NoDau) || 0,
+      phatSinh: parseFloat(r.PhatSinh) || 0,
+      daThu: parseFloat(r.DaThu) || 0,
+      noCuoi: parseFloat(r.NoCuoi) || 0,
+      hanMuc: parseFloat(r.HanMuc) || 0
+    }));
+
+    console.log(`[BaoCao] Mapped ${dsRows.value.length} DS rows and ${debtRows.value.length} CN rows`);
   } catch (err) {
-    console.warn('Failed to load reports', err?.response?.status || err.message);
+    console.error('[BaoCao] Failed to load reports:', err?.response?.data || err.message);
   }
 };
 
 onMounted(() => {
+  loadReports();
+});
+
+watch([filterMonth, filterYear], () => {
   loadReports();
 });
 
@@ -532,18 +559,74 @@ const totalRevenue   = computed(() => dsRows.value.reduce((s,r) => s + r.tongTri
 const totalCollected = computed(() => debtRows.value.reduce((s,r) => s + r.daThu, 0));
 const totalDebt      = computed(() => debtRows.value.reduce((s,r) => s + r.noCuoi, 0));
 const overDebtAgents = computed(() => debtRows.value.filter(r => r.noCuoi > r.hanMuc).length);
-const collectRatePct = computed(() => {
-  const totalPhatSinh = debtRows.value.reduce((s,r) => s + r.phatSinh, 0);
-  return Math.round(totalCollected.value / totalPhatSinh * 100);
+// ── Delta calculations ──────────────────────────────────────────────
+const revDelta      = ref(0);
+const collectDelta  = ref(0);
+
+const calculateDeltas = async () => {
+  try {
+    const prevMonth = filterMonth.value === 1 ? 12 : filterMonth.value - 1;
+    const prevYear = filterMonth.value === 1 ? filterYear.value - 1 : filterYear.value;
+    
+    const [dsRes, cnRes] = await Promise.all([
+      api.get(`/bao-cao/doanh-so?thang=${prevMonth}&nam=${prevYear}`),
+      api.get(`/bao-cao/cong-no?thang=${prevMonth}&nam=${prevYear}`),
+    ]);
+
+    const prevRevenue = parseFloat(dsRes.data?.data?.TongDoanhSo) || 0;
+    const prevCollected = (cnRes.data?.data?.chiTiet || []).reduce((s, r) => s + (parseFloat(r.DaThu) || 0), 0);
+
+    // Only show delta if previous month actually had data
+    if (prevRevenue > 0) {
+      revDelta.value = ((totalRevenue.value - prevRevenue) / prevRevenue) * 100;
+    } else {
+      revDelta.value = 0; // no prev data → don't show misleading 100%
+    }
+
+    if (prevCollected > 0) {
+      collectDelta.value = ((totalCollected.value - prevCollected) / prevCollected) * 100;
+    } else {
+      collectDelta.value = 0;
+    }
+  } catch (err) {
+    revDelta.value = 0;
+    collectDelta.value = 0;
+  }
+};
+
+watch([totalRevenue, totalCollected], () => {
+  calculateDeltas();
 });
 
-const revDelta  = 8.3;
-const collectDelta = 5.1;
+// Month progress for current month
+const monthProgressPct = computed(() => {
+  const now = _now;
+  // For selected month == current month: use today's date
+  if (filterMonth.value === (now.getMonth() + 1) && filterYear.value === now.getFullYear()) {
+    const days = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+    return Math.round((now.getDate() / days) * 100);
+  }
+  // For past months: 100%; future months: 0%
+  const selDate = new Date(filterYear.value, filterMonth.value - 1, 1);
+  return selDate < new Date(now.getFullYear(), now.getMonth(), 1) ? 100 : 0;
+});
 
-const revSpark    = [158, 174, 162, 198, 217, +totalRevenue.value.toFixed(1)];
-const maxRevSpark = computed(() => Math.max(...revSpark));
-const colSpark    = [120, 135, 128, 155, 168, +totalCollected.value.toFixed(1)];
-const maxColSpark = computed(() => Math.max(...colSpark));
+const collectRatePct = computed(() => {
+  const totalPhatSinh = debtRows.value.reduce((s,r) => s + r.phatSinh, 0);
+  if (totalPhatSinh <= 0) return 0;
+  return Math.round((totalCollected.value / totalPhatSinh) * 100);
+});
+
+const revSpark    = computed(() => {
+  const base = [158, 174, 162, 198, 217];
+  return [...base, +(totalRevenue.value / 1_000_000).toFixed(1)];
+});
+const maxRevSpark = computed(() => Math.max(...revSpark.value, 1));
+const colSpark    = computed(() => {
+  const base = [120, 135, 128, 155, 168];
+  return [...base, +(totalCollected.value / 1_000_000).toFixed(1)];
+});
+const maxColSpark = computed(() => Math.max(...colSpark.value, 1));
 
 const debtDonutGradient = computed(() => {
   const pct = collectRatePct.value;
@@ -576,7 +659,9 @@ const filteredCn = computed(() => {
 });
 
 // ── helpers ───────────────────────────────────────────────────────
-const fmtM = (n) => (Math.round(n * 10) / 10).toLocaleString('vi-VN');
+/* ── Helpers ─────────────────────────────────────────────────────── */
+const fmtVND    = (v) => (parseFloat(v) || 0).toLocaleString('vi-VN') + ' ₫';
+const fmtSummary = (v) => fmtVND(v);
 
 const rankClass = (i) => i === 1 ? 'rank-gold' : i === 2 ? 'rank-silver' : i === 3 ? 'rank-bronze' : 'rank-other';
 
@@ -610,7 +695,7 @@ const showToast = (msg, type='ok') => {
 
 const exportCSV = () => {
   const rows = reportTab.value === 'doanh-so'
-    ? [['Tên ĐL','Quận','SL Phiếu','Tổng trị giá (Tr)','Tỉ lệ (%)'],
+    ? [['Tên ĐL','Quận','SL Phiếu','Tổng trị giá','Tỉ lệ (%)'],
        ...dsRows.value.map(r => [r.name, r.district, r.slPhieuXuat, r.tongTriGia, r.tyLe])]
     : [['Tên ĐL','Quận','Nợ đầu','Phát sinh','Đã thu','Nợ cuối','Hạn mức'],
        ...debtRows.value.map(r => [r.name, r.district, r.noDau, r.phatSinh, r.daThu, r.noCuoi, r.hanMuc])];
@@ -1052,4 +1137,29 @@ const exportPrint = () => {
 @keyframes toast-in { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:none; } }
 .toast-ok  { background: #059669; }
 .toast-err { background: #dc2626; }
+
+/* ══ TIMELINE / MONTH PROGRESS ══ */
+.ctx-timeline {
+  margin-top: 20px; position: relative; z-index: 2;
+}
+.ctl-row {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 6px;
+}
+.ctl-label {
+  font-size: .72rem; font-weight: 700; color: #334155; letter-spacing: .2px;
+}
+.ctl-pct {
+  font-size: .7rem; font-weight: 700; color: #059669;
+}
+.ctl-track {
+  height: 5px; background: rgba(5,150,105,.12); border-radius: 99px; overflow: hidden;
+}
+.ctl-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #34d399, #059669);
+  border-radius: 99px;
+  transition: width .8s ease;
+}
+
 </style>

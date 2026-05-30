@@ -75,16 +75,20 @@
 
         <!-- KPI 1: Tổng phiếu -->
         <div class="cs-col">
-          <strong class="cs-num">{{ receipts.length }}</strong>
-          <span class="cs-delta cs-up">↑ 3 so tháng 4</span>
+          <strong class="cs-num">{{ thisMonthCount }}</strong>
+          <span class="cs-delta" :class="countDelta >= 0 ? 'cs-up' : 'cs-down'">
+            {{ countDelta >= 0 ? '↑' : '↓' }} {{ Math.abs(countDelta) }} so với tháng trước
+          </span>
           <span class="cs-lbl">Tổng phiếu tháng này</span>
         </div>
         <div class="cs-sep"></div>
 
         <!-- KPI 2: Doanh thu + sparkline -->
         <div class="cs-col">
-          <strong class="cs-num">{{ totalRevenue }} <span style="font-size:14px;font-weight:600;color:#94a3b8">Tr</span></strong>
-          <span class="cs-delta cs-up">↑ 22% so tháng 4</span>
+          <strong class="cs-num">{{ fmtSummary(thisMonthRevenue) }}</strong>
+          <span class="cs-delta" :class="revDelta >= 0 ? 'cs-up' : 'cs-down'">
+            {{ revDelta >= 0 ? '↑' : '↓' }} {{ Math.abs(revDelta).toFixed(1) }}% so với tháng trước
+          </span>
           <div class="spark-wrap">
             <div v-for="(h, i) in spark" :key="i"
                  class="spark-bar" :class="{ 'spark-active': i === spark.length - 1 }"
@@ -96,37 +100,15 @@
         </div>
         <div class="cs-sep"></div>
 
-        <!-- KPI 3: Chờ giao + donut -->
-        <div class="cs-col cs-warn">
-          <div class="cs-pending-row">
-            <div class="donut-wrap">
-              <div class="donut-ring" :style="{ background: donutGradient }"></div>
-            </div>
-            <div>
-              <strong class="cs-num cs-amber" style="display:block;margin-bottom:2px">
-                {{ pendingCount }}
-                <span class="cs-tag" v-if="pendingCount > 0">chờ giao</span>
-              </strong>
-              <span class="cs-delta cs-ok">↓ 2 so tháng 4</span>
-            </div>
-          </div>
-          <div class="donut-legend">
-            <span class="dl-dot" style="background:#059669"></span> Giao xong {{ deliveredCount }}
-            <span class="dl-dot" style="background:#f59e0b;margin-left:6px"></span> Chờ {{ pendingCount }}
-            <span class="dl-dot" style="background:#cbd5e1;margin-left:6px"></span> Hủy {{ cancelledCount }}
-          </div>
-          <span class="cs-lbl" style="margin-top:4px">Chờ giao hàng</span>
-        </div>
-        <div class="cs-sep"></div>
-
         <!-- KPI 4: Đại lý nợ -->
         <div class="cs-col">
           <strong class="cs-num">
             {{ overDebtCount }}
             <span class="cs-tag cs-tag-red" v-if="overDebtCount > 0">vượt hạn mức</span>
           </strong>
-          <span class="cs-delta cs-down" v-if="overDebtCount">↑ 1 so tháng 4</span>
-          <span class="cs-delta cs-up" v-else>↓ 1 so tháng 4</span>
+          <span class="cs-delta" :class="overDelta <= 0 ? 'cs-up' : 'cs-down'">
+            {{ overDelta > 0 ? '↑ ' : '↓ ' }}{{ Math.abs(overDelta) }} so với tháng trước
+          </span>
           <span class="cs-lbl">Đại lý quá hạn mức nợ</span>
         </div>
       </div>
@@ -157,18 +139,7 @@
             <button v-if="hasFilter" class="clear-btn" @click="clearFilters">
               <X :size="11"/> Xóa lọc
             </button>
-            <div class="stab-group">
-              <button class="stab" :class="{ active: !filterStatus }" @click="filterStatus = ''">Tất cả</button>
-              <button class="stab stab-warn" :class="{ active: filterStatus === 'pending' }" @click="filterStatus = 'pending'">
-                Chờ giao <span class="stab-n">{{ pendingCount }}</span>
-              </button>
-              <button class="stab stab-green" :class="{ active: filterStatus === 'delivered' }" @click="filterStatus = 'delivered'">
-                Đã giao <span class="stab-n">{{ deliveredCount }}</span>
-              </button>
-              <button class="stab stab-muted" :class="{ active: filterStatus === 'cancelled' }" @click="filterStatus = 'cancelled'">
-                Đã hủy <span class="stab-n">{{ cancelledCount }}</span>
-              </button>
-            </div>
+
           </div>
           <div class="lc-tools">
             <div class="search-wrap">
@@ -187,27 +158,19 @@
           <table class="dl-table">
             <colgroup>
               <col style="width:12%"/>
-              <col style="width:10%"/>
+              <col style="width:12%"/>
               <col/>
-              <col style="width:11%"/>
-              <col style="width:11%"/>
-              <col style="width:11%"/>
+              <col style="width:13%"/>
+              <col style="width:14%"/>
               <col style="width:13%"/>
             </colgroup>
             <thead>
               <tr>
-                <th>
-                  <span class="sort-hd" @click="toggleSort('code')">Mã phiếu <SortIcon field="code" :sk="sk" :sd="sd"/></span>
-                </th>
-                <th>
-                  <span class="sort-hd" @click="toggleSort('rawDate')">Ngày xuất <SortIcon field="rawDate" :sk="sk" :sd="sd"/></span>
-                </th>
+                <th><span class="sort-hd" @click="toggleSort('code')">Mã phiếu <SortIcon field="code" :sk="sk" :sd="sd"/></span></th>
+                <th><span class="sort-hd" @click="toggleSort('rawDate')">Ngày xuất <SortIcon field="rawDate" :sk="sk" :sd="sd"/></span></th>
                 <th>Đại lý</th>
-                <th>Số mặt hàng</th>
-                <th class="text-right">
-                  <span class="sort-hd sort-hd-r" @click="toggleSort('total')">Tổng tiền <SortIcon field="total" :sk="sk" :sd="sd"/></span>
-                </th>
-                <th>Trạng thái</th>
+                <th class="text-center">Số mặt hàng</th>
+                <th class="text-right"><span class="sort-hd" @click="toggleSort('total')">Tổng cộng <SortIcon field="total" :sk="sk" :sd="sd"/></span></th>
                 <th class="text-center">Thao tác</th>
               </tr>
             </thead>
@@ -238,22 +201,15 @@
                 <td class="text-right col-total">
                   <span class="total-num">{{ fmtTr(r.total) }}</span>
                 </td>
-                <td>
-                  <span class="status-badge" :class="r.status">{{ STATUS[r.status] }}</span>
-                </td>
                 <td class="col-actions">
                   <div class="act-group">
                     <button class="act-btn view-btn" data-tooltip="Xem chi tiết" @click.stop="openView(r)"><Eye :size="13"/></button>
-                    <template v-if="r.status === 'pending'">
-                      <button class="act-btn edit-btn" data-tooltip="Sửa phiếu" @click.stop="openEdit(r)"><Edit2 :size="13"/></button>
-                      <button class="act-btn ok-btn" data-tooltip="Xác nhận giao hàng" @click.stop="deliverReceipt(r)"><Truck :size="13"/></button>
-                    </template>
-                    <button v-else class="act-btn del-btn" data-tooltip="Xóa phiếu" @click.stop="askDelete(r)"><Trash2 :size="13"/></button>
+                    <button class="act-btn del-btn" data-tooltip="Xóa phiếu" @click.stop="askDelete(r)"><Trash2 :size="13"/></button>
                   </div>
                 </td>
               </tr>
               <tr v-if="!sortedList.length">
-                <td colspan="7" class="empty-row">
+                <td colspan="6" class="empty-row">
                   <PackageOpen :size="30" class="empty-ic"/><p>Không tìm thấy phiếu xuất phù hợp</p>
                 </td>
               </tr>
@@ -281,12 +237,10 @@
             <div class="ap-title-block">
               <h3 class="ap-name">{{ selectedReceipt.code }}</h3>
               <div class="ap-badges">
-                <span class="status-badge" :class="selectedReceipt.status">{{ STATUS[selectedReceipt.status] }}</span>
                 <span class="dist-chip">{{ selectedReceipt.items.length }} mặt hàng</span>
               </div>
             </div>
             <div style="display:flex;gap:5px">
-              <button v-if="selectedReceipt.status === 'pending'" class="act-btn edit-btn" data-tooltip="Sửa phiếu" @click="openEdit(selectedReceipt)"><Edit2 :size="14"/></button>
               <button class="act-btn" style="background:rgba(15,23,42,.04);color:var(--c-txt-3)" data-tooltip="Đóng" @click="closePanel"><X :size="14"/></button>
             </div>
           </div>
@@ -304,21 +258,9 @@
                 <span class="ig-lbl">Ngày xuất</span>
                 <span class="ig-val col-mono">{{ selectedReceipt.date }}</span>
               </div>
-              <div class="ig-row">
-                <UserRound :size="13" class="ig-ic"/>
-                <span class="ig-lbl">Người lập</span>
-                <span class="ig-val">{{ selectedReceipt.createdBy }}</span>
-              </div>
             </div>
 
-            <!-- Beautiful Quote Note block -->
-            <div v-if="selectedReceipt.note" class="note-quote-box">
-              <FileText :size="13" class="note-quote-ic"/>
-              <div class="note-quote-content">
-                <span class="note-quote-title">Ghi chú</span>
-                <p class="note-quote-text">“{{ selectedReceipt.note }}”</p>
-              </div>
-            </div>
+
 
             <!-- Financial Summary Card -->
             <div class="financial-card">
@@ -354,12 +296,6 @@
                 </div>
               </div>
 
-              <div class="debt-status-bar" :class="selectedReceipt.status">
-                <Truck       v-if="selectedReceipt.status === 'delivered'" :size="12"/>
-                <Clock       v-else-if="selectedReceipt.status === 'pending'" :size="12"/>
-                <XCircle     v-else :size="12"/>
-                {{ STATUS_DESC[selectedReceipt.status] }}
-              </div>
             </div>
 
             <!-- Items list (Natural flow height, scrolls within .ap-body) -->
@@ -373,27 +309,17 @@
               <div class="item-row" v-for="item in selectedReceipt.items" :key="item.name">
                 <span class="item-name" style="flex:2">{{ item.name }}</span>
                 <span style="flex:.7;text-align:center;color:#64748b;font-size:12px">{{ item.qty.toLocaleString('vi-VN') }}</span>
-                <span style="flex:1;text-align:right;font-weight:700;font-size:12px;font-variant-numeric:tabular-nums">{{ fmtTr(item.qty * item.price) }}</span>
+                <span style="flex:1;text-align:right;font-weight:700;font-size:12px;font-variant-numeric:tabular-nums">{{ fmtVND(item.qty * item.price) }}</span>
               </div>
               <div class="items-total">
                 <span>Tổng cộng</span>
-                <strong>{{ fmtTr(selectedReceipt.total) }}</strong>
+                <strong>{{ fmtVND(selectedReceipt.total) }}</strong>
               </div>
             </div>
           </div>
 
           <!-- Sticky Footer Actions (Only show when pending) -->
-          <div class="ap-ft" v-if="selectedReceipt.status === 'pending'">
-            <!-- Quick actions -->
-            <div class="quick-links-compact">
-              <button class="btn-p" style="flex:1;justify-content:center" @click="deliverReceipt(selectedReceipt)">
-                <Truck :size="14"/>Giao hàng
-              </button>
-              <button class="btn-danger-o" @click="cancelReceipt(selectedReceipt)">
-                <XCircle :size="14"/>Hủy phiếu
-              </button>
-            </div>
-          </div>
+
         </template>
 
         <!-- ─ EDIT MODE ─ -->
@@ -424,19 +350,9 @@
               </div>
               <div class="dh-bar"><div class="dh-fill" :style="{ width: agentDebtPct(formAgent.id)+'%', background: debtBarColor(formAgent.id) }"></div></div>
             </div>
-            <div class="field-row">
-              <div class="field">
-                <label class="flabel">Ngày xuất</label>
-                <input v-model="form.date" type="date" class="finp" :max="today"/>
-              </div>
-              <div class="field">
-                <label class="flabel">Người lập</label>
-                <input v-model="form.createdBy" class="finp" placeholder="Tên người lập"/>
-              </div>
-            </div>
             <div class="field full">
-              <label class="flabel">Ghi chú</label>
-              <textarea v-model="form.note" class="finp ftarea" rows="2" placeholder="Ghi chú thêm…"></textarea>
+              <label class="flabel">Ngày xuất</label>
+              <input v-model="form.date" type="date" class="finp" :max="today"/>
             </div>
             <div class="field full">
               <label class="flabel">Danh sách mặt hàng <span class="req">*</span></label>
@@ -462,7 +378,7 @@
             </div>
             <div class="limit-row">
               <Package :size="11"/>
-              Tổng cộng (ước tính): <strong>{{ fmtTr(formTotal) }}</strong>
+              Tổng cộng (ước tính): <strong>{{ fmtVND(formTotal) }}</strong>
             </div>
           </div>
           <div class="fc-footer">
@@ -538,7 +454,7 @@
             </div>
             <div class="limit-row">
               <Package :size="11"/>
-              Tổng cộng (ước tính): <strong>{{ fmtTr(formTotal) }}</strong>
+              Tổng cộng (ước tính): <strong>{{ fmtVND(formTotal) }}</strong>
             </div>
           </div>
           <div class="fc-footer">
@@ -596,7 +512,8 @@
 </template>
 
 <script setup>
-import { ref, computed, reactive } from 'vue';
+import { ref, computed, reactive, onMounted, watch } from 'vue';
+import api from '../services/api';
 import {
   Search, Plus, Download, X, Eye, XCircle,
   Trash2, PackageOpen, Package, CalendarDays,
@@ -643,27 +560,35 @@ const BRANDS = [
 const agentBrand = (id) => BRANDS[(id - 1 + BRANDS.length) % BRANDS.length]
 const avatarInit = (name) => name.replace(/^Đại lý\s*/i,'').trim().charAt(0).toUpperCase();
 
-const agents = [
-  { id:1, name:'Đại lý Tuấn Phát',   debt:8_500_000,  limit:10_000_000 },
-  { id:2, name:'Đại lý Lan Anh',      debt:3_200_000,  limit:5_000_000  },
-  { id:3, name:'Đại lý Quốc Khánh',   debt:6_700_000,  limit:10_000_000 },
-  { id:4, name:'Đại lý Minh Châu',    debt:1_800_000,  limit:5_000_000  },
-  { id:5, name:'Đại lý Hoa Phượng',   debt:9_100_000,  limit:10_000_000 },
-  { id:6, name:'Đại lý Thanh Bình',   debt:5_800_000,  limit:10_000_000 },
-  { id:7, name:'Đại lý Phú Quý',      debt:2_300_000,  limit:5_000_000  },
-  { id:8, name:'Đại lý Bảo Châu',     debt:4_900_000,  limit:5_000_000  },
-];
+const agents = ref([]);
+const products = ref([]);
 
-const products = [
-  { name:'Bóng đèn LED 9W',    sellPrice:0.1224 },
-  { name:'Đèn LED panel 12W',  sellPrice:0.2856 },
-  { name:'Đèn huỳnh quang T8', sellPrice:0.0969 },
-  { name:'Công tắc điện Sino', sellPrice:0.0816 },
-  { name:'Ổ cắm 3 chấu',       sellPrice:0.0663 },
-  { name:'Cầu dao MCB 20A',    sellPrice:0.459  },
-  { name:'Dây điện CVV 1.5mm', sellPrice:0.0224 },
-  { name:'Relay nhiệt LS 10A', sellPrice:0.3876 },
-];
+const loadAgents = async () => {
+  try {
+    const res = await api.get('/dai-ly');
+    agents.value = (res.data?.data || []).map(a => ({
+      id: a.MaDaiLy,
+      name: a.TenDaiLy,
+      debt: a.TongNo || 0,
+      limit: 10_000_000
+    }));
+  } catch (err) {
+    console.warn('Failed to load agents', err);
+  }
+};
+
+const loadProducts = async () => {
+  try {
+    const res = await api.get('/mat-hang');
+    products.value = (res.data?.data || []).map(p => ({
+      id: p.MaMatHang,
+      name: p.TenMatHang,
+      sellPrice: parseFloat(p.DonGiaHienTai) || 0
+    }));
+  } catch (err) {
+    console.warn('Failed to load products', err);
+  }
+};
 
 /* ── Mock data ── */
 const receipts = ref([]);
@@ -671,14 +596,43 @@ const receipts = ref([]);
 const loadReceipts = async () => {
   try {
     const res = await api.get('/phieu-xuat');
-    receipts.value = res.data || res || [];
+    const raw = res.data?.data || res.data || [];
+    receipts.value = raw.map(r => ({
+      id: r.MaPhieuXuat,
+      code: `PX-${String(r.MaPhieuXuat).padStart(3, '0')}`,
+      date: new Date(r.NgayLapPhieu).toLocaleDateString('vi-VN'),
+      rawDate: r.NgayLapPhieu,
+      agentId: r.MaDaiLy,
+      agent: r.daiLy?.TenDaiLy || 'Đại lý',
+      total: parseFloat(r.TongTien) || (r.chiTiets || []).reduce((s, ct) => s + (parseFloat(ct.ThanhTien) || (parseFloat(ct.SoLuongXuat) * parseFloat(ct.DonGiaXuat))), 0) || 0,
+      remain: parseFloat(r.ConLai) || 0,
+      status: 'delivered',
+      createdBy: 'Admin',
+      items: (r.chiTiets || []).map(ct => {
+        const prod = products.value.find(p => p.id === ct.MaMatHang);
+        const price = parseFloat(ct.DonGiaXuat) || prod?.sellPrice || 0;
+        return {
+          name: ct.matHang?.TenMatHang || prod?.name || '?',
+          qty: ct.SoLuongXuat || 0,
+          price: price
+        };
+      })
+    }));
+    // Re-calculate totals if they are 0
+    receipts.value.forEach(r => {
+      if (r.total === 0) {
+        r.total = r.items.reduce((s, i) => s + (i.qty * i.price), 0);
+      }
+    });
   } catch (err) {
     console.warn('Failed to load receipts', err?.response?.status || err.message);
   }
 };
 
-onMounted(() => {
-  loadReceipts();
+onMounted(async () => {
+  await loadAgents();
+  await loadProducts();
+  await loadReceipts();
 });
 
 /* ── State ── */
@@ -724,19 +678,54 @@ const sortedList = computed(() => {
 const selectedReceipt = computed(() => receipts.value.find(r => r.id === selectedId.value) ?? null);
 const panelVisible    = computed(() => selectedReceipt.value !== null || panelMode.value === 'create');
 
-const pendingCount   = computed(() => receipts.value.filter(r => r.status === 'pending').length);
-const deliveredCount = computed(() => receipts.value.filter(r => r.status === 'delivered').length);
-const cancelledCount = computed(() => receipts.value.filter(r => r.status === 'cancelled').length);
-const totalRevenue   = computed(() => receipts.value.filter(r => r.status === 'delivered').reduce((s, r) => s + r.total, 0).toFixed(1));
-const monthMax       = computed(() => Math.max(...receipts.value.map(r => r.total), 1));
-const overDebtCount  = computed(() => agents.filter(a => a.debt >= a.limit).length);
+const newThisMonth    = computed(() => receipts.value.length);
+const monthMax        = computed(() => Math.max(...receipts.value.map(r => r.total), 1));
+const totalRevenue   = computed(() => receipts.value.reduce((s, r) => s + r.total, 0));
+const overDebtCount  = computed(() => agents.value.filter(a => a.debt >= a.limit).length);
+const donutGradient  = computed(() => `conic-gradient(#059669 0deg 100%)`);
+/* ── KPI deltas ── */
+const thisMonthCount = computed(() => {
+  const now = _now;
+  return receipts.value.filter(r => {
+    const d = new Date(r.rawDate);
+    return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
+  }).length;
+});
 
-/* ── Donut ── */
-const donutGradient = computed(() => {
-  const total = receipts.value.length || 1;
-  const d = Math.round(deliveredCount.value / total * 100);
-  const p = Math.round(pendingCount.value   / total * 100);
-  return `conic-gradient(#059669 0% ${d}%, #f59e0b ${d}% ${d + p}%, #e2e8f0 ${d + p}% 100%)`;
+const thisMonthRevenue = computed(() => {
+  const now = _now;
+  return receipts.value.filter(r => {
+    const d = new Date(r.rawDate);
+    return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
+  }).reduce((s, r) => s + r.total, 0);
+});
+
+const countDelta = computed(() => {
+  const now = _now;
+  const prevMonth = now.getMonth() === 0 ? 11 : now.getMonth() - 1;
+  const prevYear = now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear();
+  const lastMonthCount = receipts.value.filter(r => {
+    const d = new Date(r.rawDate);
+    return d.getFullYear() === prevYear && d.getMonth() === prevMonth;
+  }).length;
+  return thisMonthCount.value - lastMonthCount;
+});
+
+const revDelta = computed(() => {
+  const now = _now;
+  const prevMonth = now.getMonth() === 0 ? 11 : now.getMonth() - 1;
+  const prevYear = now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear();
+  const lastMonthRev = receipts.value.filter(r => {
+    const d = new Date(r.rawDate);
+    return d.getFullYear() === prevYear && d.getMonth() === prevMonth;
+  }).reduce((s, r) => s + r.total, 0);
+  if (lastMonthRev === 0) return thisMonthRevenue.value > 0 ? 100 : 0;
+  return ((thisMonthRevenue.value - lastMonthRev) / lastMonthRev) * 100;
+});
+
+const overDelta = ref(0);
+watch(overDebtCount, (newVal, oldVal) => {
+  overDelta.value = newVal - (oldVal || 0);
 });
 
 /* ── Sparkline ── */
@@ -753,14 +742,17 @@ const monthName      = ['Tháng 1','Tháng 2','Tháng 3','Tháng 4','Tháng 5','
                         'Tháng 7','Tháng 8','Tháng 9','Tháng 10','Tháng 11','Tháng 12'][_now.getMonth()];
 
 /* ── Helpers ── */
-const getAgent       = (id) => agents.find(a => a.id === id);
-const fmtTr          = (v) => v >= 1 ? `${Number(v).toFixed(1)} Tr` : `${(Number(v) * 1000).toFixed(0)} K`;
+const getAgent       = (id) => agents.value.find(a => a.id === id);
+const fmtVND = (v) => v.toLocaleString('vi-VN') + ' ₫';
+const fmtTr  = (v) => fmtVND(v);
+const fmtSummary = (v) => {
+  if (v >= 1_000_000_000) return (v / 1_000_000_000).toFixed(1) + ' Tỷ';
+  if (v >= 1_000_000) return (v / 1_000_000).toFixed(0) + ' Triệu';
+  return fmtVND(v);
+};
 const fmtMoney       = (v) => ((v || 0) / 1_000_000).toFixed(1) + ' Tr';
 const revBarPct      = (r) => Math.min((r.total / monthMax.value) * 100, 100);
-const revBarColor    = (r) => {
-  const p = revBarPct(r);
-  return p >= 80 ? '#059669' : p >= 50 ? '#6ee7b7' : '#a7f3d0';
-};
+const revBarColor    = (r) => '#059669';
 const agentDebtPct   = (id) => {
   const a = getAgent(id); if (!a) return 0;
   return Math.min((a.debt / a.limit) * 100, 100);
@@ -776,7 +768,7 @@ const debtClass      = (id) => {
 
 /* ── Form ── */
 const today     = new Date().toISOString().split('T')[0];
-const emptyForm = () => ({ agentId: '', date: today, createdBy: 'Nguyễn Admin', note: '', items: [{ name: '', qty: 1, price: 0 }] });
+const emptyForm = () => ({ agentId: '', date: today, items: [{ name: '', qty: 1, price: 0 }] });
 const form      = ref(emptyForm());
 const errors    = reactive({ agent: '', items: '' });
 const formAgent = computed(() => form.value.agentId ? getAgent(Number(form.value.agentId)) : null);
@@ -786,7 +778,7 @@ const addItem    = () => form.value.items.push({ name: '', qty: 1, price: 0 });
 const removeItem = (i) => { if (form.value.items.length > 1) form.value.items.splice(i, 1); };
 const onAgentChange = () => {};
 const onProductChange = (item) => {
-  const p = products.find(p => p.name === item.name);
+  const p = products.value.find(p => p.name === item.name);
   if (p) item.price = p.sellPrice;
 };
 
@@ -823,91 +815,99 @@ const openCreate = () => {
 const openEdit = (r) => {
   selectedId.value = r.id;
   panelMode.value  = 'edit';
-  form.value = { agentId: r.agentId, date: r.rawDate, createdBy: r.createdBy, note: r.note, items: r.items.map(i => ({ ...i })) };
+  form.value = { agentId: r.agentId, date: r.rawDate, items: r.items.map(i => ({ ...i })) };
   errors.agent = ''; errors.items = '';
 };
 
 const closePanel = () => { selectedId.value = null; panelMode.value = 'view'; };
 
-const deliverReceipt = (r) => {
-  const found = receipts.value.find(x => x.id === r.id);
-  if (found) { found.status = 'delivered'; showToast(`Phiếu ${found.code} đã giao hàng thành công`); }
-};
 
-const cancelReceipt = (r) => {
-  const found = receipts.value.find(x => x.id === r.id);
-  if (found) { found.status = 'cancelled'; showToast(`Phiếu ${found.code} đã bị hủy`, 'warn'); }
-};
 
 const askDelete     = (r) => { deleteTarget.value = r; };
-const confirmDelete = () => {
+const confirmDelete = async () => {
   const target = deleteTarget.value;
   const code = target.code;
-  const deletedReceipt = { ...target, items: target.items.map(i => ({ ...i })) };
-  const deletedIndex = receipts.value.findIndex(r => r.id === target.id);
-  receipts.value = receipts.value.filter(r => r.id !== target.id);
-  if (selectedId.value === target.id) closePanel();
+  try {
+    const res = await api.delete(`/phieu-xuat/${target.id}`);
+    if (res.data?.status === 'success') {
+      showToast(`Đã xóa phiếu ${code}`);
+      await loadReceipts();
+      await loadAgents();
+      if (selectedId.value === target.id) closePanel();
+    }
+  } catch (err) {
+    showToast(err.response?.data?.message || 'Lỗi khi xóa phiếu', 'danger');
+  }
   deleteTarget.value = null;
-
-  const undoDelete = () => {
-    receipts.value.splice(deletedIndex, 0, deletedReceipt);
-    clearTimeout(_toastTimer);
-    clearInterval(_countdownTimer);
-    toast.value = { show: false, msg: '', type: 'success', undoFn: null };
-    showToast(`Đã hoàn tác xóa phiếu ${code}`, 'success');
-  };
-  showToast(`Đã xóa phiếu ${code}`, 'danger', undoDelete);
 };
 
-const submitCreate = () => {
+const submitCreate = async () => {
   errors.agent = ''; errors.items = '';
   if (!form.value.agentId) { errors.agent = 'Vui lòng chọn đại lý'; return; }
   const validItems = form.value.items.filter(i => i.name && i.qty > 0);
   if (!validItems.length) { errors.items = 'Thêm ít nhất 1 mặt hàng hợp lệ'; return; }
-  const newId = Math.max(...receipts.value.map(r => r.id)) + 1;
-  const d = new Date(form.value.date);
-  const agnt = getAgent(Number(form.value.agentId));
-  const code = `PX-2026-${String(newId).padStart(3, '0')}`;
-  receipts.value.unshift({
-    id: newId, code,
-    date: d.toLocaleDateString('vi-VN'),
-    rawDate: form.value.date,
-    agent: agnt?.name ?? '',
-    agentId: Number(form.value.agentId),
-    createdBy: form.value.createdBy || 'Nguyễn Admin',
-    items: validItems.map(i => ({ ...i })),
-    total: formTotal.value,
-    status: 'pending',
-    note: form.value.note,
-  });
-  showToast(`Đã lập phiếu xuất ${code}`);
-  closePanel();
+
+  try {
+    const payload = {
+      MaDaiLy: Number(form.value.agentId),
+      NgayLapPhieu: form.value.date,
+      chiTiets: validItems.map(i => {
+        const prod = products.value.find(p => p.name === i.name);
+        return {
+          MaMatHang: prod?.id,
+          SoLuongXuat: i.qty,
+          DonGiaXuat: i.price
+        };
+      })
+    };
+
+    const res = await api.post('/phieu-xuat', payload);
+    if (res.data?.status === 'success') {
+      showToast(`Đã lập phiếu xuất hàng thành công`);
+      loadReceipts();
+      loadAgents(); // Refresh debt
+      closePanel();
+    }
+  } catch (err) {
+    showToast(err.response?.data?.message || 'Lỗi khi lập phiếu xuất', 'danger');
+  }
 };
 
-const submitEdit = () => {
+const submitEdit = async () => {
   errors.agent = ''; errors.items = '';
   if (!form.value.agentId) { errors.agent = 'Vui lòng chọn đại lý'; return; }
   const validItems = form.value.items.filter(i => i.name && i.qty > 0);
   if (!validItems.length) { errors.items = 'Thêm ít nhất 1 mặt hàng hợp lệ'; return; }
-  const found = receipts.value.find(r => r.id === selectedId.value);
-  if (!found) return;
-  const d = new Date(form.value.date);
-  const agnt = getAgent(Number(form.value.agentId));
-  found.agent     = agnt?.name ?? '';
-  found.agentId   = Number(form.value.agentId);
-  found.date      = d.toLocaleDateString('vi-VN');
-  found.rawDate   = form.value.date;
-  found.createdBy = form.value.createdBy || 'Nguyễn Admin';
-  found.note      = form.value.note;
-  found.items     = validItems.map(i => ({ ...i }));
-  found.total     = formTotal.value;
-  showToast(`Đã cập nhật phiếu ${found.code}`);
-  panelMode.value = 'view';
+  
+  try {
+    const payload = {
+      MaDaiLy: Number(form.value.agentId),
+      NgayLapPhieu: form.value.date,
+      chiTiets: validItems.map(i => {
+        const prod = products.value.find(p => p.name === i.name);
+        return {
+          MaMatHang: prod?.id,
+          SoLuongXuat: i.qty,
+          DonGiaXuat: i.price
+        };
+      })
+    };
+
+    const res = await api.put(`/phieu-xuat/${selectedId.value}`, payload);
+    if (res.data?.status === 'success') {
+      showToast(`Đã cập nhật phiếu xuất hàng thành công`);
+      await loadReceipts();
+      await loadAgents();
+      panelMode.value = 'view';
+    }
+  } catch (err) {
+    showToast(err.response?.data?.message || 'Lỗi khi cập nhật phiếu xuất', 'danger');
+  }
 };
 
 const exportCSV = () => {
-  const cols = ['Mã phiếu', 'Ngày xuất', 'Đại lý', 'Tổng tiền (Tr)', 'Trạng thái', 'Ghi chú'];
-  const rows = sortedList.value.map(r => [r.code, r.date, r.agent, r.total, STATUS[r.status], r.note]);
+  const cols = ['Mã phiếu', 'Ngày xuất', 'Đại lý', 'Tổng tiền (Tr)'];
+  const rows = sortedList.value.map(r => [r.code, r.date, r.agent, r.total]);
   const csv = [cols, ...rows].map(row => row.map(v => `"${v ?? ''}"`).join(',')).join('\n');
   const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
   const url  = URL.createObjectURL(blob);

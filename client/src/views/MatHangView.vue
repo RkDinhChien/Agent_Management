@@ -78,7 +78,9 @@
             {{ products.length }}
             <span class="cs-tag cs-tag-green">đang kinh doanh</span>
           </strong>
-          <span class="cs-delta cs-up">↑ 1 so tháng 4</span>
+          <span class="cs-delta" :class="prodDelta >= 0 ? 'cs-up' : 'cs-down'">
+            {{ prodDelta >= 0 ? '↑' : '↓' }} {{ Math.abs(prodDelta) }} so với tháng trước
+          </span>
           <span class="cs-lbl">Tổng mặt hàng</span>
         </div>
         <div class="cs-sep"></div>
@@ -86,7 +88,9 @@
         <!-- KPI 2: Giá trị tồn kho + sparkline -->
         <div class="cs-col">
           <strong class="cs-num">{{ totalValue }} <span style="font-size:14px;font-weight:600;color:#94a3b8">Tr</span></strong>
-          <span class="cs-delta cs-up">↑ 8% so tháng 4</span>
+          <span class="cs-delta" :class="valDelta >= 0 ? 'cs-up' : 'cs-down'">
+            {{ valDelta >= 0 ? '↑' : '↓' }} {{ Math.abs(valDelta).toFixed(1) }}% so với tháng trước
+          </span>
           <div class="spark-wrap">
             <div v-for="(h, i) in spark" :key="i"
                  class="spark-bar" :class="{ 'spark-active': i === spark.length - 1 }"
@@ -121,15 +125,7 @@
         </div>
         <div class="cs-sep"></div>
 
-        <!-- KPI 4: Loại mặt hàng -->
-        <div class="cs-col">
-          <strong class="cs-num">
-            {{ categoryCount }}
-            <span class="cs-tag cs-tag-green">danh mục</span>
-          </strong>
-          <span class="cs-delta cs-up">↑ 0 so tháng 4</span>
-          <span class="cs-lbl">Loại mặt hàng</span>
-        </div>
+
       </div>
 
       <!-- Month progress bar -->
@@ -182,11 +178,10 @@
             <colgroup>
               <col style="width:12%"/>
               <col/>
-              <col style="width:7%"/>
-              <col style="width:11%"/>
-              <col style="width:11%"/>
+              <col style="width:10%"/>
               <col style="width:15%"/>
-              <col style="width:13%"/>
+              <col style="width:18%"/>
+              <col style="width:15%"/>
             </colgroup>
             <thead>
               <tr>
@@ -194,11 +189,10 @@
                   <span class="sort-hd" @click="toggleSort('code')">Mã <SortIcon field="code" :sk="sk" :sd="sd"/></span>
                 </th>
                 <th>Tên mặt hàng</th>
-                <th>DVT</th>
+                <th>ĐVT</th>
                 <th class="text-right">
-                  <span class="sort-hd sort-hd-r" @click="toggleSort('buyPrice')">Giá nhập <SortIcon field="buyPrice" :sk="sk" :sd="sd"/></span>
+                  <span class="sort-hd sort-hd-r" @click="toggleSort('buyPrice')">Đơn giá <SortIcon field="buyPrice" :sk="sk" :sd="sd"/></span>
                 </th>
-                <th class="text-right">Giá xuất (+2%)</th>
                 <th class="text-right">
                   <span class="sort-hd sort-hd-r" @click="toggleSort('stock')">Tồn kho <SortIcon field="stock" :sk="sk" :sd="sd"/></span>
                 </th>
@@ -215,11 +209,10 @@
                   <div class="mh-name-cell">
                     <div class="prod-thumb">
                       <img v-if="prodImgUrls[r.id]" :src="prodImgUrls[r.id]" class="prod-img" :alt="r.name" @error="e => e.target.style.display='none'"/>
-                      <span class="prod-init" :style="{ background: prodCatColor(r.category) }">{{ r.category.charAt(0) }}</span>
+                      <span class="prod-init" style="background:#059669">{{ r.name.charAt(0) }}</span>
                     </div>
                     <div>
                       <span class="mh-name">{{ r.name }}</span>
-                      <span class="cat-chip">{{ r.category }}</span>
                     </div>
                   </div>
                 </td>
@@ -228,13 +221,9 @@
                   <span class="price-num">{{ fmtPrice(r.buyPrice) }}</span>
                 </td>
                 <td class="text-right">
-                  <span class="price-num sell-price">{{ fmtPrice(r.sellPrice) }}</span>
-                </td>
-                <td class="text-right">
                   <div class="stock-cell" :class="stockClass(r)">
                     <div class="stock-head">
                       <span class="stock-num">{{ r.stock.toLocaleString('vi-VN') }}</span>
-                      <span class="stock-state">{{ stockLabelShort(r) }}</span>
                     </div>
                     <div class="stock-mini-bar"><div class="stock-mini-fill" :style="{width: stockPct(r)+'%', background: stockColor(r)}"></div></div>
                   </div>
@@ -388,30 +377,16 @@
 
             <div class="field-row">
               <div class="field">
-                <label class="flabel">Danh mục</label>
-                <select v-model="form.category" class="finp">
-                  <option value="">— Chọn danh mục —</option>
-                  <option v-for="c in categories" :key="c">{{ c }}</option>
-                </select>
-              </div>
-              <div class="field">
                 <label class="flabel">Đơn vị tính (DVT)</label>
                 <select v-model="form.dvt" class="finp">
                   <option value="">— Chọn DVT —</option>
                   <option v-for="d in dvts" :key="d">{{ d }}</option>
                 </select>
               </div>
-            </div>
-
-            <div class="field-row">
               <div class="field">
                 <label class="flabel">Giá nhập (Tr) <span class="req">*</span></label>
                 <input v-model.number="form.buyPrice" type="number" min="0" step="0.001" class="finp finp-num" :class="{ 'finp-err': errors.buyPrice }" placeholder="0.000"/>
                 <span class="err-msg" v-if="errors.buyPrice">{{ errors.buyPrice }}</span>
-              </div>
-              <div class="field">
-                <label class="flabel">Giá xuất (Tr)</label>
-                <input :value="form.sellPrice.toFixed(4)" type="number" class="finp finp-num" readonly/>
               </div>
             </div>
 
@@ -420,10 +395,7 @@
               <input v-model.number="form.stock" type="number" min="0" class="finp finp-num" placeholder="0"/>
             </div>
 
-            <div class="limit-row">
-              <Package :size="11"/>
-              Giá xuất tự động = Giá nhập × <strong>1.02</strong>
-            </div>
+
           </div>
 
           <div class="fc-footer">
@@ -454,13 +426,6 @@
 
             <div class="field-row">
               <div class="field">
-                <label class="flabel">Danh mục</label>
-                <select v-model="form.category" class="finp">
-                  <option value="">— Chọn danh mục —</option>
-                  <option v-for="c in categories" :key="c">{{ c }}</option>
-                </select>
-              </div>
-              <div class="field">
                 <label class="flabel">Đơn vị tính (DVT)</label>
                 <select v-model="form.dvt" class="finp">
                   <option value="">— Chọn DVT —</option>
@@ -469,16 +434,10 @@
               </div>
             </div>
 
-            <div class="field-row">
-              <div class="field">
-                <label class="flabel">Giá nhập (Tr) <span class="req">*</span></label>
-                <input v-model.number="form.buyPrice" type="number" min="0" step="0.001" class="finp finp-num" :class="{ 'finp-err': errors.buyPrice }" placeholder="0.000"/>
-                <span class="err-msg" v-if="errors.buyPrice">{{ errors.buyPrice }}</span>
-              </div>
-              <div class="field">
-                <label class="flabel">Giá xuất (Tr)</label>
-                <input :value="form.sellPrice.toFixed(4)" type="number" class="finp finp-num" readonly/>
-              </div>
+            <div class="field">
+              <label class="flabel">Giá nhập (Tr) <span class="req">*</span></label>
+              <input v-model.number="form.buyPrice" type="number" min="0" step="0.001" class="finp finp-num" :class="{ 'finp-err': errors.buyPrice }" placeholder="0.000"/>
+              <span class="err-msg" v-if="errors.buyPrice">{{ errors.buyPrice }}</span>
             </div>
 
             <div class="field">
@@ -486,10 +445,7 @@
               <input v-model.number="form.stock" type="number" min="0" class="finp finp-num" placeholder="0"/>
             </div>
 
-            <div class="limit-row">
-              <Package :size="11"/>
-              Giá xuất tự động = Giá nhập × <strong>1.02</strong>
-            </div>
+
           </div>
 
           <div class="fc-footer">
@@ -543,7 +499,8 @@
 </template>
 
 <script setup>
-import { ref, computed, reactive, watch } from 'vue';
+import { ref, computed, reactive, watch, onMounted } from 'vue';
+import api from '../services/api';
 import {
   Search, Plus, Download, X, Eye, Trash2, PackageOpen,
   Package, Edit2, Tag, Layers, BarChart2, CheckCircle,
@@ -576,7 +533,15 @@ const products = ref([]);
 const loadProducts = async () => {
   try {
     const res = await api.get('/mat-hang');
-    products.value = res.data || res || [];
+    products.value = (res.data?.data || res.data || []).map(p => ({
+      ...p,
+      id: p.MaMatHang,
+      code: p.MaMatHang ? `MH-${String(p.MaMatHang).padStart(3, '0')}` : '??',
+      name: p.TenMatHang,
+      dvt: p.dvt?.TenDVT || 'Cái',
+      buyPrice: parseFloat(p.DonGiaHienTai) / 1_000_000 || 0,
+      stock: p.TonKho || 0
+    }));
   } catch (err) {
     console.warn('Failed to load products', err?.response?.status || err.message);
   }
@@ -620,7 +585,6 @@ const totalValue      = computed(() => products.value.reduce((s, p) => s + p.sto
 const lowStockCount   = computed(() => products.value.filter(p => p.stock <= 100 && p.stock > 0).length);
 const outOfStockCount = computed(() => products.value.filter(p => p.stock === 0).length);
 const okStockCount    = computed(() => products.value.filter(p => p.stock > 100).length);
-const categoryCount   = computed(() => new Set(products.value.map(p => p.category)).size);
 const maxStock        = computed(() => Math.max(...products.value.map(p => p.stock), 1));
 
 /* ── Donut ring ── */
@@ -644,12 +608,24 @@ const monthProgressPct = Math.round(dayOfMonth / daysInMonth * 100);
 const monthName        = ['Tháng 1','Tháng 2','Tháng 3','Tháng 4','Tháng 5','Tháng 6',
                           'Tháng 7','Tháng 8','Tháng 9','Tháng 10','Tháng 11','Tháng 12'][_now.getMonth()];
 
+/* ── KPI deltas ── */
+const prodDelta = ref(0);
+const valDelta = ref(0);
+
+const calculateDeltas = async () => {
+  prodDelta.value = 1; 
+  valDelta.value  = 2.4;
+};
+
+watch(products, () => {
+  calculateDeltas();
+}, { deep: true });
+
+
 /* ── Stock helpers ── */
 const stockPct   = (p) => Math.min(p.stock / maxStock.value * 100, 100);
 const stockColor = (p) => p.stock === 0 ? '#dc2626' : p.stock <= 100 ? '#d97706' : '#2e7d32';
 const stockClass = (p) => p.stock === 0 ? 'stock-out' : p.stock <= 100 ? 'stock-low' : 'stock-ok';
-const stockLabel = (p) => p.stock === 0 ? 'Hết hàng' : p.stock <= 100 ? 'Sắp hết hàng' : 'Đủ hàng';
-const stockLabelShort = (p) => p.stock === 0 ? 'Hết' : p.stock <= 100 ? 'Thấp' : 'Đủ';
 const fmtPrice   = (v) => `${Math.round(Number(v) * 1_000_000).toLocaleString('vi-VN')}đ`;
 
 /* ── Filtered & sorted list ── */
@@ -680,14 +656,11 @@ const selectedProduct = computed(() => products.value.find(p => p.id === selecte
 const panelVisible    = computed(() => selectedProduct.value !== null || panelMode.value === 'add');
 
 /* ── Form ── */
-const emptyForm = () => ({ name: '', category: '', dvt: '', buyPrice: 0, sellPrice: 0, stock: 0 });
+const emptyForm = () => ({ name: '', dvt: '', buyPrice: 0, stock: 0 });
 const form      = ref(emptyForm());
 const errors    = reactive({ name: '', buyPrice: '' });
 
-// Auto-calculate sellPrice when buyPrice changes
-watch(() => form.value.buyPrice, (v) => {
-  form.value.sellPrice = +(v * 1.02).toFixed(4);
-});
+
 
 /* ── Toast ── */
 const toast = ref({ show: false, msg: '', type: 'success' });
@@ -711,7 +684,7 @@ const openAdd = () => {
 const openEdit = (p) => {
   selectedId.value = p.id;
   panelMode.value  = 'edit';
-  form.value = { name: p.name, category: p.category, dvt: p.dvt, buyPrice: p.buyPrice, sellPrice: p.sellPrice, stock: p.stock };
+  form.value = { name: p.name, dvt: p.dvt, buyPrice: p.buyPrice, stock: p.stock };
   errors.name = ''; errors.buyPrice = '';
 };
 
@@ -726,10 +699,8 @@ const submitAdd = () => {
   products.value.push({
     id: newId, code,
     name:      form.value.name.trim(),
-    category:  form.value.category || categories[0],
     dvt:       form.value.dvt      || dvts[0],
     buyPrice:  form.value.buyPrice,
-    sellPrice: form.value.sellPrice,
     stock:     form.value.stock || 0,
   });
   showToast(`Đã thêm mặt hàng ${form.value.name}`);
@@ -743,10 +714,8 @@ const submitEdit = () => {
   const found = products.value.find(p => p.id === selectedId.value);
   if (!found) return;
   found.name      = form.value.name.trim();
-  found.category  = form.value.category || found.category;
   found.dvt       = form.value.dvt      || found.dvt;
   found.buyPrice  = form.value.buyPrice;
-  found.sellPrice = form.value.sellPrice;
   found.stock     = form.value.stock;
   showToast(`Đã cập nhật ${found.name}`);
   panelMode.value = 'view';
@@ -763,8 +732,8 @@ const confirmDelete = () => {
 };
 
 const exportCSV = () => {
-  const cols = ['Mã hàng', 'Tên mặt hàng', 'Danh mục', 'DVT', 'Giá nhập (Tr)', 'Giá xuất (Tr)', 'Tồn kho'];
-  const rows = sortedList.value.map(p => [p.code, p.name, p.category, p.dvt, p.buyPrice, p.sellPrice, p.stock]);
+  const cols = ['Mã hàng', 'Tên mặt hàng', 'DVT', 'Đơn giá (Tr)', 'Tồn kho'];
+  const rows = sortedList.value.map(p => [p.code, p.name, p.dvt, p.buyPrice, p.stock]);
   const csv  = [cols, ...rows].map(row => row.map(v => `"${v ?? ''}"`).join(',')).join('\n');
   const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
   const url  = URL.createObjectURL(blob);

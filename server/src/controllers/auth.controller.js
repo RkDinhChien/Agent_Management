@@ -35,14 +35,6 @@ const login = async (req, res) => {
       });
     }
 
-    // Kiểm tra trạng thái (nếu trường tồn tại trong schema)
-    if (typeof user.TrangThai !== 'undefined' && !user.TrangThai) {
-      return res.status(403).json({
-        status: 'error',
-        message: 'Tài khoản đã bị vô hiệu hóa.',
-      });
-    }
-
     // Kiểm tra mật khẩu
     const isValid = await user.kiemTraMatKhau(matKhau);
     if (!isValid) {

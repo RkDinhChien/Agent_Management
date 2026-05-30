@@ -11,11 +11,31 @@ const getAll = async (req, res) => {
       include: [
         { model: LoaiDaiLy, as: 'loaiDaiLy' },
         { model: Quan, as: 'quan' },
+        { model: PhieuXuatHang, as: 'phieuXuats', required: false },
+        { model: PhieuThuTien, as: 'phieuThus', required: false },
       ],
       order: [['MaDaiLy', 'DESC']],
     });
 
-    res.json({ status: 'success', data: daiLys });
+    // Tính TongNo động từ giao dịch thực, tránh phụ thuộc cột DB có thể stale
+    const result = daiLys.map(dl => {
+      const tongXuat = (dl.phieuXuats || [])
+        .reduce((s, px) => s + parseFloat(px.TongTien || 0), 0);
+      const tongThu = (dl.phieuThus || [])
+        .reduce((s, pt) => s + parseFloat(pt.SoTienThu || 0), 0);
+      const computedTongNo = Math.max(0, tongXuat - tongThu);
+
+      const obj = dl.toJSON();
+      obj.TongNo = computedTongNo;
+      // Đồng bộ field trong DB nếu lệch
+      if (parseFloat(dl.TongNo || 0) !== computedTongNo) {
+        DaiLy.update({ TongNo: computedTongNo }, { where: { MaDaiLy: dl.MaDaiLy } })
+          .catch(() => {}); // fire-and-forget, không block response
+      }
+      return obj;
+    });
+
+    res.json({ status: 'success', data: result });
   } catch (error) {
     console.error('DaiLy getAll error:', error);
     res.status(500).json({ status: 'error', message: 'Lỗi server.' });
@@ -200,7 +220,7 @@ const getLichSu = async (req, res) => {
     // Lấy phiếu xuất hàng
     const phieuXuats = await PhieuXuatHang.findAll({
       where: { MaDaiLy: id },
-      order: [['NgayXuat', 'DESC']],
+      order: [['NgayLapPhieu', 'DESC']],
     });
 
     // Lấy phiếu thu tiền
@@ -224,7 +244,7 @@ const getLichSu = async (req, res) => {
           tongDoanhThu,
           tongPhieuThu: phieuThus.length,
           tongDaThu,
-          conNo: parseFloat(daiLy.TienNo || 0),
+          conNo: parseFloat(daiLy.TongNo || 0),
         },
       },
     });

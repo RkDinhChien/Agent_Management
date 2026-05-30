@@ -135,9 +135,9 @@
                 </span>
               </td>
               <td class="cell-location">{{ dl.quan?.TenQuan || 'N/A' }}</td>
-              <td class="cell-phone">{{ dl.DienThoai }}</td>
-              <td class="cell-debt" :class="{ 'debt-high': dl.TienNo > 40000000 }">
-                {{ fmtCurrency(dl.TienNo) }}
+              <td class="cell-phone">{{ dl.SDT }}</td>
+              <td class="cell-debt" :class="{ 'debt-high': dl.TongNo > 40000000 }">
+                {{ fmtCurrency(dl.TongNo) }}
               </td>
               <td class="cell-actions">
                 <button class="btn-action btn-view" @click="viewDaiLy(dl)" title="Xem">
@@ -225,7 +225,7 @@
             <div class="form-group">
               <label>Điện Thoại *</label>
               <input 
-                v-model="form.DienThoai" 
+                v-model="form.SDT" 
                 type="text" 
                 placeholder="03XXXXXXXX" 
                 required 
@@ -310,15 +310,14 @@ const form = reactive({
   MaLoai: '',
   MaQuan: '',
   DiaChi: '',
-  DienThoai: '',
+  SDT: '',
   Email: '',
   NgayTiepNhan: new Date().toISOString().split('T')[0]
 });
 
 // Computed
 const avgDebt = computed(() => {
-  if (daiLys.value.length === 0) return 0;
-  return daiLys.value.reduce((s, dl) => s + parseFloat(dl.TienNo || 0), 0) / daiLys.value.length;
+  return daiLys.value.reduce((s, dl) => s + parseFloat(dl.TongNo || 0), 0) / daiLys.value.length;
 });
 
 const filteredDaiLys = computed(() => {
@@ -331,8 +330,8 @@ const filteredDaiLys = computed(() => {
     const matchesQuan = !filterQuan.value || dl.MaQuan == filterQuan.value;
     const matchesLoai = !filterLoai.value || dl.MaLoai == filterLoai.value;
     const matchesDebt = !filterDebt.value || (
-      filterDebt.value === 'no' ? dl.TienNo > 0 : 
-      filterDebt.value === 'no-high' ? dl.TienNo > 40000000 : true
+      filterDebt.value === 'no' ? dl.TongNo > 0 : 
+      filterDebt.value === 'no-high' ? dl.TongNo > 40000000 : true
     );
     return matchesSearch && matchesQuan && matchesLoai && matchesDebt;
   });
@@ -442,9 +441,9 @@ const exportToExcel = () => {
     'Loại': dl.loaiDaiLy?.TenLoai || '',
     'Khu Vực': dl.quan?.TenQuan || '',
     'Địa Chỉ': dl.DiaChi || '',
-    'Điện Thoại': dl.DienThoai,
+    'Điện Thoại': dl.SDT,
     'Email': dl.Email || '',
-    'Dư Nợ': dl.TienNo || 0
+    'Dư Nợ': dl.TongNo || 0
   }));
   
   const ws = XLSX.utils.json_to_sheet(data);

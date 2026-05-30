@@ -41,7 +41,7 @@ const getDashboard = async (req, res) => {
 
       const doanhSo = await PhieuXuatHang.sum('TongTien', {
         where: {
-          NgayXuat: { [Op.between]: [month, endMonth] },
+          NgayLapPhieu: { [Op.between]: [month, endMonth] },
         },
       }) || 0;
 

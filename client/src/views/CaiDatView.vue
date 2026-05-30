@@ -151,12 +151,12 @@
               </div>
               <div>
                 <p class="param-name">Áp dụng KTQĐ số tiền thu</p>
-                <p class="param-desc">Số tiền thu tối thiểu mỗi lần (áp dụng kiểm tra quy định)</p>
+                <p class="param-desc">Số tiền thu không vượt quá tiền nợ đại lý</p>
               </div>
             </div>
             <div class="param-input-wrap">
-              <input v-model.number="params.soTienThu" type="number" min="0" step="100000" class="finp param-inp"/>
-              <span class="param-unit">VNĐ</span>
+              <input v-model="params.apDungQDKiemTraSoTienThu" type="checkbox" class="param-check"/>
+              <span class="param-unit">{{ params.apDungQDKiemTraSoTienThu ? 'Đang bật' : 'Đang tắt' }}</span>
             </div>
           </div>
 
@@ -333,9 +333,39 @@ const tab = ref('thamso');
 const fmtMoney = (v) => Number(v).toLocaleString('vi-VN') + ' đ';
 
 /* ── Tham số hệ thống ── */
-const params = reactive({ soDaiLyToiDa: 5, tiLeGiaXuat: 2, soTienThu: 1_000_000 });
+const params = reactive({ soDaiLyToiDa: 4, tiLeGiaXuat: 2, apDungQDKiemTraSoTienThu: false });
 const paramSaved = ref(false);
-const saveParams = () => { paramSaved.value = true; setTimeout(() => paramSaved.value = false, 2500); };
+
+const loadParams = async () => {
+  try {
+    const res = await api.get('/tham-so');
+    const data = res.data?.data;
+    if (data) {
+      params.soDaiLyToiDa = data.SoDaiLyToiDa;
+      // Convert multiplier (e.g. 1.02) to percentage (e.g. 2)
+      params.tiLeGiaXuat = Math.round((parseFloat(data.TiLeTinhDonGiaXuat) - 1) * 100 * 10) / 10;
+      params.apDungQDKiemTraSoTienThu = !!data.ApDungQDKiemTraSoTienThu;
+    }
+  } catch (err) {
+    console.warn('Failed to load params', err);
+  }
+};
+
+const saveParams = async () => {
+  try {
+    const payload = {
+      SoDaiLyToiDa: Number(params.soDaiLyToiDa),
+      // Convert percentage (e.g. 2) to multiplier (e.g. 1.02)
+      TiLeTinhDonGiaXuat: 1 + (params.tiLeGiaXuat / 100),
+      ApDungQDKiemTraSoTienThu: params.apDungQDKiemTraSoTienThu
+    };
+    await api.put('/tham-so', payload);
+    paramSaved.value = true;
+    setTimeout(() => paramSaved.value = false, 2500);
+  } catch (err) {
+    alert('Lỗi khi lưu tham số: ' + (err.response?.data?.message || err.message));
+  }
+};
 
 /* ── Loại đại lý ── */
 const loais = ref([]);
@@ -344,7 +374,8 @@ let loaiNextId = 100;
 const loadLoais = async () => {
   try {
     const res = await api.get('/loai-dai-ly');
-    loais.value = res.data || res || [];
+    const data = res.data?.data || res.data || res || [];
+    loais.value = data.map(l => ({ id: l.MaLoaiDaiLy, ten: l.TenLoaiDaiLy, hanMucNo: l.TienNoToiDa }));
     loaiNextId = Math.max(...loais.value.map(l => l.id), 0) + 1;
   } catch (err) {
     console.warn('Failed to load loai-dai-ly', err?.response?.status || err.message);
@@ -353,16 +384,29 @@ const loadLoais = async () => {
 const loaiForm = reactive({ id: null, ten: '', hanMucNo: '' });
 const resetLoai  = () => { loaiForm.id = null; loaiForm.ten = ''; loaiForm.hanMucNo = ''; };
 const editLoai   = (l) => { loaiForm.id = l.id; loaiForm.ten = l.ten; loaiForm.hanMucNo = l.hanMucNo; };
-const deleteLoai = (id) => { loais.value = loais.value.filter(l => l.id !== id); };
-const submitLoai = () => {
-  if (!loaiForm.ten.trim() || !loaiForm.hanMucNo) return;
-  if (loaiForm.id) {
-    const l = loais.value.find(l => l.id === loaiForm.id);
-    if (l) { l.ten = loaiForm.ten.trim(); l.hanMucNo = Number(loaiForm.hanMucNo); }
-  } else {
-    loais.value.push({ id: loaiNextId++, ten: loaiForm.ten.trim(), hanMucNo: Number(loaiForm.hanMucNo) });
+const deleteLoai = async (id) => {
+  if (!confirm('Xóa loại đại lý này?')) return;
+  try {
+    await api.delete(`/loai-dai-ly/${id}`);
+    await loadLoais();
+  } catch (err) {
+    alert(err.response?.data?.message || 'Không thể xóa loại đại lý.');
   }
-  resetLoai();
+};
+const submitLoai = async () => {
+  if (!loaiForm.ten.trim() || !loaiForm.hanMucNo) return;
+  const payload = { TenLoaiDaiLy: loaiForm.ten.trim(), TienNoToiDa: Number(loaiForm.hanMucNo) };
+  try {
+    if (loaiForm.id) {
+      await api.put(`/loai-dai-ly/${loaiForm.id}`, payload);
+    } else {
+      await api.post('/loai-dai-ly', payload);
+    }
+    await loadLoais();
+    resetLoai();
+  } catch (err) {
+    alert(err.response?.data?.message || 'Có lỗi khi lưu loại đại lý.');
+  }
 };
 
 /* ── Đơn vị tính ── */
@@ -372,7 +416,8 @@ let dvtNextId = 100;
 const loadDvts = async () => {
   try {
     const res = await api.get('/don-vi-tinh');
-    dvts.value = res.data || res || [];
+    const data = res.data?.data || res.data || res || [];
+    dvts.value = data.map(d => ({ id: d.MaDVT, ten: d.TenDVT }));
     dvtNextId = Math.max(...dvts.value.map(d => d.id), 0) + 1;
   } catch (err) {
     console.warn('Failed to load don-vi-tinh', err?.response?.status || err.message);
@@ -381,16 +426,29 @@ const loadDvts = async () => {
 const dvtForm = reactive({ id: null, ten: '' });
 const resetDvt  = () => { dvtForm.id = null; dvtForm.ten = ''; };
 const editDvt   = (d) => { dvtForm.id = d.id; dvtForm.ten = d.ten; };
-const deleteDvt = (id) => { dvts.value = dvts.value.filter(d => d.id !== id); };
-const submitDvt = () => {
-  if (!dvtForm.ten.trim()) return;
-  if (dvtForm.id) {
-    const d = dvts.value.find(d => d.id === dvtForm.id);
-    if (d) d.ten = dvtForm.ten.trim();
-  } else {
-    dvts.value.push({ id: dvtNextId++, ten: dvtForm.ten.trim() });
+const deleteDvt = async (id) => {
+  if (!confirm('Xóa đơn vị tính này?')) return;
+  try {
+    await api.delete(`/don-vi-tinh/${id}`);
+    await loadDvts();
+  } catch (err) {
+    alert(err.response?.data?.message || 'Không thể xóa đơn vị tính.');
   }
-  resetDvt();
+};
+const submitDvt = async () => {
+  if (!dvtForm.ten.trim()) return;
+  const payload = { TenDVT: dvtForm.ten.trim() };
+  try {
+    if (dvtForm.id) {
+      await api.put(`/don-vi-tinh/${dvtForm.id}`, payload);
+    } else {
+      await api.post('/don-vi-tinh', payload);
+    }
+    await loadDvts();
+    resetDvt();
+  } catch (err) {
+    alert(err.response?.data?.message || 'Có lỗi khi lưu đơn vị tính.');
+  }
 };
 
 /* ── Quận ── */
@@ -400,7 +458,8 @@ let quanNextId = 100;
 const loadQuans = async () => {
   try {
     const res = await api.get('/quan');
-    quans.value = res.data || res || [];
+    const data = res.data?.data || res.data || res || [];
+    quans.value = data.map(q => ({ id: q.MaQuan, ten: q.TenQuan }));
     quanNextId = Math.max(...quans.value.map(q => q.id), 0) + 1;
   } catch (err) {
     console.warn('Failed to load quan', err?.response?.status || err.message);
@@ -408,6 +467,7 @@ const loadQuans = async () => {
 };
 
 onMounted(() => {
+  loadParams();
   loadLoais();
   loadDvts();
   loadQuans();
@@ -415,16 +475,29 @@ onMounted(() => {
 const quanForm = reactive({ id: null, ten: '' });
 const resetQuan  = () => { quanForm.id = null; quanForm.ten = ''; };
 const editQuan   = (q) => { quanForm.id = q.id; quanForm.ten = q.ten; };
-const deleteQuan = (id) => { quans.value = quans.value.filter(q => q.id !== id); };
-const submitQuan = () => {
-  if (!quanForm.ten.trim()) return;
-  if (quanForm.id) {
-    const q = quans.value.find(q => q.id === quanForm.id);
-    if (q) q.ten = quanForm.ten.trim();
-  } else {
-    quans.value.push({ id: quanNextId++, ten: quanForm.ten.trim() });
+const deleteQuan = async (id) => {
+  if (!confirm('Xóa quận này?')) return;
+  try {
+    await api.delete(`/quan/${id}`);
+    await loadQuans();
+  } catch (err) {
+    alert(err.response?.data?.message || 'Không thể xóa quận.');
   }
-  resetQuan();
+};
+const submitQuan = async () => {
+  if (!quanForm.ten.trim()) return;
+  const payload = { TenQuan: quanForm.ten.trim() };
+  try {
+    if (quanForm.id) {
+      await api.put(`/quan/${quanForm.id}`, payload);
+    } else {
+      await api.post('/quan', payload);
+    }
+    await loadQuans();
+    resetQuan();
+  } catch (err) {
+    alert(err.response?.data?.message || 'Có lỗi khi lưu quận.');
+  }
 };
 </script>
 
@@ -559,6 +632,10 @@ const submitQuan = () => {
 .param-desc { font-size: 12px; color: var(--c-txt-3); margin: 0; }
 .param-input-wrap { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
 .param-inp { width: 140px !important; text-align: right; }
+.param-check {
+  width: 18px; height: 18px; cursor: pointer;
+  accent-color: var(--c-primary);
+}
 .param-unit { font-size: 12px; font-weight: 600; color: var(--c-txt-3); white-space: nowrap; }
 .param-footer {
   display: flex; align-items: center; justify-content: flex-end;

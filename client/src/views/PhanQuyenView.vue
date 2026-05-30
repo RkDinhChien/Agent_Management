@@ -307,8 +307,9 @@ let nhomNextId = 100;
 const loadNhomNguoiDung = async () => {
   try {
     const res = await api.get('/nhom-nguoi-dung');
-    nhoms.value = res.data || res || [];
-    nhomNextId = Math.max(...nhoms.value.map(n => n.id), 0) + 1;
+    const data = res.data?.data || res.data || [];
+    nhoms.value = data.map(n => ({ id: n.MaNhom, ten: n.TenNhom }));
+    nhomNextId = Math.max(...nhoms.value.map(n => n.id || 0), 0) + 1;
   } catch (err) {
     console.warn('Failed to load nhom-nguoi-dung', err?.response?.status || err.message);
   }
@@ -338,8 +339,14 @@ let ndNextId = 100;
 const loadNguoiDung = async () => {
   try {
     const res = await api.get('/nguoi-dung');
-    nguoiDungs.value = res.data || res || [];
-    ndNextId = Math.max(...nguoiDungs.value.map(u => u.id), 0) + 1;
+    const data = res.data?.data || res.data || [];
+    nguoiDungs.value = data.map(u => ({
+      id: u.TenNguoiDung, // Use TenNguoiDung as ID since it's the PK
+      ten: u.TenNguoiDung,
+      mk: '******',
+      nhomId: u.MaNhom
+    }));
+    ndNextId = (nguoiDungs.value.length > 0) ? (Math.max(...nguoiDungs.value.map(u => typeof u.id === 'number' ? u.id : 0), 0) + 1) : 100;
   } catch (err) {
     console.warn('Failed to load nguoi-dung', err?.response?.status || err.message);
   }
@@ -362,55 +369,124 @@ const submitNd = () => {
   resetNd();
 };
 
+/* ════════════════════ PHÂN QUYỀN ════════════════════ */
+const chucNangs = ref([]);
+const fnIcons = {
+  'DaiLyView': Users,
+  'PhieuNhapView': FileInput,
+  'PhieuXuatView': FileOutput,
+  'TraCuuView': Package,
+  'ThuTienView': Receipt,
+  'BaoCaoView': BarChart2,
+  'CaiDatView': Settings,
+  'PhanQuyenView': Lock,
+};
+
+const loadChucNangs = async () => {
+  try {
+    const res = await api.get('/chuc-nang');
+    const data = res.data?.data || res.data || res || [];
+    chucNangs.value = data.map(c => ({
+      id: c.MaChucNang,
+      ten: c.TenChucNang,
+      icon: fnIcons[c.TenManHinhDuocLoad] || ShieldCheck
+    }));
+  } catch (err) {
+    console.warn('Failed to load chuc-nang', err);
+  }
+};
+
 onMounted(() => {
   loadNhomNguoiDung();
   loadNguoiDung();
+  loadChucNangs();
 });
-
-/* ════════════════════ PHÂN QUYỀN ════════════════════ */
-const chucNangs = [
-  { id: 1, ten: 'Hồ Sơ Đại Lý',    icon: Users },
-  { id: 2, ten: 'Phiếu Nhập Hàng',  icon: FileInput },
-  { id: 3, ten: 'Phiếu Xuất Hàng',  icon: FileOutput },
-  { id: 4, ten: 'Thu Tiền',         icon: Receipt },
-  { id: 5, ten: 'Mặt Hàng',         icon: Package },
-  { id: 6, ten: 'Báo Cáo',          icon: BarChart2 },
-  { id: 7, ten: 'Cài Đặt',          icon: Settings },
-  { id: 8, ten: 'Phân Quyền',       icon: Lock },
-];
 
 /* perms[groupId][fnId] = { xem, them, sua, xoa } */
-const perms = reactive({
-  1: Object.fromEntries(chucNangs.map(f => [f.id, { xem:true, them:true, sua:true, xoa:true }])),
-  2: Object.fromEntries(chucNangs.map(f => [f.id, {
-    xem: true, them: [1,2,3,4,5].includes(f.id), sua: [1,2,3,4,5].includes(f.id), xoa: [1,2,3].includes(f.id)
-  }])),
-  3: Object.fromEntries(chucNangs.map(f => [f.id, { xem:true, them:false, sua:false, xoa:false }])),
-});
+const perms = reactive({});
+
+const loadPerms = async (gid) => {
+  if (!gid) return;
+  try {
+    const res = await api.get(`/phan-quyen/${gid}`);
+    const data = res.data?.data || [];
+    // Initialize all as false
+    const gPerms = Object.fromEntries(chucNangs.value.map(f => [f.id, { xem:false, them:false, sua:false, xoa:false }]));
+    // Fill from DB
+    data.forEach(p => {
+      if (gPerms[p.MaChucNang]) {
+        gPerms[p.MaChucNang] = { xem: !!p.Xem, them: !!p.Them, sua: !!p.Sua, xoa: !!p.Xoa };
+      }
+    });
+    perms[gid] = gPerms;
+  } catch (err) {
+    console.warn('Load perms error', err);
+  }
+};
 
 const permGroupId = ref(1);
 const permSaved   = ref(false);
 
-const ensureGroup = (gid) => {
-  if (!perms[gid]) perms[gid] = Object.fromEntries(chucNangs.map(f => [f.id, { xem:false, them:false, sua:false, xoa:false }]));
+const ensureGroup = async (gid) => {
+  if (!perms[gid]) {
+    // Initial local empty state to avoid errors while loading
+    perms[gid] = Object.fromEntries(chucNangs.value.map(f => [f.id, { xem:false, them:false, sua:false, xoa:false }]));
+    await loadPerms(gid);
+  }
 };
 
 const getP = (fnId, perm) => {
-  ensureGroup(permGroupId.value);
+  if (!perms[permGroupId.value]) return false;
   return !!perms[permGroupId.value][fnId]?.[perm];
 };
 const toggleP = (fnId, perm) => {
-  ensureGroup(permGroupId.value);
+  if (!perms[permGroupId.value]) return;
   perms[permGroupId.value][fnId][perm] = !perms[permGroupId.value][fnId][perm];
   permSaved.value = false;
 };
-const grantAll  = (fnId) => { ensureGroup(permGroupId.value); const p = perms[permGroupId.value][fnId]; p.xem=p.them=p.sua=p.xoa=true; permSaved.value=false; };
-const revokeAll = (fnId) => { ensureGroup(permGroupId.value); const p = perms[permGroupId.value][fnId]; p.xem=p.them=p.sua=p.xoa=false; permSaved.value=false; };
-const grantCol  = (perm) => { ensureGroup(permGroupId.value); chucNangs.forEach(f => perms[permGroupId.value][f.id][perm] = true); permSaved.value=false; };
+const grantAll  = (fnId) => {
+  if (!perms[permGroupId.value]) return;
+  const p = perms[permGroupId.value][fnId];
+  p.xem = p.them = p.sua = p.xoa = true;
+  permSaved.value = false;
+};
+const revokeAll = (fnId) => {
+  if (!perms[permGroupId.value]) return;
+  const p = perms[permGroupId.value][fnId];
+  p.xem = p.them = p.sua = p.xoa = false;
+  permSaved.value = false;
+};
+const grantCol  = (perm) => {
+  if (!perms[permGroupId.value]) return;
+  chucNangs.value.forEach(f => perms[permGroupId.value][f.id][perm] = true);
+  permSaved.value = false;
+};
 
-const savePerms = () => { permSaved.value = true; setTimeout(() => permSaved.value = false, 2500); };
+const savePerms = async () => {
+  const gPerms = perms[permGroupId.value];
+  if (!gPerms) return;
+  const payload = {
+    MaNhom: permGroupId.value,
+    permissions: Object.entries(gPerms).map(([fnId, p]) => ({
+      MaChucNang: Number(fnId),
+      Xem: p.xem, Them: p.them, Sua: p.sua, Xoa: p.xoa
+    }))
+  };
+  try {
+    await api.post('/phan-quyen', payload);
+    permSaved.value = true;
+    setTimeout(() => permSaved.value = false, 2500);
+  } catch (err) {
+    alert('Không thể lưu phân quyền');
+  }
+};
 
-watch(permGroupId, () => { ensureGroup(permGroupId.value); });
+watch(permGroupId, (newG) => { ensureGroup(newG); }, { immediate: true });
+// Also reload when groups are loaded to ensure first group is ready
+watch(nhoms, (newN) => { if (newN.length && !perms[permGroupId.value]) ensureGroup(permGroupId.value); });
+// Also reload when functions are loaded
+watch(chucNangs, () => { if (permGroupId.value) loadPerms(permGroupId.value); });
+
 </script>
 
 <style scoped>

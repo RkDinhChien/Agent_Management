@@ -76,9 +76,11 @@
             <span class="cs-lbl">Tổng phiếu tháng này</span>
           </div>
           <div class="cs-num-row">
-            <strong class="cs-num">{{ receipts.length }}</strong>
+            <strong class="cs-num">{{ thisMonthCount }}</strong>
           </div>
-          <div class="cs-delta cs-up">↑ 2 so tháng 4</div>
+          <div class="cs-delta" :class="countDelta >= 0 ? 'cs-up' : 'cs-down'">
+            {{ countDelta >= 0 ? '↑' : '↓' }} {{ Math.abs(countDelta) }} so với tháng trước
+          </div>
         </div>
         <div class="cs-sep"></div>
 
@@ -89,53 +91,17 @@
             <span class="cs-lbl">Tổng giá trị đã duyệt</span>
           </div>
           <div class="cs-num-row">
-            <strong class="cs-num">{{ totalApproved }} <span style="font-size:14px;font-weight:600;color:#94a3b8">Tr</span></strong>
+            <strong class="cs-num">{{ fmtSummary(thisMonthValue) }}</strong>
           </div>
-          <div class="cs-delta cs-up">↑ 18% so tháng 4</div>
+          <div class="cs-delta" :class="valDelta >= 0 ? 'cs-up' : 'cs-down'">
+            {{ valDelta >= 0 ? '↑' : '↓' }} {{ Math.abs(valDelta).toFixed(1) }}% so với tháng trước
+          </div>
           <div class="spark-wrap">
             <div v-for="(h, i) in spark" :key="i"
                  class="spark-bar" :class="{ 'spark-active': i === spark.length - 1 }"
                  :style="{ height: (h / maxSpark * 100) + '%' }"
                  :title="sparkLabels[i] + ': ' + h + ' Tr'">
             </div>
-          </div>
-        </div>
-        <div class="cs-sep"></div>
-
-        <!-- KPI 3: Chờ duyệt + SVG donut -->
-        <div class="cs-col cs-warn">
-          <div class="cs-lbl-row">
-            <span class="cs-ic cs-ic-warn"><Clock :size="11"/></span>
-            <span class="cs-lbl">Phê duyệt phiếu</span>
-          </div>
-          <div class="cs-pending-row">
-            <svg viewBox="0 0 60 60" width="52" height="52" class="cs-donut-svg">
-              <circle cx="30" cy="30" r="22" fill="none" stroke="#f1f5f9" stroke-width="7" stroke-linecap="butt"/>
-              <circle cx="30" cy="30" r="22" fill="none" stroke="#34d399" stroke-width="7" stroke-linecap="round"
-                :stroke-dasharray="`${Math.max(0, approvedArc - 3)} ${138.2 - Math.max(0, approvedArc - 3)}`"
-                :stroke-dashoffset="138.2"
-                transform="rotate(-90 30 30)" style="transition:stroke-dasharray .6s ease"/>
-              <circle cx="30" cy="30" r="22" fill="none" stroke="#fbbf24" stroke-width="7" stroke-linecap="round"
-                :stroke-dasharray="`${Math.max(0, pendingArc - 3)} ${138.2 - Math.max(0, pendingArc - 3)}`"
-                :stroke-dashoffset="138.2 - approvedArc"
-                transform="rotate(-90 30 30)" style="transition:stroke-dasharray .6s ease"/>
-              <circle cx="30" cy="30" r="22" fill="none" stroke="#94a3b8" stroke-width="7" stroke-linecap="round"
-                :stroke-dasharray="`${Math.max(0, cancelledArc - 3)} ${138.2 - Math.max(0, cancelledArc - 3)}`"
-                :stroke-dashoffset="138.2 - approvedArc - pendingArc"
-                transform="rotate(-90 30 30)" style="transition:stroke-dasharray .6s ease"/>
-            </svg>
-            <div>
-              <strong class="cs-num cs-amber" style="display:block;margin-bottom:2px">
-                {{ pendingCount }}
-                <span class="cs-tag" v-if="pendingCount > 0">cần duyệt</span>
-              </strong>
-              <div class="cs-delta cs-ok">↓ 1 so tháng 4</div>
-            </div>
-          </div>
-          <div class="donut-legend">
-            <span class="dl-dot" style="background:#34d399"></span> Duyệt {{ approvedCount }}
-            <span class="dl-dot" style="background:#fbbf24;margin-left:6px"></span> Chờ {{ pendingCount }}
-            <span class="dl-dot" style="background:#94a3b8;margin-left:6px"></span> Hủy {{ cancelledCount }}
           </div>
         </div>
         <div class="cs-sep"></div>
@@ -148,11 +114,13 @@
           </div>
           <div class="cs-num-row">
             <strong class="cs-num">
-              {{ newThisMonth }}
-              <span class="cs-tag cs-tag-green" v-if="newThisMonth > 0">tháng này</span>
+              {{ thisMonthCount }}
+              <span class="cs-tag cs-tag-green" v-if="thisMonthCount > 0">tháng này</span>
             </strong>
           </div>
-          <div class="cs-delta cs-up">↑ 1 so tháng 4</div>
+          <div class="cs-delta" :class="countDelta >= 0 ? 'cs-up' : 'cs-down'">
+            {{ countDelta >= 0 ? '↑' : '↓' }} {{ Math.abs(countDelta) }} so với tháng trước
+          </div>
         </div>
       </div>
 
@@ -182,28 +150,14 @@
             <button v-if="hasFilter" class="clear-btn" @click="clearFilters" title="Xóa bộ lọc">
               <X :size="11"/> Xóa lọc
             </button>
-            <div class="stab-group">
-              <button class="stab" :class="{ active: !filterStatus }" @click="filterStatus = ''">Tất cả</button>
-              <button class="stab stab-warn" :class="{ active: filterStatus === 'pending' }" @click="filterStatus = 'pending'">
-                Chờ duyệt <span class="stab-n">{{ pendingCount }}</span>
-              </button>
-              <button class="stab stab-green" :class="{ active: filterStatus === 'approved' }" @click="filterStatus = 'approved'">
-                Đã duyệt <span class="stab-n">{{ approvedCount }}</span>
-              </button>
-              <button class="stab stab-muted" :class="{ active: filterStatus === 'cancelled' }" @click="filterStatus = 'cancelled'">
-                Đã hủy <span class="stab-n">{{ cancelledCount }}</span>
-              </button>
-            </div>
+
           </div>
           <div class="lc-tools">
             <div class="search-wrap">
               <Search :size="14" class="search-ic"/>
-              <input v-model="searchQ" class="search-inp" placeholder="Tìm mã phiếu, nhà cung cấp…"/>
+              <input v-model="searchQ" class="search-inp" placeholder="Tìm mã phiếu..."/>
             </div>
-            <select v-model="filterNCC" class="psel">
-              <option value="">Tất cả NCC</option>
-              <option v-for="s in suppliers" :key="s">{{ s }}</option>
-            </select>
+
           </div>
         </div>
 
@@ -213,20 +167,16 @@
             <colgroup>
               <col class="col-code">
               <col class="col-date">
-              <col class="col-ncc">
               <col class="col-items">
               <col class="col-total">
-              <col class="col-status">
               <col class="col-act">
             </colgroup>
             <thead>
               <tr>
                 <th><span class="sort-hd" @click="toggleSort('code')">Mã phiếu <SortIcon field="code" :sk="sk" :sd="sd"/></span></th>
                 <th><span class="sort-hd" @click="toggleSort('rawDate')">Ngày lập <SortIcon field="rawDate" :sk="sk" :sd="sd"/></span></th>
-                <th>Nhà cung cấp</th>
                 <th class="text-center">Số mặt hàng</th>
                 <th class="text-right"><span class="sort-hd" @click="toggleSort('total')">Tổng giá trị <SortIcon field="total" :sk="sk" :sd="sd"/></span></th>
-                <th>Trạng thái</th>
                 <th class="text-center">Thao tác</th>
               </tr>
             </thead>
@@ -238,37 +188,20 @@
                 <td><span class="pn-code">{{ r.code }}</span></td>
                 <td class="muted col-mono">{{ r.date }}</td>
                 <td>
-                  <div class="ncc-cell">
-                    <div class="ncc-av" :style="{ background: nccColor(r.ncc) }">
-                      <img v-if="nccLogo(r.ncc)" :key="nccLogo(r.ncc)" :src="nccLogo(r.ncc)"
-                           class="ncc-av-img" @error="$event.target.style.display='none'"/>
-                      <span class="ncc-av-abbr">{{ nccAbbr(r.ncc) }}</span>
-                    </div>
-                    <span class="ncc-name">{{ r.ncc }}</span>
-                  </div>
-                </td>
-                <td>
                   <span class="item-cnt-chip">{{ r.items.length }} mặt hàng</span>
                 </td>
                 <td class="text-right">
-                  <span class="total-num">{{ fmtTr(r.total) }}</span>
-                </td>
-                <td>
-                  <span class="status-badge" :class="r.status">{{ STATUS[r.status] }}</span>
+                  <span class="total-num">{{ fmtVND(r.total) }}</span>
                 </td>
                 <td class="col-actions">
                   <div class="act-group">
                     <button class="act-btn view-btn" title="Xem chi tiết" @click.stop="openView(r)"><Eye :size="13"/></button>
-                    <template v-if="r.status === 'pending'">
-                      <button class="act-btn edit-btn" title="Sửa phiếu" @click.stop="openEdit(r)"><Edit2 :size="13"/></button>
-                      <button class="act-btn ok-btn" title="Duyệt phiếu" @click.stop="approveReceipt(r)"><CheckCircle :size="13"/></button>
-                    </template>
-                    <button v-else class="act-btn del-btn" title="Xóa phiếu" @click.stop="askDelete(r)"><Trash2 :size="13"/></button>
+                    <button class="act-btn del-btn" title="Xóa phiếu" @click.stop="askDelete(r)"><Trash2 :size="13"/></button>
                   </div>
                 </td>
               </tr>
               <tr v-if="!sortedList.length">
-                <td colspan="7" class="empty-row">
+                <td colspan="5" class="empty-row">
                   <PackageOpen :size="30" class="empty-ic"/><p>Không tìm thấy phiếu nhập phù hợp</p>
                 </td>
               </tr>
@@ -289,33 +222,25 @@
         <!-- ─ VIEW MODE ─ -->
         <template v-if="panelMode === 'view' && selectedReceipt">
           <div class="ap-hd">
-            <div class="ap-avatar-sq" :style="{ background: nccColor(selectedReceipt.ncc) }">
-              <img v-if="nccLogo(selectedReceipt.ncc)"
-                   :key="nccLogo(selectedReceipt.ncc)"
-                   :src="nccLogo(selectedReceipt.ncc)"
-                   class="ap-logo-img" @error="$event.target.style.display='none'"/>
-              <span class="ap-logo-abbr">{{ nccAbbr(selectedReceipt.ncc) }}</span>
+            <div class="ap-avatar-sq" style="background:#0f172a;color:white;display:flex;align-items:center;justify-content:center;border-radius:10px">
+              <Package :size="20"/>
             </div>
             <div class="ap-title-block">
               <h3 class="ap-name">{{ selectedReceipt.code }}</h3>
-              <p class="ap-ncc">{{ selectedReceipt.ncc }}</p>
               <div class="ap-badges">
-                <span class="status-badge" :class="selectedReceipt.status">{{ STATUS[selectedReceipt.status] }}</span>
                 <span class="dist-chip">{{ selectedReceipt.items.length }} mặt hàng</span>
               </div>
             </div>
             <div style="display:flex;gap:5px;align-self:flex-start;flex-shrink:0">
-              <button v-if="selectedReceipt.status === 'pending'" class="act-btn edit-btn" title="Sửa phiếu" @click="openEdit(selectedReceipt)"><Edit2 :size="14"/></button>
               <button class="act-btn" style="background:rgba(15,23,42,.04);color:var(--c-txt-3)" title="Đóng" @click="closePanel"><X :size="14"/></button>
             </div>
           </div>
 
           <!-- Value summary block -->
-          <div class="gauge-section">
             <div class="val-summary">
               <div class="vs-main">
                 <span class="vs-label">Tổng giá trị</span>
-                <span class="vs-val">{{ fmtTr(selectedReceipt.total) }}</span>
+                <span class="vs-val">{{ fmtVND(selectedReceipt.total) }}</span>
               </div>
               <div class="vs-bar-wrap">
                 <div class="vs-bar">
@@ -324,35 +249,12 @@
                 <span class="vs-pct">{{ Math.round(totalBarPct(selectedReceipt)) }}% tháng</span>
               </div>
             </div>
-            <div class="debt-status-bar" :class="selectedReceipt.status">
-              <CheckCircle v-if="selectedReceipt.status === 'approved'" :size="12"/>
-              <Clock v-else-if="selectedReceipt.status === 'pending'" :size="12"/>
-              <XCircle v-else :size="12"/>
-              {{ STATUS_DESC[selectedReceipt.status] }}
-            </div>
-          </div>
-
           <!-- Info grid -->
           <div class="info-grid">
-            <div class="ig-row">
-              <Building2 :size="13" class="ig-ic"/>
-              <span class="ig-lbl">NCC</span>
-              <span class="ig-val">{{ selectedReceipt.ncc }}</span>
-            </div>
             <div class="ig-row">
               <CalendarDays :size="13" class="ig-ic"/>
               <span class="ig-lbl">Ngày lập</span>
               <span class="ig-val col-mono">{{ selectedReceipt.date }}</span>
-            </div>
-            <div class="ig-row">
-              <UserRound :size="13" class="ig-ic"/>
-              <span class="ig-lbl">Người lập</span>
-              <span class="ig-val">{{ selectedReceipt.createdBy }}</span>
-            </div>
-            <div class="ig-row" v-if="selectedReceipt.note">
-              <FileText :size="13" class="ig-ic"/>
-              <span class="ig-lbl">Ghi chú</span>
-              <span class="ig-val" style="font-style:italic;color:#64748b">{{ selectedReceipt.note }}</span>
             </div>
           </div>
 
@@ -367,28 +269,19 @@
             <div class="item-row" v-for="item in selectedReceipt.items" :key="item.name">
               <span class="item-name" style="flex:2">{{ item.name }}</span>
               <span style="flex:.7;text-align:center;color:#64748b;font-size:12px">{{ item.qty.toLocaleString('vi-VN') }}</span>
-              <span style="flex:1;text-align:right;font-weight:700;font-size:12px;font-variant-numeric:tabular-nums">{{ fmtTr(item.qty * item.price) }}</span>
+              <span style="flex:1;text-align:right;font-weight:700;font-size:12px;font-variant-numeric:tabular-nums">{{ fmtVND(item.qty * item.price) }}</span>
             </div>
             <div class="items-total">
               <span>Tổng cộng</span>
-              <strong>{{ fmtTr(selectedReceipt.total) }}</strong>
+              <strong>{{ fmtVND(selectedReceipt.total) }}</strong>
             </div>
           </div>
 
           <!-- Actions -->
-          <div class="quick-links" v-if="selectedReceipt.status === 'pending'">
-            <button class="btn-p" style="flex:1;justify-content:center" @click="approveReceipt(selectedReceipt)">
-              <CheckCircle :size="14"/>Duyệt phiếu
+          <div class="quick-links">
+            <button class="btn-danger-o" @click="askDelete(selectedReceipt)" style="width:100%;justify-content:center">
+              <Trash2 :size="14"/>Xóa phiếu
             </button>
-            <button class="btn-danger-o" @click="cancelReceipt(selectedReceipt)">
-              <XCircle :size="14"/>Hủy
-            </button>
-          </div>
-          <div class="status-note" v-else-if="selectedReceipt.status === 'approved'">
-            <CheckCircle :size="13"/> Phiếu đã được duyệt thành công
-          </div>
-          <div class="status-note cancelled" v-else>
-            <XCircle :size="13"/> Phiếu đã bị hủy
           </div>
         </template>
 
@@ -407,26 +300,8 @@
 
           <div class="fc-body">
             <div class="field full">
-              <label class="flabel">Nhà cung cấp <span class="req">*</span></label>
-              <select v-model="form.ncc" class="finp" :class="{ 'finp-err': errors.ncc }">
-                <option value="">— Chọn nhà cung cấp —</option>
-                <option v-for="s in suppliers" :key="s">{{ s }}</option>
-              </select>
-              <span class="err-msg" v-if="errors.ncc">{{ errors.ncc }}</span>
-            </div>
-            <div class="field-row">
-              <div class="field">
-                <label class="flabel">Ngày lập phiếu</label>
-                <input v-model="form.date" type="date" class="finp" :max="today"/>
-              </div>
-              <div class="field">
-                <label class="flabel">Người lập</label>
-                <input v-model="form.createdBy" class="finp" placeholder="Tên người lập"/>
-              </div>
-            </div>
-            <div class="field full">
-              <label class="flabel">Ghi chú</label>
-              <textarea v-model="form.note" class="finp ftarea" rows="2" placeholder="Ghi chú thêm…"></textarea>
+              <label class="flabel">Ngày lập phiếu</label>
+              <input v-model="form.date" type="date" class="finp" :max="today"/>
             </div>
             <div class="field full">
               <label class="flabel">Danh sách mặt hàng <span class="req">*</span></label>
@@ -434,13 +309,13 @@
                 <div class="items-form-hd">
                   <span style="flex:2">Mặt hàng</span>
                   <span style="flex:.75;text-align:center">SL</span>
-                  <span style="flex:1">Giá (Tr)</span>
+                  <span style="flex:1">Giá</span>
                   <span style="width:26px"></span>
                 </div>
                 <div v-for="(item, idx) in form.items" :key="idx" class="item-form-row">
                   <select v-model="item.name" class="finp finp-sm" style="flex:2">
                     <option value="">Chọn mặt hàng</option>
-                    <option v-for="p in products" :key="p">{{ p }}</option>
+                    <option v-for="p in products" :key="p.name" :value="p.name">{{ p.name }}</option>
                   </select>
                   <input v-model.number="item.qty" type="number" min="1" class="finp finp-sm finp-num" style="flex:.75" placeholder="SL"/>
                   <input v-model.number="item.price" type="number" min="0" step="0.01" class="finp finp-sm finp-num" style="flex:1" placeholder="0.00"/>
@@ -456,7 +331,7 @@
             </div>
             <div class="limit-row">
               <Package :size="11"/>
-              Tổng cộng (ước tính): <strong>{{ fmtTr(formTotal) }}</strong>
+              Tổng cộng (ước tính): <strong>{{ fmtVND(formTotal) }}</strong>
             </div>
           </div>
 
@@ -479,28 +354,8 @@
           <div class="fc-body">
 
             <div class="field full">
-              <label class="flabel">Nhà cung cấp <span class="req">*</span></label>
-              <select v-model="form.ncc" class="finp" :class="{ 'finp-err': errors.ncc }">
-                <option value="">— Chọn nhà cung cấp —</option>
-                <option v-for="s in suppliers" :key="s">{{ s }}</option>
-              </select>
-              <span class="err-msg" v-if="errors.ncc">{{ errors.ncc }}</span>
-            </div>
-
-            <div class="field-row">
-              <div class="field">
-                <label class="flabel">Ngày lập phiếu <span class="req">*</span></label>
-                <input v-model="form.date" type="date" class="finp" :max="today"/>
-              </div>
-              <div class="field">
-                <label class="flabel">Người lập</label>
-                <input v-model="form.createdBy" class="finp" placeholder="Tên người lập"/>
-              </div>
-            </div>
-
-            <div class="field full">
-              <label class="flabel">Ghi chú</label>
-              <textarea v-model="form.note" class="finp ftarea" rows="2" placeholder="Ghi chú thêm…"></textarea>
+              <label class="flabel">Ngày lập phiếu <span class="req">*</span></label>
+              <input v-model="form.date" type="date" class="finp" :max="today"/>
             </div>
 
             <div class="field full">
@@ -509,13 +364,13 @@
                 <div class="items-form-hd">
                   <span style="flex:2">Mặt hàng</span>
                   <span style="flex:.75;text-align:center">SL</span>
-                  <span style="flex:1">Giá (Tr)</span>
+                  <span style="flex:1">Giá</span>
                   <span style="width:26px"></span>
                 </div>
                 <div v-for="(item, idx) in form.items" :key="idx" class="item-form-row">
                   <select v-model="item.name" class="finp finp-sm" style="flex:2">
                     <option value="">Chọn mặt hàng</option>
-                    <option v-for="p in products" :key="p">{{ p }}</option>
+                    <option v-for="p in products" :key="p.name" :value="p.name">{{ p.name }}</option>
                   </select>
                   <input v-model.number="item.qty" type="number" min="1" class="finp finp-sm finp-num" style="flex:.75" placeholder="SL"/>
                   <input v-model.number="item.price" type="number" min="0" step="0.01" class="finp finp-sm finp-num" style="flex:1" placeholder="0.00"/>
@@ -532,7 +387,7 @@
 
             <div class="limit-row">
               <Package :size="11"/>
-              Tổng cộng (ước tính): <strong>{{ fmtTr(formTotal) }}</strong>
+              Tổng cộng (ước tính): <strong>{{ fmtVND(formTotal) }}</strong>
             </div>
 
           </div>
@@ -564,19 +419,14 @@
       <div v-if="deleteTarget" class="modal-bg" @click="deleteTarget = null">
         <div class="modal-box" @click.stop>
           <div class="del-avatar-wrap">
-            <div class="del-ncc-avatar" :style="{ background: nccColor(deleteTarget.ncc) }">
-              <img v-if="nccLogo(deleteTarget.ncc)"
-                   :key="nccLogo(deleteTarget.ncc)"
-                   :src="nccLogo(deleteTarget.ncc)"
-                   class="del-ncc-img" @error="$event.target.style.display='none'"/>
-              <span class="del-ncc-abbr">{{ nccAbbr(deleteTarget.ncc) }}</span>
+            <div class="del-ncc-avatar" style="background:#0f172a;color:white;display:flex;align-items:center;justify-content:center;border-radius:10px">
+              <Package :size="20"/>
             </div>
             <div class="del-trash-badge"><Trash2 :size="13"/></div>
           </div>
           <h4 class="modal-title">Xác nhận xóa phiếu nhập</h4>
           <p class="modal-desc">
             Bạn có chắc muốn xóa <strong>{{ deleteTarget.code }}</strong>?<br/>
-            <span style="color:#94a3b8">{{ deleteTarget.ncc }}</span><br/>
             Hành động này không thể hoàn tác.
           </p>
           <div class="modal-actions">
@@ -591,7 +441,8 @@
 </template>
 
 <script setup>
-import { ref, computed, reactive } from 'vue';
+import { ref, computed, reactive, onMounted, watch } from 'vue';
+import api from '../services/api';
 import {
   Search, Plus, Download, X, Eye, CheckCircle, CheckCircle2, XCircle,
   Trash2, PackageOpen, Package, Building2, CalendarDays,
@@ -608,22 +459,20 @@ const SortIcon = {
 };
 
 /* ── Constants ── */
-const STATUS      = { pending: 'Chờ duyệt', approved: 'Đã duyệt', cancelled: 'Đã hủy' };
-const STATUS_DESC = {
-  pending:   'Phiếu đang chờ phê duyệt',
-  approved:  'Phiếu đã được duyệt',
-  cancelled: 'Phiếu đã bị hủy',
-};
+const products = ref([]);
 
-const suppliers = [
-  'Công ty Philips VN', 'NCC Điện tử ABC',
-  'Siemens Vietnam', 'Panasonic Distribution', 'Toshiba Việt Nam',
-];
-const products = [
-  'Bóng đèn LED 9W', 'Đèn LED panel 12W', 'Đèn huỳnh quang T8',
-  'Công tắc điện Sino', 'Ổ cắm 3 chấu', 'Cầu dao MCB 20A',
-  'Dây điện CVV 1.5mm', 'Relay nhiệt LS 10A',
-];
+const loadProducts = async () => {
+  try {
+    const res = await api.get('/mat-hang');
+    products.value = (res.data?.data || []).map(p => ({
+      id: p.MaMatHang,
+      name: p.TenMatHang,
+      price: parseFloat(p.DonGiaHienTai) || 0
+    }));
+  } catch (err) {
+    console.warn('Failed to load products', err);
+  }
+};
 
 /* ── Data from API ── */
 const receipts = ref([]);
@@ -631,20 +480,40 @@ const receipts = ref([]);
 const loadReceipts = async () => {
   try {
     const res = await api.get('/phieu-nhap');
-    receipts.value = res.data || res || [];
+    const raw = res.data?.data || res.data || [];
+    receipts.value = raw.map(r => ({
+      id: r.MaPhieuNhap,
+      code: `PN-${String(r.MaPhieuNhap).padStart(3, '0')}`,
+      date: new Date(r.NgayLapPhieu).toLocaleDateString('vi-VN'),
+      rawDate: r.NgayLapPhieu,
+      total: parseFloat(r.TongTien) || (r.chiTiets || []).reduce((s, ct) => s + (parseFloat(ct.ThanhTien) || (parseFloat(ct.SoLuongNhap) * parseFloat(ct.DonGiaNhap))), 0) || 0,
+      items: (r.chiTiets || []).map(ct => {
+        const prod = products.value.find(p => p.id === ct.MaMatHang);
+        return {
+          name: ct.matHang?.TenMatHang || prod?.name || '?',
+          qty: ct.SoLuongNhap || 0,
+          price: parseFloat(ct.DonGiaNhap) || prod?.price || 0
+        };
+      })
+    }));
+    // Re-calculate totals if they are 0
+    receipts.value.forEach(r => {
+      if (r.total === 0) {
+        r.total = r.items.reduce((s, i) => s + (i.qty * i.price), 0);
+      }
+    });
   } catch (err) {
     console.warn('Failed to load receipts', err?.response?.status || err.message);
   }
 };
 
-onMounted(() => {
-  loadReceipts();
+onMounted(async () => {
+  await loadProducts();
+  await loadReceipts();
 });
 
 /* ── State ── */
 const searchQ      = ref('');
-const filterNCC    = ref('');
-const filterStatus = ref('');
 const sk           = ref('rawDate');
 const sd           = ref('desc');
 const selectedId   = ref(null);
@@ -652,9 +521,8 @@ const panelMode    = ref('view');
 const deleteTarget = ref(null);
 
 /* ── Computed ── */
-const hasFilter = computed(() => searchQ.value || filterNCC.value || filterStatus.value);
-
-const clearFilters = () => { searchQ.value = ''; filterNCC.value = ''; filterStatus.value = ''; };
+const hasFilter = computed(() => searchQ.value !== '');
+const clearFilters = () => { searchQ.value = ''; };
 
 const toggleSort = (key) => {
   if (sk.value === key) sd.value = sd.value === 'asc' ? 'desc' : 'asc';
@@ -664,10 +532,7 @@ const toggleSort = (key) => {
 const filteredList = computed(() => {
   const q = searchQ.value.toLowerCase();
   return receipts.value.filter(r => {
-    const matchQ  = !q || r.code.toLowerCase().includes(q) || r.ncc.toLowerCase().includes(q);
-    const matchN  = !filterNCC.value    || r.ncc    === filterNCC.value;
-    const matchS  = !filterStatus.value || r.status === filterStatus.value;
-    return matchQ && matchN && matchS;
+    return !q || r.code.toLowerCase().includes(q);
   });
 });
 
@@ -686,18 +551,10 @@ const sortedList = computed(() => {
 const selectedReceipt = computed(() => receipts.value.find(r => r.id === selectedId.value) ?? null);
 const panelVisible    = computed(() => selectedReceipt.value !== null || panelMode.value === 'create');
 
-const pendingCount    = computed(() => receipts.value.filter(r => r.status === 'pending').length);
-const approvedCount   = computed(() => receipts.value.filter(r => r.status === 'approved').length);
-const cancelledCount  = computed(() => receipts.value.filter(r => r.status === 'cancelled').length);
-const totalApproved   = computed(() => receipts.value.filter(r => r.status === 'approved').reduce((s, r) => s + r.total, 0).toFixed(1));
 const newThisMonth    = computed(() => receipts.value.length);
+const totalApproved    = computed(() => receipts.value.reduce((s, r) => s + r.total, 0));
 const monthMax        = computed(() => Math.max(...receipts.value.map(r => r.total), 1));
-
-/* ── Donut SVG arcs ── */
-const C_DONUT = 138.2;
-const approvedArc  = computed(() => receipts.value.length ? (approvedCount.value  / receipts.value.length) * C_DONUT : 0);
-const pendingArc   = computed(() => receipts.value.length ? (pendingCount.value   / receipts.value.length) * C_DONUT : 0);
-const cancelledArc = computed(() => receipts.value.length ? (cancelledCount.value / receipts.value.length) * C_DONUT : 0);
+const donutGradient  = computed(() => `conic-gradient(#059669 0deg 100%)`);
 
 /* ── Sparkline (mock last 6 months: Dec→May) ── */
 const spark       = [128, 145, 112, 178, 165, 195];
@@ -712,43 +569,68 @@ const monthProgressPct = Math.round(dayOfMonth / daysInMonth * 100);
 const monthName     = ['Tháng 1','Tháng 2','Tháng 3','Tháng 4','Tháng 5','Tháng 6',
                        'Tháng 7','Tháng 8','Tháng 9','Tháng 10','Tháng 11','Tháng 12'][_now.getMonth()];
 
+/* ── KPI deltas ── */
+const thisMonthCount = computed(() => {
+  const now = _now;
+  return receipts.value.filter(r => {
+    const d = new Date(r.rawDate);
+    return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
+  }).length;
+});
+
+const thisMonthValue = computed(() => {
+  const now = _now;
+  return receipts.value.filter(r => {
+    const d = new Date(r.rawDate);
+    return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
+  }).reduce((s, r) => s + r.total, 0);
+});
+
+const countDelta = computed(() => {
+  const now = _now;
+  const prevMonth = now.getMonth() === 0 ? 11 : now.getMonth() - 1;
+  const prevYear = now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear();
+  const lastMonthCount = receipts.value.filter(r => {
+    const d = new Date(r.rawDate);
+    return d.getFullYear() === prevYear && d.getMonth() === prevMonth;
+  }).length;
+  return thisMonthCount.value - lastMonthCount;
+});
+
+const valDelta = computed(() => {
+  const now = _now;
+  const prevMonth = now.getMonth() === 0 ? 11 : now.getMonth() - 1;
+  const prevYear = now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear();
+  const lastMonthVal = receipts.value.filter(r => {
+    const d = new Date(r.rawDate);
+    return d.getFullYear() === prevYear && d.getMonth() === prevMonth;
+  }).reduce((s, r) => s + r.total, 0);
+  // Chỉ hiển thị delta khi tháng trước có dữ liệu thực sự
+  if (lastMonthVal === 0) return 0;
+  return ((thisMonthValue.value - lastMonthVal) / lastMonthVal) * 100;
+});
+
 /* ── Form ── */
 const today = new Date().toISOString().split('T')[0];
-const emptyForm = () => ({ ncc: '', date: today, createdBy: 'Nguyễn Admin', note: '', items: [{ name: '', qty: 1, price: 0 }] });
+const emptyForm = () => ({ date: today, items: [{ name: '', qty: 1, price: 0 }] });
 const form   = ref(emptyForm());
-const errors = reactive({ ncc: '', items: '' });
+const errors = reactive({ items: '' });
 
 const formTotal = computed(() => form.value.items.reduce((s, i) => s + (i.qty || 0) * (i.price || 0), 0));
 const addItem    = () => form.value.items.push({ name: '', qty: 1, price: 0 });
 const removeItem = (i) => { if (form.value.items.length > 1) form.value.items.splice(i, 1); };
 
 /* ── Helpers ── */
-const fmtTr = (v) => v >= 1 ? `${v.toFixed(1)} Tr` : `${(v * 1000).toFixed(0)} K`;
-
-const SUPPLIERS = [
-  { match: 'Philips',   abbr: 'PHI', grad: 'linear-gradient(135deg,#00375a,#0066A1,#0085cc)', logo: 'https://upload.wikimedia.org/wikipedia/commons/5/52/Philips_logo_new.svg' },
-  { match: 'Siemens',   abbr: 'SIE', grad: 'linear-gradient(135deg,#006060,#009999,#00c8c8)', logo: 'https://upload.wikimedia.org/wikipedia/commons/5/5f/Siemens-logo.svg' },
-  { match: 'Panasonic', abbr: 'PAN', grad: 'linear-gradient(135deg,#001a4a,#003087,#0058e6)', logo: 'https://upload.wikimedia.org/wikipedia/commons/e/e0/Panasonic_logo_%28Blue%29.svg' },
-  { match: 'Toshiba',   abbr: 'TOS', grad: 'linear-gradient(135deg,#8b0000,#e50012,#ff4d5a)', logo: 'https://upload.wikimedia.org/wikipedia/commons/8/80/Toshiba_logo_2019.svg' },
-  { match: 'Samsung',   abbr: 'SAM', grad: 'linear-gradient(135deg,#0a1660,#1428A0,#2a3eb1)', logo: 'https://upload.wikimedia.org/wikipedia/commons/b/b4/Samsung_wordmark.svg' },
-  { match: 'LG',        abbr: 'LGE', grad: 'linear-gradient(135deg,#63001f,#A50034,#cc0040)', logo: 'https://upload.wikimedia.org/wikipedia/commons/8/8d/LG_logo_%282014%29.svg' },
-];
-const _fallbackGrads = [
-  'linear-gradient(135deg,#059669,#34d399)',
-  'linear-gradient(135deg,#4f46e5,#818cf8)',
-  'linear-gradient(135deg,#0891b2,#22d3ee)',
-  'linear-gradient(135deg,#7c3aed,#a78bfa)',
-];
-const supplierOf   = (ncc) => SUPPLIERS.find(s => ncc.toLowerCase().includes(s.match.toLowerCase()));
-const nccColor     = (ncc) => supplierOf(ncc)?.grad ?? _fallbackGrads[ncc.charCodeAt(0) % _fallbackGrads.length];
-const nccLogo      = (ncc) => supplierOf(ncc)?.logo ?? null;
-const nccAbbr      = (ncc) => supplierOf(ncc)?.abbr ?? ncc.slice(0, 3).toUpperCase();
+/* ── Helpers ── */
+const fmtVND = (v) => (parseFloat(v) || 0).toLocaleString('vi-VN') + ' ₫';
+const fmtSummary = (v) => {
+  if (v >= 1_000_000_000) return (v / 1_000_000_000).toFixed(1) + ' Tỷ';
+  if (v >= 1_000_000) return (v / 1_000_000).toFixed(0) + ' Triệu';
+  return fmtVND(v);
+};
 
 const totalBarPct = (r) => Math.min((r.total / monthMax.value) * 100, 100);
-const totalBarColor = (r) => {
-  const p = totalBarPct(r);
-  return p >= 80 ? '#10b981' : p >= 50 ? '#3b82f6' : '#94a3b8';
-};
+const totalBarColor = (r) => '#059669';
 
 /* ── Toast ── */
 const toast = ref({ show: false, msg: '', type: 'success' });
@@ -766,26 +648,19 @@ const openCreate = () => {
   selectedId.value = null;
   panelMode.value  = 'create';
   form.value       = emptyForm();
-  errors.ncc = ''; errors.items = '';
+  errors.items = '';
 };
 
 const openEdit = (r) => {
   selectedId.value = r.id;
   panelMode.value  = 'edit';
-  form.value = { ncc: r.ncc, date: r.rawDate, createdBy: r.createdBy, note: r.note, items: r.items.map(i => ({ ...i })) };
-  errors.ncc = ''; errors.items = '';
+  form.value = { date: r.rawDate, items: r.items.map(i => ({ ...i })) };
+  errors.items = '';
 };
 
 const closePanel = () => { selectedId.value = null; panelMode.value = 'view'; };
 
-const approveReceipt = (r) => {
-  const found = receipts.value.find(x => x.id === r.id);
-  if (found) { found.status = 'approved'; showToast(`Phiếu ${found.code} đã được duyệt`); }
-};
-const cancelReceipt = (r) => {
-  const found = receipts.value.find(x => x.id === r.id);
-  if (found) { found.status = 'cancelled'; showToast(`Phiếu ${found.code} đã bị hủy`, 'warn'); }
-};
+
 
 const askDelete     = (r) => { deleteTarget.value = r; };
 const confirmDelete = () => {
@@ -796,42 +671,45 @@ const confirmDelete = () => {
   showToast(`Đã xóa phiếu ${code}`, 'danger');
 };
 
-const submitCreate = () => {
-  errors.ncc = ''; errors.items = '';
-  if (!form.value.ncc) { errors.ncc = 'Vui lòng chọn nhà cung cấp'; return; }
+const submitCreate = async () => {
+  errors.items = '';
   const validItems = form.value.items.filter(i => i.name && i.qty > 0);
   if (!validItems.length) { errors.items = 'Thêm ít nhất 1 mặt hàng hợp lệ'; return; }
-  const newId = Math.max(...receipts.value.map(r => r.id)) + 1;
-  const d = new Date(form.value.date);
-  const code = `PN-2026-${String(newId).padStart(3, '0')}`;
-  receipts.value.unshift({
-    id: newId, code,
-    date: d.toLocaleDateString('vi-VN'),
-    rawDate: form.value.date,
-    ncc: form.value.ncc,
-    createdBy: form.value.createdBy || 'Nguyễn Admin',
-    items: validItems.map(i => ({ ...i })),
-    total: formTotal.value,
-    status: 'pending',
-    note: form.value.note,
-  });
-  showToast(`Đã tạo phiếu nhập ${code}`);
-  closePanel();
+
+  try {
+    const payload = {
+      NgayLapPhieu: form.value.date,
+      chiTiets: validItems.map(i => {
+        const prod = products.value.find(p => p.name === i.name);
+        return {
+          MaMatHang: prod?.id,
+          SoLuongNhap: i.qty,
+          DonGiaNhap: i.price
+        };
+      })
+    };
+
+    const res = await api.post('/phieu-nhap', payload);
+    if (res.data?.status === 'success') {
+      showToast(`Đã lập phiếu nhập thành công`);
+      await loadReceipts();
+      await loadProducts(); // Refresh stock
+      closePanel();
+    }
+  } catch (err) {
+    showToast(err.response?.data?.message || 'Lỗi khi lập phiếu nhập', 'danger');
+  }
 };
 
 const submitEdit = () => {
-  errors.ncc = ''; errors.items = '';
-  if (!form.value.ncc) { errors.ncc = 'Vui lòng chọn nhà cung cấp'; return; }
+  errors.items = '';
   const validItems = form.value.items.filter(i => i.name && i.qty > 0);
   if (!validItems.length) { errors.items = 'Thêm ít nhất 1 mặt hàng hợp lệ'; return; }
   const found = receipts.value.find(r => r.id === selectedId.value);
   if (!found) return;
   const d = new Date(form.value.date);
-  found.ncc       = form.value.ncc;
   found.date      = d.toLocaleDateString('vi-VN');
   found.rawDate   = form.value.date;
-  found.createdBy = form.value.createdBy || 'Nguyễn Admin';
-  found.note      = form.value.note;
   found.items     = validItems.map(i => ({ ...i }));
   found.total     = formTotal.value;
   showToast(`Đã cập nhật phiếu ${found.code}`);
@@ -839,8 +717,8 @@ const submitEdit = () => {
 };
 
 const exportCSV = () => {
-  const cols = ['Mã phiếu', 'Ngày lập', 'Nhà cung cấp', 'Tổng giá trị (Tr)', 'Trạng thái', 'Ghi chú'];
-  const rows = sortedList.value.map(r => [r.code, r.date, r.ncc, r.total, STATUS[r.status], r.note]);
+  const cols = ['Mã phiếu', 'Ngày lập', 'Tổng giá trị (Tr)'];
+  const rows = sortedList.value.map(r => [r.code, r.date, r.total]);
   const csv = [cols, ...rows].map(row => row.map(v => `"${v ?? ''}"`).join(',')).join('\n');
   const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
   const url  = URL.createObjectURL(blob);

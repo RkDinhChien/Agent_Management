@@ -20,7 +20,7 @@ const MatHang = sequelize.define('MatHang', {
     type: DataTypes.DECIMAL(15, 2),
     allowNull: false,
   },
-  SoLuongTon: {
+  TonKho: {
     type: DataTypes.INTEGER,
     defaultValue: 0,
   },

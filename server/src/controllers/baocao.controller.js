@@ -36,50 +36,8 @@ const getDoanhSo = async (req, res) => {
       });
     }
 
-    const existingReport = await BaoCaoDoanhSo.findOne({
-      where: { Thang: month, Nam: year },
-      include: [
-        {
-          model: ChiTiet_BaoCaoDoanhSo,
-          as: 'chiTietBaoCaoDoanhSos',
-          include: [
-            {
-              model: DaiLy,
-              as: 'daiLy',
-              include: [
-                { model: LoaiDaiLy, as: 'loaiDaiLy' },
-                { model: Quan, as: 'quan' },
-              ],
-            },
-          ],
-        },
-      ],
-    });
-
-    if (existingReport) {
-      const chiTiet = existingReport.chiTietBaoCaoDoanhSos.map((item) => ({
-        MaDaiLy: item.MaDaiLy,
-        TenDaiLy: item.daiLy?.TenDaiLy,
-        LoaiDaiLy: item.daiLy?.loaiDaiLy?.TenLoai,
-        Quan: item.daiLy?.quan?.TenQuan,
-        SoPhieuXuat: item.SoLuongPhieuXuat,
-        TongTriGia: parseFloat(item.TongTriGia) || 0,
-        TiLe: parseFloat(item.TiLe) || 0,
-      }));
-
-      return res.json({
-        status: 'success',
-        data: {
-          Thang: month,
-          Nam: year,
-          TongDoanhSo: parseFloat(existingReport.TongDoanhSo) || 0,
-          chiTiet,
-        },
-      });
-    }
-
-    const startDate = new Date(year, month - 1, 1);
-    const endDate = new Date(year, month, 0);
+    const startDate = new Date(year, month - 1, 1, 0, 0, 0);
+    const endDate = new Date(year, month, 0, 23, 59, 59);
 
     const daiLys = await DaiLy.findAll({
       include: [
@@ -111,41 +69,24 @@ const getDoanhSo = async (req, res) => {
         Quan: dl.quan?.TenQuan,
         SoLuongPhieuXuat: soPhieuXuat,
         TongTriGia: tongTriGia,
-        TiLe: 0, // sẽ tính sau
+        TiLe: 0,
       };
     });
-    // tính tỉ lệ
+
     baoCaoData.forEach((item) => {
       item.TiLe = tongDoanhSo > 0 ? Math.round((item.TongTriGia / tongDoanhSo) * 10000) / 100 : 0;
     });
 
-    const filtered = baoCaoData.filter((item) => item.SoLuongPhieuXuat > 0);
+    // Trả về toàn bộ danh sách, không lọc để giao diện không bị trống
+    const resultData = baoCaoData;
 
-    const summary = await BaoCaoDoanhSo.create({
-      Thang: month,
-      Nam: year,
-      TongDoanhSo: tongDoanhSo,
-    });
-
-    const detailPayload = filtered.map((item) => ({
-      MaBCDS: summary.MaBCDS,
-      MaDaiLy: item.MaDaiLy,
-      SoLuongPhieuXuat: item.SoLuongPhieuXuat,
-      TongTriGia: item.TongTriGia,
-      TiLe: item.TiLe,
-    }));
-
-    if (detailPayload.length > 0) {
-      await ChiTiet_BaoCaoDoanhSo.bulkCreate(detailPayload);
-    }
-
-    res.json({
+    return res.json({
       status: 'success',
       data: {
         Thang: month,
         Nam: year,
         TongDoanhSo: tongDoanhSo,
-        chiTiet: filtered,
+        chiTiet: resultData,
       },
     });
   } catch (error) {
@@ -154,10 +95,6 @@ const getDoanhSo = async (req, res) => {
   }
 };
 
-/**
- * GET /api/bao-cao/cong-no?thang=X&nam=Y
- * Báo cáo công nợ tháng (BM6.2)
- */
 const getCongNo = async (req, res) => {
   try {
     const { thang, nam } = req.query;
@@ -169,9 +106,20 @@ const getCongNo = async (req, res) => {
       });
     }
 
-    const startDate = new Date(nam, thang - 1, 1);
-    const endDate = new Date(nam, thang, 0);
+    const month = parseInt(thang, 10);
+    const year = parseInt(nam, 10);
+    if (Number.isNaN(month) || Number.isNaN(year)) {
+      return res.status(400).json({ status: 'error', message: 'Tháng hoặc năm không hợp lệ.' });
+    }
 
+    const startDate = new Date(year, month - 1, 1, 0, 0, 0);
+    const endDate = new Date(year, month, 0, 23, 59, 59);
+
+    // Load all agents with:
+    //  - phieuXuatsTrongKy: exports WITHIN this month (for PhatSinh)
+    //  - phieuThusTrongKy:  collections WITHIN this month (for DaThu)
+    //  - phieuXuatsTatCa:   ALL exports up to end of period (for NoCuoi)
+    //  - phieuThusTatCa:    ALL collections up to end of period (for NoCuoi)
     const daiLys = await DaiLy.findAll({
       include: [
         { model: LoaiDaiLy, as: 'loaiDaiLy' },
@@ -179,48 +127,70 @@ const getCongNo = async (req, res) => {
         {
           model: PhieuXuatHang,
           as: 'phieuXuats',
-          where: { NgayLapPhieu: { [Op.between]: [startDate, endDate] } },
           required: false,
+          // Load ALL, we'll filter in JS
         },
         {
           model: PhieuThuTien,
           as: 'phieuThus',
-          where: { NgayThuTien: { [Op.between]: [startDate, endDate] } },
           required: false,
+          // Load ALL, we'll filter in JS
         },
       ],
     });
 
     const baoCaoData = daiLys.map((dl) => {
-      // Phát sinh = tổng xuất - tổng thu
-      const tongXuat = dl.phieuXuats
-        ? dl.phieuXuats.reduce((sum, px) => sum + parseFloat(px.TongTien || 0), 0)
-        : 0;
-      const tongThu = dl.phieuThus
-        ? dl.phieuThus.reduce((sum, pt) => sum + parseFloat(pt.SoTienThu || 0), 0)
-        : 0;
-      const phatSinh = tongXuat - tongThu;
+      const allXuats = dl.phieuXuats || [];
+      const allThus  = dl.phieuThus  || [];
 
-      // Nợ cuối = Nợ hiện tại (đã được cập nhật real-time)
-      const noCuoi = parseFloat(dl.TienNo) || 0;
-      const noDau = noCuoi - phatSinh;
+      // Phát sinh trong kỳ (phiếu xuất in this month)
+      const tongXuat = allXuats
+        .filter(px => {
+          const d = new Date(px.NgayLapPhieu);
+          return d >= startDate && d <= endDate;
+        })
+        .reduce((sum, px) => sum + parseFloat(px.TongTien || 0), 0);
+
+      // Đã thu trong kỳ (phiếu thu in this month)
+      const tongThu = allThus
+        .filter(pt => {
+          const d = new Date(pt.NgayThuTien);
+          return d >= startDate && d <= endDate;
+        })
+        .reduce((sum, pt) => sum + parseFloat(pt.SoTienThu || 0), 0);
+
+      // Nợ cuối kỳ: tổng tất cả xuất - tổng tất cả thu, tính đến hết ngày endDate
+      const totalXuatToDate = allXuats
+        .filter(px => new Date(px.NgayLapPhieu) <= endDate)
+        .reduce((sum, px) => sum + parseFloat(px.TongTien || 0), 0);
+
+      const totalThuToDate = allThus
+        .filter(pt => new Date(pt.NgayThuTien) <= endDate)
+        .reduce((sum, pt) => sum + parseFloat(pt.SoTienThu || 0), 0);
+
+      const noCuoi = Math.max(0, totalXuatToDate - totalThuToDate);
+
+      // Nợ cuối tháng trước = Nợ đầu kỳ
+      const noDau = Math.max(0, noCuoi - tongXuat + tongThu);
 
       return {
         MaDaiLy: dl.MaDaiLy,
         TenDaiLy: dl.TenDaiLy,
         LoaiDaiLy: dl.loaiDaiLy?.TenLoai,
         Quan: dl.quan?.TenQuan,
-        NoDau: Math.max(0, noDau),
-        PhatSinh: phatSinh,
-        NoCuoi: noCuoi,
+        NoDau: Math.round(noDau),
+        PhatSinh: Math.round(tongXuat),
+        DaThu: Math.round(tongThu),
+        NoCuoi: Math.round(noCuoi),
+        HanMuc: parseFloat(dl.loaiDaiLy?.TienNoToiDa) || 0,
       };
     });
 
     res.json({
       status: 'success',
       data: {
-        Thang: parseInt(thang),
-        Nam: parseInt(nam),
+        Thang: month,
+        Nam: year,
         chiTiet: baoCaoData,
       },
     });
@@ -229,5 +199,6 @@ const getCongNo = async (req, res) => {
     res.status(500).json({ status: 'error', message: 'Lỗi server.' });
   }
 };
+
 
 module.exports = { getDoanhSo, getCongNo };

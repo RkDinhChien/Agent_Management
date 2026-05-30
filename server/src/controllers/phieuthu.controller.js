@@ -40,13 +40,13 @@ const create = async (req, res) => {
     const thamSo = await ThamSo.findOne();
     const kiemTra = (thamSo && typeof thamSo.ApDungQDKiemTraSoTienThu !== 'undefined') ? thamSo.ApDungQDKiemTraSoTienThu : true;
 
-    const tienNo = parseFloat(daiLy.TienNo) || 0;
+    const tongNo = parseFloat(daiLy.TongNo) || 0;
 
-    if (kiemTra && SoTienThu >= tienNo) {
+    if (kiemTra && SoTienThu > tongNo) {
       await t.rollback();
       return res.status(400).json({
         status: 'error',
-        message: `Số tiền thu (${SoTienThu.toLocaleString()}đ) không được vượt quá tiền nợ (${tienNo.toLocaleString()}đ).`,
+        message: `Số tiền thu (${SoTienThu.toLocaleString()}đ) không được vượt quá tiền nợ (${tongNo.toLocaleString()}đ).`,
         rule: 'QD4',
       });
     }
@@ -66,7 +66,7 @@ const create = async (req, res) => {
     );
 
     // QĐ7: Cập nhật tiền nợ
-    await DaiLy.decrement('TienNo', {
+    await DaiLy.decrement('TongNo', {
       by: SoTienThu,
       where: { MaDaiLy },
       transaction: t,
@@ -90,4 +90,35 @@ const create = async (req, res) => {
   }
 };
 
-module.exports = { getAll, create };
+/**
+ * DELETE /api/phieu-thu/:id
+ * Xóa phiếu thu + hoàn tác tiền nợ (tăng lại TongNo)
+ */
+const remove = async (req, res) => {
+  const t = await sequelize.transaction();
+  try {
+    const phieu = await PhieuThuTien.findByPk(req.params.id, { transaction: t });
+    if (!phieu) {
+      await t.rollback();
+      return res.status(404).json({ status: 'error', message: 'Không tìm thấy phiếu thu.' });
+    }
+
+    // Hoàn tác: tăng lại tiền nợ
+    await DaiLy.increment('TongNo', {
+      by: parseFloat(phieu.SoTienThu) || 0,
+      where: { MaDaiLy: phieu.MaDaiLy },
+      transaction: t,
+    });
+
+    await phieu.destroy({ transaction: t });
+
+    await t.commit();
+    res.json({ status: 'success', message: 'Xóa phiếu thu thành công.' });
+  } catch (error) {
+    await t.rollback();
+    console.error('PhieuThu delete error:', error);
+    res.status(500).json({ status: 'error', message: 'Lỗi server.' });
+  }
+};
+
+module.exports = { getAll, create, remove };

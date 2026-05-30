@@ -1,8 +1,8 @@
 <template>
-  <div class="tt">
-
+<div class="tt">
     <!-- ══ CONTEXT BANNER ══ -->
     <div class="ctx-card">
+ 
 
       <!-- Hexagon decoration -->
       <svg class="ctx-deco" viewBox="0 0 300 155" fill="none" aria-hidden="true">
@@ -69,19 +69,22 @@
       <div class="ctx-divider"></div>
 
       <div class="ctx-stats">
-
         <!-- KPI 1: Tổng phiếu thu -->
         <div class="cs-col">
-          <strong class="cs-num">{{ receipts.length }}</strong>
-          <span class="cs-delta cs-up">↑ 2 so tháng 4</span>
+          <strong class="cs-num">{{ thisMonthCount }}</strong>
+          <span class="cs-delta" :class="countDelta >= 0 ? 'cs-up' : 'cs-down'">
+            {{ countDelta >= 0 ? '↑' : '↓' }} {{ Math.abs(countDelta) }} so với tháng trước
+          </span>
           <span class="cs-lbl">Tổng phiếu tháng này</span>
         </div>
         <div class="cs-sep"></div>
 
         <!-- KPI 2: Tổng thu + sparkline -->
         <div class="cs-col">
-          <strong class="cs-num">{{ totalCollected }} <span style="font-size:14px;font-weight:600;color:#94a3b8">Tr</span></strong>
-          <span class="cs-delta cs-up">↑ 15% so tháng 4</span>
+          <strong class="cs-num">{{ fmtSummary(thisMonthCollected) }}</strong>
+          <span class="cs-delta" :class="collectDelta >= 0 ? 'cs-up' : 'cs-down'">
+            {{ collectDelta >= 0 ? '↑' : '↓' }} {{ Math.abs(collectDelta).toFixed(1) }}% so với tháng trước
+          </span>
           <div class="spark-wrap">
             <div v-for="(h, i) in spark" :key="i"
                  class="spark-bar" :class="{ 'spark-active': i === spark.length - 1 }"
@@ -93,36 +96,15 @@
         </div>
         <div class="cs-sep"></div>
 
-        <!-- KPI 3: Chờ xử lý + donut -->
-        <div class="cs-col cs-warn">
-          <div class="cs-pending-row">
-            <div class="donut-wrap">
-              <div class="donut-ring" :style="{ background: donutGradient }"></div>
-            </div>
-            <div>
-              <strong class="cs-num cs-amber" style="display:block;margin-bottom:2px">
-                {{ pendingCount }}
-                <span class="cs-tag" v-if="pendingCount > 0">đang xử lý</span>
-              </strong>
-              <span class="cs-delta cs-ok">↓ 1 so tháng 4</span>
-            </div>
-          </div>
-          <div class="donut-legend">
-            <span class="dl-dot" style="background:#10b981"></span> Xác nhận {{ confirmedCount }}
-            <span class="dl-dot" style="background:#f59e0b;margin-left:6px"></span> Chờ {{ pendingCount }}
-          </div>
-          <span class="cs-lbl" style="margin-top:4px">Phiếu chờ xử lý</span>
-        </div>
-        <div class="cs-sep"></div>
-
         <!-- KPI 4: Đại lý còn nợ -->
         <div class="cs-col">
           <strong class="cs-num">
             {{ agentsWithDebt }}
             <span class="cs-tag cs-tag-green" v-if="agentsWithDebt > 0">còn nợ</span>
           </strong>
-          <span class="cs-delta cs-down" v-if="agentsWithDebt > 0">↑ 1 so tháng 4</span>
-          <span class="cs-delta cs-up" v-else>Tất cả đã trả nợ</span>
+          <span class="cs-delta" :class="debtDelta <= 0 ? 'cs-up' : 'cs-down'">
+            {{ debtDelta > 0 ? '↑ ' : '↓ ' }}{{ Math.abs(debtDelta) }} so với tháng trước
+          </span>
           <span class="cs-lbl">Đại lý còn dư nợ</span>
         </div>
       </div>
@@ -138,6 +120,7 @@
         </div>
       </div>
     </div>
+
 
     <!-- ══ MAIN LAYOUT ══ -->
     <div class="dl-flex">
@@ -179,28 +162,18 @@
         <div class="table-wrap">
           <table class="dl-table">
             <colgroup>
-              <col style="width:11%"/>
-              <col style="width:10%"/>
-              <col style="width:25%"/>
-              <col style="width:13%"/>
-              <col style="width:14%"/>
-              <col style="width:13%"/>
-              <col style="width:14%"/>
+              <col style="width:12%"/>
+              <col style="width:12%"/>
+              <col/>
+              <col style="width:15%"/>
+              <col style="width:15%"/>
             </colgroup>
             <thead>
               <tr>
-                <th>
-                  <span class="sort-hd" @click="toggleSort('code')">Mã phiếu <SortIcon field="code" :sk="sk" :sd="sd"/></span>
-                </th>
-                <th>
-                  <span class="sort-hd" @click="toggleSort('rawDate')">Ngày thu <SortIcon field="rawDate" :sk="sk" :sd="sd"/></span>
-                </th>
+                <th><span class="sort-hd" @click="toggleSort('code')">Mã phiếu <SortIcon field="code" :sk="sk" :sd="sd"/></span></th>
+                <th><span class="sort-hd" @click="toggleSort('rawDate')">Ngày thu <SortIcon field="rawDate" :sk="sk" :sd="sd"/></span></th>
                 <th>Đại lý</th>
-                <th class="text-right">
-                  <span class="sort-hd sort-hd-r" @click="toggleSort('amount')">Số tiền thu <SortIcon field="amount" :sk="sk" :sd="sd"/></span>
-                </th>
-                <th>Phương thức</th>
-                <th>Trạng thái</th>
+                <th class="text-right"><span class="sort-hd sort-hd-r" @click="toggleSort('amount')">Số tiền thu <SortIcon field="amount" :sk="sk" :sd="sd"/></span></th>
                 <th class="text-center">Thao tác</th>
               </tr>
             </thead>
@@ -226,33 +199,17 @@
                   </div>
                 </td>
                 <td class="text-right">
-                  <span class="total-num">{{ fmtTr(r.amount) }}</span>
-                </td>
-                <td>
-                  <span class="method-text" :class="methodClass(r.method)">
-                    <component :is="methodIcon(r.method)" :size="14" stroke-width="2.2" class="method-icon" />
-                    {{ r.method }}
-                  </span>
-                </td>
-                <td>
-                  <span class="status-badge" :class="r.status">{{ STATUS[r.status] }}</span>
+                  <span class="total-num">{{ fmtVND(r.amount) }}</span>
                 </td>
                 <td class="col-actions">
                   <div class="action-group">
                     <button class="act-btn view-btn" title="Xem" @click.stop="openView(r)"><Eye :size="13"/></button>
-                    <button
-                      class="act-btn ok-btn"
-                      :class="{ invisible: r.status !== 'pending' }"
-                      :disabled="r.status !== 'pending'"
-                      title="Xác nhận"
-                      @click.stop="confirmReceipt(r)"
-                    ><CheckCircle :size="13"/></button>
                     <button class="act-btn del-btn" title="Xóa" @click.stop="askDelete(r)"><Trash2 :size="13"/></button>
                   </div>
                 </td>
               </tr>
               <tr v-if="!sortedList.length">
-                <td colspan="7" class="empty-row">
+                <td colspan="5" class="empty-row">
                   <PackageOpen :size="30" class="empty-ic"/><p>Không tìm thấy phiếu thu phù hợp</p>
                 </td>
               </tr>
@@ -296,11 +253,11 @@
             <div class="amt-display">
               <div>
                 <span class="amt-label">Số tiền thu</span>
-                <div class="amt-value">{{ fmtTr(selectedReceipt.amount) }}</div>
+                <div class="amt-value">{{ fmtVND(selectedReceipt.amount) }}</div>
               </div>
               <div class="amt-side">
                 <span>{{ selectedReceipt.date }}</span>
-                <strong>{{ (selectedReceipt.amount * 1_000_000).toLocaleString('vi-VN') }}đ</strong>
+                <strong>Đã thu đủ</strong>
               </div>
             </div>
 
@@ -324,59 +281,23 @@
               </div>
             </div>
 
-            <div class="debt-status-bar" :class="selectedReceipt.status">
-              <CheckCircle v-if="selectedReceipt.status === 'confirmed'" :size="12"/>
-              <Clock v-else :size="12"/>
-              {{ STATUS_DESC[selectedReceipt.status] }}
-            </div>
           </div>
 
           <!-- Info grid -->
           <div class="info-grid">
             <div class="ig-row">
-              <Building2 :size="13" class="ig-ic"/>
-              <span class="ig-lbl">Đại lý</span>
-              <span class="ig-val">{{ selectedReceipt.agent }}</span>
-            </div>
-            <div class="ig-row">
               <CalendarDays :size="13" class="ig-ic"/>
               <span class="ig-lbl">Ngày thu</span>
               <span class="ig-val col-mono">{{ selectedReceipt.date }}</span>
             </div>
-            <div class="ig-row">
-              <UserRound :size="13" class="ig-ic"/>
-              <span class="ig-lbl">Người thu</span>
-              <span class="ig-val">{{ selectedReceipt.collector }}</span>
-            </div>
-            <div class="ig-row">
-              <Wallet :size="13" class="ig-ic"/>
-              <span class="ig-lbl">Phương thức</span>
-              <span class="ig-val">
-                <span class="method-text info-method" :class="methodClass(selectedReceipt.method)">
-                  <component :is="methodIcon(selectedReceipt.method)" :size="13" stroke-width="2.2" class="method-icon" />
-                  {{ selectedReceipt.method }}
-                </span>
-              </span>
-            </div>
-            <div class="ig-row" v-if="selectedReceipt.note">
-              <FileText :size="13" class="ig-ic"/>
-              <span class="ig-lbl">Ghi chú</span>
-              <span class="ig-val" style="font-style:italic;color:#64748b">{{ selectedReceipt.note }}</span>
-            </div>
           </div>
 
-          <!-- Actions -->
-          <div class="quick-links" v-if="selectedReceipt.status === 'pending'">
-            <button class="btn-p" style="flex:1;justify-content:center" @click="confirmReceipt(selectedReceipt)">
-              <CheckCircle :size="14"/>Xác nhận thu tiền
-            </button>
-            <button class="btn-danger-o" @click="askDelete(selectedReceipt)">
-              <XCircle :size="14"/>Hủy
+          <div class="quick-links">
+            <button class="btn-danger-o" @click="askDelete(selectedReceipt)" style="width:100%;justify-content:center">
+              <Trash2 :size="14"/>Xóa phiếu thu
             </button>
           </div>
-          <div class="status-note" v-else>
-            <CheckCircle :size="13"/> Đã xác nhận thu tiền
-          </div>
+
         </template>
 
         <!-- ─ CREATE MODE ─ -->
@@ -411,15 +332,9 @@
               </span>
             </div>
 
-            <div class="field-row">
-              <div class="field">
-                <label class="flabel">Ngày thu <span class="req">*</span></label>
-                <input v-model="form.date" type="date" class="finp" :max="today"/>
-              </div>
-              <div class="field">
-                <label class="flabel">Người thu</label>
-                <input v-model="form.collector" class="finp" placeholder="Tên người thu tiền"/>
-              </div>
+            <div class="field full">
+              <label class="flabel">Ngày thu <span class="req">*</span></label>
+              <input v-model="form.date" type="date" class="finp" :max="today"/>
             </div>
 
             <div class="field full">
@@ -432,27 +347,13 @@
                   <div class="amt-hint-fill" :style="{ width: Math.min(form.amount / (formAgent.debt / 1_000_000) * 100, 100) + '%' }"></div>
                 </div>
                 <span class="amt-hint-txt">
-                  Thu {{ fmtTr(form.amount) }} / {{ fmtMoney(formAgent.debt) }} nợ
-                  ({{ Math.round(Math.min(form.amount / (formAgent.debt / 1_000_000) * 100, 100)) }}%)
+                  Thu {{ fmtSummary(form.amount) }} / {{ fmtMoney(formAgent.debt) }} nợ
+                  ({{ Math.round(Math.min(form.amount / (formAgent.debt || 1) * 100, 100)) }}%)
                 </span>
               </div>
             </div>
 
-            <div class="field full">
-              <label class="flabel">Phương thức <span class="req">*</span></label>
-              <select v-model="form.method" class="finp" :class="{ 'finp-err': errors.method }">
-                <option value="">— Chọn phương thức —</option>
-                <option>Tiền mặt</option>
-                <option>Chuyển khoản</option>
-                <option>Ví điện tử</option>
-              </select>
-              <span class="err-msg" v-if="errors.method">{{ errors.method }}</span>
-            </div>
 
-            <div class="field full">
-              <label class="flabel">Ghi chú</label>
-              <textarea v-model="form.note" class="finp ftarea" rows="2" placeholder="Ghi chú thêm (VD: MB Bank, MoMo…)"></textarea>
-            </div>
           </div>
           <div class="fc-footer">
             <button class="btn-ghost" @click="closePanel"><X :size="12"/> Hủy</button>
@@ -500,12 +401,12 @@
         </div>
       </div>
     </Teleport>
-
   </div>
 </template>
 
 <script setup>
-import { ref, computed, reactive } from 'vue';
+import { ref, computed, reactive, onMounted, watch } from 'vue';
+import api from '../services/api';
 import {
   Search, Plus, Download, X, Eye, XCircle, CheckCircle,
   Trash2, PackageOpen, CalendarDays, UserRound, FileText,
@@ -522,12 +423,6 @@ const SortIcon = {
 };
 
 /* ── Constants ── */
-const STATUS = { confirmed: 'Đã xác nhận', pending: 'Đang xử lý' };
-const STATUS_DESC = {
-  confirmed: 'Đã xác nhận thu tiền',
-  pending:   'Đang chờ xử lý',
-};
-
 const AGENT_CLR = [
   'linear-gradient(135deg,#059669,#34d399)',
   'linear-gradient(135deg,#0d9488,#2dd4bf)',
@@ -538,30 +433,46 @@ const AGENT_CLR = [
 ];
 const agentColor = (id) => AGENT_CLR[id % AGENT_CLR.length];
 
-const agents = [
-  { id:1, name:'Đại lý Tuấn Phát',  debt:8_500_000, limit:10_000_000 },
-  { id:2, name:'Đại lý Lan Anh',    debt:3_200_000, limit:5_000_000  },
-  { id:3, name:'Đại lý Quốc Khánh', debt:6_700_000, limit:10_000_000 },
-  { id:4, name:'Đại lý Minh Châu',  debt:1_800_000, limit:5_000_000  },
-  { id:5, name:'Đại lý Hoa Phượng', debt:9_100_000, limit:10_000_000 },
-  { id:6, name:'Đại lý Thanh Bình', debt:5_800_000, limit:10_000_000 },
-  { id:7, name:'Đại lý Phú Quý',    debt:2_300_000, limit:5_000_000  },
-  { id:8, name:'Đại lý Bảo Châu',   debt:4_900_000, limit:5_000_000  },
-];
+const agents = ref([]);
 
-/* ── Mock data ── */
+const loadAgents = async () => {
+  try {
+    const res = await api.get('/dai-ly');
+    agents.value = (res.data?.data || []).map(a => ({
+      id: a.MaDaiLy,
+      name: a.TenDaiLy,
+      district: a.quan?.TenQuan || '',
+      debt: parseFloat(a.TongNo) || 0,
+      limit: a.loaiDaiLy?.TienNoToiDa ? parseFloat(a.loaiDaiLy.TienNoToiDa) : 10_000_000
+    }));
+  } catch (err) {
+    console.warn('Failed to load agents', err);
+  }
+};
+
+/* ── Data ── */
 const receipts = ref([]);
 
 const loadReceipts = async () => {
   try {
     const res = await api.get('/phieu-thu');
-    receipts.value = res.data || res || [];
+    const raw = res.data?.data || res.data || [];
+    receipts.value = raw.map(r => ({
+      id: r.MaPhieuThu,
+      code: `PT-${String(r.MaPhieuThu).padStart(3, '0')}`,
+      date: new Date(r.NgayThuTien).toLocaleDateString('vi-VN'),
+      rawDate: r.NgayThuTien,
+      agentId: r.MaDaiLy,
+      agent: r.daiLy?.TenDaiLy || 'Đại lý',
+      amount: parseFloat(r.SoTienThu) || 0
+    }));
   } catch (err) {
     console.warn('Failed to load receipts', err?.response?.status || err.message);
   }
 };
 
 onMounted(() => {
+  loadAgents();
   loadReceipts();
 });
 
@@ -618,19 +529,12 @@ const sortedList = computed(() => {
   return list;
 });
 
-const selectedReceipt = computed(() => receipts.value.find(r => r.id === selectedId.value) ?? null);
-const panelVisible    = computed(() => selectedReceipt.value !== null || panelMode.value === 'create');
-
-const confirmedCount  = computed(() => receipts.value.filter(r => r.status === 'confirmed').length);
-const pendingCount    = computed(() => receipts.value.filter(r => r.status === 'pending').length);
-const totalCollected  = computed(() => receipts.value.filter(r => r.status === 'confirmed').reduce((s, r) => s + r.amount, 0).toFixed(1));
-const agentsWithDebt  = computed(() => agents.filter(a => a.debt > 0).length);
+const totalCollected = computed(() => receipts.value.reduce((s, r) => s + r.amount, 0));
+const agentsWithDebt  = computed(() => agents.value.filter(a => a.debt > 0).length);
 
 /* ── Donut ── */
 const donutGradient = computed(() => {
-  const total = receipts.value.length || 1;
-  const c = Math.round(confirmedCount.value / total * 100);
-  return `conic-gradient(#10b981 0% ${c}%, #f59e0b ${c}% 100%)`;
+  return `conic-gradient(#10b981 0% 100%)`;
 });
 
 /* ── Sparkline ── */
@@ -647,9 +551,16 @@ const monthName      = ['Tháng 1','Tháng 2','Tháng 3','Tháng 4','Tháng 5','
                         'Tháng 7','Tháng 8','Tháng 9','Tháng 10','Tháng 11','Tháng 12'][_now.getMonth()];
 
 /* ── Helpers ── */
-const getAgent     = (id) => agents.find(a => a.id === id);
-const fmtTr        = (v) => v >= 1 ? `${Number(v).toFixed(1)} Tr` : `${(Number(v) * 1000).toFixed(0)} K`;
-const fmtMoney     = (v) => ((v || 0) / 1_000_000).toFixed(1) + ' Tr';
+const getAgent     = (id) => agents.value.find(a => a.id === id);
+/* ── Helpers ── */
+const fmtVND = (v) => v.toLocaleString('vi-VN') + ' ₫';
+const fmtTr  = (v) => v.toFixed(1) + ' Tr';
+const fmtSummary = (v) => {
+  if (v >= 1_000_000_000) return (v / 1_000_000_000).toFixed(1) + ' Tỷ';
+  if (v >= 1_000_000) return (v / 1_000_000).toFixed(0) + ' Triệu';
+  return fmtVND(v);
+};
+const fmtMoney     = (v) => (v || 0).toLocaleString('vi-VN') + ' ₫';
 const methodClass  = (method) => {
   if (method === 'Chuyển khoản') return 'method-transfer';
   if (method === 'Ví điện tử') return 'method-wallet';
@@ -693,11 +604,56 @@ const debtRemainClass = (r) => {
   return p >= 80 ? 'debt-over' : p >= 50 ? 'debt-warn' : 'debt-ok';
 };
 
+/* ── KPI deltas ── */
+const thisMonthCount = computed(() => {
+  const now = _now;
+  return receipts.value.filter(r => {
+    const d = new Date(r.rawDate);
+    return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
+  }).length;
+});
+
+const thisMonthCollected = computed(() => {
+  const now = _now;
+  return receipts.value.filter(r => {
+    const d = new Date(r.rawDate);
+    return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
+  }).reduce((s, r) => s + r.amount, 0);
+});
+
+const countDelta = computed(() => {
+  const now = _now;
+  const prevMonth = now.getMonth() === 0 ? 11 : now.getMonth() - 1;
+  const prevYear = now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear();
+  const lastMonthCount = receipts.value.filter(r => {
+    const d = new Date(r.rawDate);
+    return d.getFullYear() === prevYear && d.getMonth() === prevMonth;
+  }).length;
+  return thisMonthCount.value - lastMonthCount;
+});
+
+const collectDelta = computed(() => {
+  const now = _now;
+  const prevMonth = now.getMonth() === 0 ? 11 : now.getMonth() - 1;
+  const prevYear = now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear();
+  const lastMonthColl = receipts.value.filter(r => {
+    const d = new Date(r.rawDate);
+    return d.getFullYear() === prevYear && d.getMonth() === prevMonth;
+  }).reduce((s, r) => s + r.amount, 0);
+  if (lastMonthColl === 0) return thisMonthCollected.value > 0 ? 100 : 0;
+  return ((thisMonthCollected.value - lastMonthColl) / lastMonthColl) * 100;
+});
+
+const debtDelta = ref(0);
+watch(agentsWithDebt, (newVal, oldVal) => {
+  debtDelta.value = newVal - (oldVal || 0);
+});
+
 /* ── Form ── */
 const today     = new Date().toISOString().split('T')[0];
-const emptyForm = () => ({ agentId: '', date: today, collector: 'Nguyễn Admin', amount: '', method: '', note: '' });
+const emptyForm = () => ({ agentId: '', date: today, amount: '' });
 const form      = ref(emptyForm());
-const errors    = reactive({ agent: '', amount: '', method: '' });
+const errors    = reactive({ agent: '', amount: '' });
 const formAgent = computed(() => form.value.agentId ? getAgent(Number(form.value.agentId)) : null);
 
 const onAgentChange = () => {};
@@ -718,15 +674,10 @@ const openCreate = () => {
   selectedId.value = null;
   panelMode.value  = 'create';
   form.value       = emptyForm();
-  errors.agent = ''; errors.amount = ''; errors.method = '';
+  errors.agent = ''; errors.amount = '';
 };
 
 const closePanel = () => { selectedId.value = null; panelMode.value = 'view'; };
-
-const confirmReceipt = (r) => {
-  const found = receipts.value.find(x => x.id === r.id);
-  if (found) { found.status = 'confirmed'; showToast(`Phiếu ${found.code} đã xác nhận thu tiền`); }
-};
 
 const askDelete     = (r) => { deleteTarget.value = r; };
 const confirmDelete = () => {
@@ -737,37 +688,39 @@ const confirmDelete = () => {
   showToast(`Đã xóa phiếu ${code}`, 'danger');
 };
 
-const submitCreate = () => {
-  errors.agent = ''; errors.amount = ''; errors.method = '';
+const submitCreate = async () => {
+  errors.agent = ''; errors.amount = '';
   if (!form.value.agentId) { errors.agent = 'Vui lòng chọn đại lý'; return; }
   const agnt = getAgent(Number(form.value.agentId));
   const amt  = Number(form.value.amount);
   if (!amt || amt <= 0) { errors.amount = 'Vui lòng nhập số tiền hợp lệ'; return; }
-  if (agnt && amt * 1_000_000 > agnt.debt) { errors.amount = `Số tiền vượt quá nợ hiện tại (${fmtMoney(agnt.debt)})`; return; }
-  if (!form.value.method) { errors.method = 'Vui lòng chọn phương thức thanh toán'; return; }
+  
+  if (agnt && amt * 1_000_000 > agnt.debt) {
+    errors.amount = `Số tiền vượt quá nợ hiện tại (${fmtMoney(agnt.debt)})`;
+    return;
+  }
 
-  const newId = Math.max(...receipts.value.map(r => r.id)) + 1;
-  const d = new Date(form.value.date);
-  const code = `PT-2026-${String(newId).padStart(3, '0')}`;
-  receipts.value.unshift({
-    id: newId, code,
-    date: d.toLocaleDateString('vi-VN'),
-    rawDate: form.value.date,
-    agent: agnt?.name ?? '',
-    agentId: Number(form.value.agentId),
-    amount: amt,
-    method: form.value.method,
-    collector: form.value.collector || 'Nguyễn Admin',
-    note: form.value.note,
-    status: 'pending',
-  });
-  showToast(`Đã lập phiếu thu ${code}`);
-  closePanel();
+  try {
+    const res = await api.post('/phieu-thu', {
+      MaDaiLy: Number(form.value.agentId),
+      NgayThuTien: form.value.date,
+      SoTienThu: amt * 1_000_000
+    });
+    
+    if (res.data?.status === 'success') {
+      showToast('Đã lập phiếu thu tiền thành công');
+      loadReceipts();
+      loadAgents(); // Refresh debt
+      closePanel();
+    }
+  } catch (err) {
+    showToast(err.response?.data?.message || 'Lỗi khi lập phiếu thu', 'danger');
+  }
 };
 
 const exportCSV = () => {
-  const cols = ['Mã phiếu', 'Ngày thu', 'Đại lý', 'Số tiền thu (Tr)', 'Phương thức', 'Người thu', 'Trạng thái', 'Ghi chú'];
-  const rows = sortedList.value.map(r => [r.code, r.date, r.agent, r.amount, r.method, r.collector, STATUS[r.status], r.note]);
+  const cols = ['Mã phiếu', 'Ngày thu', 'Đại lý', 'Số tiền thu (Tr)'];
+  const rows = sortedList.value.map(r => [r.code, r.date, r.agent, r.amount]);
   const csv = [cols, ...rows].map(row => row.map(v => `"${v ?? ''}"`).join(',')).join('\n');
   const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
   const url  = URL.createObjectURL(blob);

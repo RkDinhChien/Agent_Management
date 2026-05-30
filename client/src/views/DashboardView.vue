@@ -13,8 +13,8 @@
           <CardShell card-id="chart" class="chart-card">
             <div class="chart-hd">
               <div class="ch-kpi">
-                <h2 class="ch-num">1.245,0 <span class="ch-unit">triệu ₫</span></h2>
-                <p class="ch-sub">Doanh số &amp; công nợ toàn hệ thống</p>
+                <h2 class="ch-num">{{ fmtSummary(Number(stats.tongDoanhSo)) }}</h2>
+                <p class="ch-sub">Tổng doanh số hệ thống</p>
               </div>
               <div class="ch-ctrl">
                 <select class="psel"><option>7 Ngày</option></select>
@@ -65,18 +65,18 @@
           <div class="kpi-col">
             <CardShell card-id="stat-revenue" class="kpi-card">
               <p class="kpi-lbl">Doanh số (tiền bán hàng)</p>
-              <h3 class="kpi-val">1.500 triệu</h3>
-              <span class="trend up"><ArrowUpRight :size="12"/>Đang đà tăng từ T2</span>
+              <h3 class="kpi-val">{{ fmtSummary(Number(stats.tongDoanhSo)) }}</h3>
+              <span class="trend up"><ArrowUpRight :size="12"/>Tổng doanh số</span>
             </CardShell>
             <CardShell card-id="stat-avg" class="kpi-card">
-              <p class="kpi-lbl">Trung bình doanh thu / đại lý</p>
-              <h3 class="kpi-val">12,5 triệu</h3>
-              <span class="trend up"><ArrowUpRight :size="12"/>Khá hơn mức sàn 10 Tr</span>
+              <p class="kpi-lbl">Tổng số đại lý</p>
+              <h3 class="kpi-val">{{ stats.tongDaiLy }} ĐL</h3>
+              <span class="trend up"><ArrowUpRight :size="12"/>Quy mô hệ thống</span>
             </CardShell>
             <CardShell card-id="stat-collected" class="kpi-card">
-              <p class="kpi-lbl">Lượng tiền đã thu hồi</p>
-              <h3 class="kpi-val">830 triệu</h3>
-              <span class="trend down"><ArrowDownRight :size="12"/>Nhiều đại lý chưa thanh toán</span>
+              <p class="kpi-lbl">Tổng nợ hiện tại</p>
+              <h3 class="kpi-val">{{ fmtSummary(Number(stats.tongNo)) }}</h3>
+              <span class="trend down"><ArrowDownRight :size="12"/>Cần thu hồi</span>
             </CardShell>
           </div>
         </div>
@@ -102,11 +102,11 @@
 
             <div class="dc-progress">
               <div class="prog-track">
-                <div class="prog-fill" style="width:25%"></div>
+                <div class="prog-fill" :style="{ width: stats.tongDaiLy ? (debtOffenders.length / stats.tongDaiLy * 100) + '%' : '0%' }"></div>
               </div>
               <div class="prog-labels">
-                <span class="danger-txt">Vi phạm: <strong>25</strong> đại lý</span>
-                <span class="muted-txt">Tổng: 100 đại lý</span>
+                <span class="danger-txt">Vi phạm: <strong>{{ debtOffenders.length }}</strong> đại lý</span>
+                <span class="muted-txt">Tổng: {{ stats.tongDaiLy }} đại lý</span>
               </div>
             </div>
 
@@ -119,7 +119,7 @@
               >
                 <span class="of-name">{{ o.name }}</span>
                 <span class="of-dist">{{ o.district }}</span>
-                <span class="of-amt">+{{ o.overLimit }} Tr</span>
+                <span class="of-amt">+{{ fmtSummary(Number(o.overLimit) * 1_000_000) }}</span>
               </div>
             </div>
 
@@ -346,7 +346,7 @@
               <span class="cm-lbl">Hạn mức nợ tối đa</span>
               <span class="cm-badge">Q.Định Số 1</span>
             </div>
-            <div class="cm-value">32,5 / 50,0 Tr</div>
+            <div class="cm-value">{{ (stats.tongNo / 1_000_000).toFixed(1) }} / 50.0 Tr</div>
             <div class="cm-track"><div class="cm-fill" style="width:65%"></div></div>
             <p class="cm-note">Đã sử dụng 65% • Còn 17,5 Tr</p>
             <div class="cm-bot-row">
@@ -402,6 +402,14 @@
 <script setup>
 import { computed, ref, onMounted } from 'vue';
 import api from '../services/api';
+
+/* ── Helpers ── */
+const fmtVND = (v) => v.toLocaleString('vi-VN') + ' ₫';
+const fmtSummary = (v) => {
+  if (v >= 1_000_000_000) return (v / 1_000_000_000).toFixed(1) + ' Tỷ';
+  if (v >= 1_000_000) return (v / 1_000_000).toFixed(0) + ' Triệu';
+  return fmtVND(v);
+};
 import {
   BarChart2, LineChart, ArrowUpRight, ArrowDownRight, Edit2,
   Users, Truck, Store, Plus, FileText, Package, Award
@@ -411,12 +419,48 @@ import CardShell from '../components/CardShell.vue';
 /* ─── Data ─── */
 const districtOptions = ref([]);
 
+const stats = ref({
+  tongDaiLy: 0,
+  tongDoanhSo: 0,
+  tongNo: 0,
+  tongMatHang: 0,
+  doanhSoTheoThang: []
+});
+
+
 const loadDistricts = async () => {
   try {
     const res = await api.get('/quan');
-    districtOptions.value = (res.data || res || []).map(q => q.ten);
+    const data = res.data?.data || res.data || [];
+    districtOptions.value = data.map(q => q.TenQuan);
   } catch (err) {
-    console.warn('Failed to load quan', err?.response?.status || err.message);
+    console.warn('Failed to load districts', err);
+  }
+};
+
+const loadDashboard = async () => {
+  try {
+    const res = await api.get('/dashboard');
+    const data = res.data?.data || res.data;
+    if (data) {
+      if (data.topDebtors) {
+        debtOffenders.value = data.topDebtors.map(d => ({
+          name: d.TenDaiLy,
+          district: d.quan?.TenQuan || 'Unknown',
+          overLimit: (Number(d.TongNo) / 1_000_000).toFixed(1),
+          note: `Công nợ hiện tại: ${Number(d.TongNo).toLocaleString()} VNĐ`
+        }));
+      }
+      stats.value = {
+        tongDaiLy: data.tongDaiLy || 0,
+        tongDoanhSo: data.tongDoanhSo || 0,
+        tongNo: data.tongNo || 0,
+        tongMatHang: data.tongMatHang || 0,
+        doanhSoTheoThang: data.doanhSoTheoThang || []
+      };
+    }
+  } catch (err) {
+    console.warn('Dashboard load failed', err);
   }
 };
 
@@ -434,9 +478,10 @@ const actionFeedback   = ref('');
 
 /* ─── Computed ─── */
 const visibleOffenders = computed(() => {
+  const baseList = debtOffenders.value || [];
   const list = selectedDistrict.value === 'Tất cả quận'
-    ? debtOffenders
-    : debtOffenders.filter(o => o.district === selectedDistrict.value);
+    ? baseList
+    : baseList.filter(o => o.district === selectedDistrict.value);
   return list.slice(0, 3);
 });
 

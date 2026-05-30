@@ -39,7 +39,7 @@
               <h1 class="hero-title">{{ daiLy.TenDaiLy }}</h1>
               <div class="hero-meta">
                 <span><MapPin :size="16" /> {{ daiLy.quan?.TenQuan || 'N/A' }}</span>
-                <span><Phone :size="16" /> {{ daiLy.DienThoai }}</span>
+                <span><Phone :size="16" /> {{ daiLy.SDT }}</span>
                 <span v-if="daiLy.Email"><Mail :size="16" /> {{ daiLy.Email }}</span>
               </div>
             </div>
@@ -74,7 +74,7 @@
           </div>
           <div class="info-item">
             <span class="info-label">Điện Thoại</span>
-            <span class="info-value">{{ daiLy.DienThoai }}</span>
+            <span class="info-value">{{ daiLy.SDT }}</span>
           </div>
           <div class="info-item">
             <span class="info-label">Email</span>

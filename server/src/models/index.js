@@ -43,8 +43,8 @@ ChucNang.belongsToMany(NhomNguoiDung, {
 });
 
 // Đại lý <-> Loại đại lý
-LoaiDaiLy.hasMany(DaiLy, { foreignKey: 'MaLoai', as: 'daiLys' });
-DaiLy.belongsTo(LoaiDaiLy, { foreignKey: 'MaLoai', as: 'loaiDaiLy' });
+LoaiDaiLy.hasMany(DaiLy, { foreignKey: 'MaLoaiDaiLy', as: 'daiLys' });
+DaiLy.belongsTo(LoaiDaiLy, { foreignKey: 'MaLoaiDaiLy', as: 'loaiDaiLy' });
 
 // Đại lý <-> Quận
 Quan.hasMany(DaiLy, { foreignKey: 'MaQuan', as: 'daiLys' });

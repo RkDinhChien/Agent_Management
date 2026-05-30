@@ -116,31 +116,31 @@ const create = async (req, res) => {
       }
 
       // QĐ5: Kiểm tra tồn kho
-      if (kiemTraTon && matHang.TonKho < ct.TonKho) {
+      if (kiemTraTon && matHang.TonKho < ct.SoLuongXuat) {
         await t.rollback();
         return res.status(400).json({
           status: 'error',
-          message: `Mặt hàng "${matHang.TenMatHang}" không đủ tồn kho. Hiện có: ${matHang.TonKho}, cần: ${ct.TonKho}.`,
+          message: `Mặt hàng "${matHang.TenMatHang}" không đủ tồn kho. Hiện có: ${matHang.TonKho}, cần: ${ct.SoLuongXuat}.`,
           rule: 'QD5',
         });
       }
 
       // QĐ2: Tính đơn giá xuất = đơn giá nhập × tỷ lệ
       // Lấy giá nhập gần nhất
-      const lastImport = await CT_PNH.findOne({
+      const lastImport = await ChiTiet_PhieuNhap.findOne({
         where: { MaMatHang: ct.MaMatHang },
         order: [['MaPhieuNhap', 'DESC']],
         transaction: t,
       });
 
-      const donGiaNhap = lastImport ? parseFloat(lastImport.DonGiaNhap) : 0;
+      const donGiaNhap = lastImport ? parseFloat(lastImport.DonGiaNhap) : parseFloat(matHang.DonGiaHienTai) || 0;
       const donGiaXuat = Math.round(donGiaNhap * tyLe);
-      const thanhTien = donGiaXuat * ct.TonKho;
+      const thanhTien = donGiaXuat * ct.SoLuongXuat;
       tongTien += thanhTien;
 
       processedDetails.push({
         MaMatHang: ct.MaMatHang,
-        TonKho: ct.TonKho,
+        SoLuongXuat: ct.SoLuongXuat,
         DonGiaXuat: donGiaXuat,
         ThanhTien: thanhTien,
       });
@@ -152,7 +152,7 @@ const create = async (req, res) => {
       const tienNoToiDa = parseFloat(daiLy.loaiDaiLy.TienNoToiDa) || 0;
       const tienNoSauXuat = tienNoHienTai + tongTien;
 
-      if (tienNoSauXuat > soNoToiDa) {
+      if (tienNoSauXuat > tienNoToiDa) {
         await t.rollback();
         return res.status(400).json({
           status: 'error',
@@ -163,9 +163,19 @@ const create = async (req, res) => {
       }
     }
 
+    // Tính toán ConLai (Giả sử mặc định trả 0, hoặc lấy từ body nếu có)
+    const TienTra = parseFloat(req.body.TienTra) || 0;
+    const ConLai = tongTien - TienTra;
+
     // Tạo phiếu xuất
     const phieu = await PhieuXuatHang.create(
-      { MaDaiLy, NgayLapPhieu: NgayLapPhieu || new Date(), TongTien: tongTien },
+      {
+        MaDaiLy,
+        NgayLapPhieu: NgayLapPhieu || new Date(),
+        TongTien: tongTien,
+        TienTra: TienTra,
+        ConLai: ConLai
+      },
       { transaction: t }
     );
 
@@ -178,7 +188,7 @@ const create = async (req, res) => {
 
       // QĐ6: Giảm tồn kho
       await MatHang.decrement('TonKho', {
-        by: ct.TonKho,
+        by: ct.SoLuongXuat,
         where: { MaMatHang: ct.MaMatHang },
         transaction: t,
       });
@@ -190,6 +200,7 @@ const create = async (req, res) => {
       where: { MaDaiLy },
       transaction: t,
     });
+
 
     await t.commit();
 
@@ -217,4 +228,89 @@ const create = async (req, res) => {
   }
 };
 
-module.exports = { getAll, getById, create };
+const update = async (req, res) => {
+  const t = await sequelize.transaction();
+  try {
+    const phieu = await PhieuXuatHang.findByPk(req.params.id, { transaction: t });
+    if (!phieu) {
+      await t.rollback();
+      return res.status(404).json({ status: 'error', message: 'Không tìm thấy phiếu xuất.' });
+    }
+
+    // Hoàn tác các thay đổi của phiếu cũ (tồn kho, nợ)
+    const oldChiTiets = await ChiTiet_PhieuXuat.findAll({ where: { MaPhieuXuat: phieu.MaPhieuXuat }, transaction: t });
+    for (const ct of oldChiTiets) {
+      await MatHang.increment('TonKho', { by: ct.SoLuongXuat, where: { MaMatHang: ct.MaMatHang }, transaction: t });
+    }
+    await DaiLy.decrement('TongNo', { by: phieu.TongTien, where: { MaDaiLy: phieu.MaDaiLy }, transaction: t });
+
+    // Cập nhật thông tin mới (Giống Create nhưng dùng update)
+    const { MaDaiLy, NgayLapPhieu, chiTiets } = req.body;
+    const daiLy = await DaiLy.findByPk(MaDaiLy || phieu.MaDaiLy, { include: [{ model: LoaiDaiLy, as: 'loaiDaiLy' }], transaction: t });
+
+    // Xóa chi tiết cũ
+    await ChiTiet_PhieuXuat.destroy({ where: { MaPhieuXuat: phieu.MaPhieuXuat }, transaction: t });
+
+    // Tính toán lại
+    let tongTien = 0;
+    const thamSo = await ThamSo.findOne();
+    const tyLe = (thamSo && thamSo.TiLeTinhDonGiaXuat) ? parseFloat(thamSo.TiLeTinhDonGiaXuat) : 1.02;
+
+    for (const ct of chiTiets) {
+      const matHang = await MatHang.findByPk(ct.MaMatHang, { transaction: t });
+      const lastImport = await ChiTiet_PhieuNhap.findOne({ where: { MaMatHang: ct.MaMatHang }, order: [['MaPhieuNhap', 'DESC']], transaction: t });
+      const donGiaNhap = lastImport ? parseFloat(lastImport.DonGiaNhap) : parseFloat(matHang.DonGiaHienTai) || 0;
+      const donGiaXuat = Math.round(donGiaNhap * tyLe);
+      const thanhTien = donGiaXuat * ct.SoLuongXuat;
+      tongTien += thanhTien;
+
+      await ChiTiet_PhieuXuat.create({ MaPhieuXuat: phieu.MaPhieuXuat, MaMatHang: ct.MaMatHang, SoLuongXuat: ct.SoLuongXuat, DonGiaXuat: donGiaXuat, ThanhTien: thanhTien }, { transaction: t });
+      await MatHang.decrement('TonKho', { by: ct.SoLuongXuat, where: { MaMatHang: ct.MaMatHang }, transaction: t });
+    }
+
+    const TienTra = parseFloat(req.body.TienTra) || 0;
+    await phieu.update({
+      MaDaiLy: MaDaiLy || phieu.MaDaiLy,
+      NgayLapPhieu: NgayLapPhieu || phieu.NgayLapPhieu,
+      TongTien: tongTien,
+      TienTra: TienTra,
+      ConLai: tongTien - TienTra
+    }, { transaction: t });
+
+    await DaiLy.increment('TongNo', { by: tongTien, where: { MaDaiLy: MaDaiLy || phieu.MaDaiLy }, transaction: t });
+
+    await t.commit();
+    res.json({ status: 'success', message: 'Cập nhật phiếu xuất thành công.' });
+  } catch (error) {
+    await t.rollback();
+    console.error('PhieuXuat update error:', error);
+    res.status(500).json({ status: 'error', message: 'Lỗi server.' });
+  }
+};
+
+const remove = async (req, res) => {
+  const t = await sequelize.transaction();
+  try {
+    const phieu = await PhieuXuatHang.findByPk(req.params.id, { transaction: t });
+    if (!phieu) {
+      await t.rollback();
+      return res.status(404).json({ status: 'error', message: 'Không tìm thấy phiếu xuất.' });
+    }
+
+    const chiTiets = await ChiTiet_PhieuXuat.findAll({ where: { MaPhieuXuat: phieu.MaPhieuXuat }, transaction: t });
+    for (const ct of chiTiets) {
+      await MatHang.increment('TonKho', { by: ct.SoLuongXuat, where: { MaMatHang: ct.MaMatHang }, transaction: t });
+    }
+    await DaiLy.decrement('TongNo', { by: phieu.TongTien, where: { MaDaiLy: phieu.MaDaiLy }, transaction: t });
+
+    await phieu.destroy({ transaction: t });
+    await t.commit();
+    res.json({ status: 'success', message: 'Xóa phiếu xuất thành công.' });
+  } catch (error) {
+    await t.rollback();
+    console.error('PhieuXuat delete error:', error);
+    res.status(500).json({ status: 'error', message: 'Lỗi server.' });
+  }
+};
+
+module.exports = { getAll, getById, create, update, remove };

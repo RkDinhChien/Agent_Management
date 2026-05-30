@@ -1,4 +1,4 @@
-const { sequelize, PhieuNhapHang, ChiTiet_PhieuNHap, MatHang, DonViTinh } = require('../models');
+const { sequelize, PhieuNhapHang, ChiTiet_PhieuNhap, MatHang, DonViTinh } = require('../models');
 
 /**
  * GET /api/phieu-nhap
@@ -9,7 +9,7 @@ const getAll = async (req, res) => {
     const phieuNhaps = await PhieuNhapHang.findAll({
       include: [
         {
-          model: ChiTiet_PhieuNHap,
+          model: ChiTiet_PhieuNhap,
           as: 'chiTiets',
           include: [{ model: MatHang, as: 'matHang', include: [{ model: DonViTinh, as: 'dvt' }] }],
         },
@@ -32,7 +32,7 @@ const getById = async (req, res) => {
     const phieu = await PhieuNhapHang.findByPk(req.params.id, {
       include: [
         {
-          model: ChiTiet_PhieuNHap,
+          model: ChiTiet_PhieuNhap,
           as: 'chiTiets',
           include: [{ model: MatHang, as: 'matHang', include: [{ model: DonViTinh, as: 'dvt' }] }],
         },
@@ -83,18 +83,24 @@ const create = async (req, res) => {
 
     // Tạo chi tiết + cập nhật tồn kho (QĐ6)
     for (const ct of processedDetails) {
-      await ChiTiet_PhieuNHap.create(
+      await ChiTiet_PhieuNhap.create(
         { MaPhieuNhap: phieu.MaPhieuNhap, ...ct },
         { transaction: t }
       );
 
-      // QĐ6: Cập nhật số lượng tồn kho
-      await MatHang.increment('SoLuongTon', {
-        by: ct.SoLuongNhap,
-        where: { MaMatHang: ct.MaMatHang },
-        transaction: t,
-      });
+      // QĐ6: Cập nhật số lượng tồn kho + Cập nhật đơn giá hiện tại
+      await MatHang.update(
+        {
+          TonKho: sequelize.literal(`TonKho + ${ct.SoLuongNhap}`),
+          DonGiaHienTai: ct.DonGiaNhap
+        },
+        {
+          where: { MaMatHang: ct.MaMatHang },
+          transaction: t
+        }
+      );
     }
+
 
     await t.commit();
 
@@ -102,7 +108,7 @@ const create = async (req, res) => {
     const result = await PhieuNhapHang.findByPk(phieu.MaPhieuNhap, {
       include: [
         {
-          model: ChiTiet_PhieuNHap,
+          model: ChiTiet_PhieuNhap,
           as: 'chiTiets',
           include: [{ model: MatHang, as: 'matHang', include: [{ model: DonViTinh, as: 'dvt' }] }],
         },
@@ -121,4 +127,40 @@ const create = async (req, res) => {
   }
 };
 
-module.exports = { getAll, getById, create };
+/**
+ * DELETE /api/phieu-nhap/:id
+ * Xóa phiếu nhập + hoàn tác tồn kho
+ */
+const remove = async (req, res) => {
+  const t = await sequelize.transaction();
+  try {
+    const phieu = await PhieuNhapHang.findByPk(req.params.id, { transaction: t });
+    if (!phieu) {
+      await t.rollback();
+      return res.status(404).json({ status: 'error', message: 'Không tìm thấy phiếu nhập.' });
+    }
+
+    // Hoàn tác tồn kho: giảm lại số lượng đã nhập
+    const chiTiets = await ChiTiet_PhieuNhap.findAll({ where: { MaPhieuNhap: phieu.MaPhieuNhap }, transaction: t });
+    for (const ct of chiTiets) {
+      await MatHang.decrement('TonKho', {
+        by: ct.SoLuongNhap,
+        where: { MaMatHang: ct.MaMatHang },
+        transaction: t,
+      });
+    }
+
+    // Xóa chi tiết rồi xóa phiếu
+    await ChiTiet_PhieuNhap.destroy({ where: { MaPhieuNhap: phieu.MaPhieuNhap }, transaction: t });
+    await phieu.destroy({ transaction: t });
+
+    await t.commit();
+    res.json({ status: 'success', message: 'Xóa phiếu nhập thành công.' });
+  } catch (error) {
+    await t.rollback();
+    console.error('PhieuNhap delete error:', error);
+    res.status(500).json({ status: 'error', message: 'Lỗi server.' });
+  }
+};
+
+module.exports = { getAll, getById, create, remove };
