@@ -60,8 +60,31 @@ const onBlur = () => {
 </script>
 
 <style scoped>
-.money-input-wrap { position: relative; display: flex; align-items: center; }
-.money-input-wrap input { flex: 1; padding-right: 28px; }
+.money-input-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-width: 0;
+}
+.money-input-wrap input {
+  flex: 1 1 auto;
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  padding-right: 28px;
+  font-variant-numeric: tabular-nums;
+}
+.money-input-wrap input.money-finp {
+  text-align: right;
+  background: #fff;
+  border: 1.5px solid rgba(148, 163, 184, .32);
+  border-radius: 8px;
+  box-shadow: inset 0 1px 0 rgba(15, 23, 42, .02), 0 1px 2px rgba(15, 23, 42, .03);
+}
+.money-input-wrap input.money-finp:focus {
+  background: #fff;
+}
 .money-suffix {
   position: absolute; right: 10px;
   font-size: 12px; font-weight: 600; color: #94a3b8; pointer-events: none;

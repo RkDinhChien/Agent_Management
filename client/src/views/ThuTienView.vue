@@ -316,7 +316,9 @@
             </div>
             <div class="field full">
               <label class="flabel">Số tiền thu <span class="req">*</span></label>
-              <MoneyInput v-model="editForm.amount" :input-class="['finp', errors.amount ? 'finp-err' : '']" placeholder="0"/>
+              <div class="money-field">
+                <MoneyInput v-model="editForm.amount" :input-class="['finp', 'money-finp', errors.amount ? 'finp-err' : '']" placeholder="0"/>
+              </div>
               <span class="err-msg" v-if="errors.amount">{{ errors.amount }}</span>
             </div>
           </div>
@@ -365,7 +367,9 @@
 
             <div class="field full">
               <label class="flabel">Số tiền thu <span class="req">*</span></label>
-              <MoneyInput v-model="form.amount" :input-class="['finp', errors.amount ? 'finp-err' : '']" placeholder="0"/>
+              <div class="money-field">
+                <MoneyInput v-model="form.amount" :input-class="['finp', 'money-finp', errors.amount ? 'finp-err' : '']" placeholder="0"/>
+              </div>
               <span class="err-msg" v-if="errors.amount">{{ errors.amount }}</span>
               <!-- Mini progress bar: amount vs debt -->
               <div class="amt-hint" v-if="formAgent && form.amount > 0">
@@ -1125,6 +1129,30 @@ const exportCSV = () => {
 .finp.finp-err { border-color:var(--c-danger); }
 .finp.ftarea { resize:none; }
 .err-msg { font-size:11px; color:var(--c-danger); }
+
+.money-field {
+  padding:8px;
+  background:rgba(248,250,252,.78);
+  border:1px solid rgba(148,163,184,.24);
+  border-radius:12px;
+}
+.money-field :deep(.money-input-wrap) {
+  width:100%;
+  min-width:0;
+}
+.money-field :deep(.money-input-wrap input) {
+  min-height:42px;
+  padding:9px 32px 9px 12px;
+  font-size:16px;
+  font-weight:750;
+  letter-spacing:0;
+  color:var(--c-txt);
+}
+.money-field :deep(.money-suffix) {
+  right:12px;
+  color:var(--c-primary);
+  font-weight:800;
+}
 
 /* Debt hint in form */
 .debt-hint { background:var(--c-bg); border:1px solid var(--c-border); border-radius:var(--r-md); padding:10px 12px; display:flex; flex-direction:column; gap:6px; }

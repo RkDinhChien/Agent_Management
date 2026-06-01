@@ -307,19 +307,19 @@
               <label class="flabel">Danh sách mặt hàng <span class="req">*</span></label>
               <div class="items-form-list">
                 <div class="items-form-hd">
-                  <span style="flex:2">Mặt hàng</span>
-                  <span style="flex:.75;text-align:center">SL</span>
-                  <span style="flex:1">Giá</span>
-                  <span style="width:26px"></span>
+                  <span>Mặt hàng</span>
+                  <span>SL</span>
+                  <span>Giá</span>
+                  <span></span>
                 </div>
                 <div v-for="(item, idx) in form.items" :key="idx" class="item-form-row">
-                  <select v-model="item.name" class="finp finp-sm" style="flex:2">
+                  <select v-model="item.name" class="finp finp-sm">
                     <option value="">Chọn mặt hàng</option>
                     <option v-for="p in products" :key="p.name" :value="p.name">{{ p.name }}</option>
                   </select>
-                  <input v-model.number="item.qty" type="number" min="1" class="finp finp-sm finp-num" style="flex:.75" placeholder="SL"/>
-                  <MoneyInput v-model="item.price" :input-class="'finp finp-sm finp-num'" :suffix="''" style="flex:1" placeholder="0"/>
-                  <button type="button" class="act-btn del-btn" style="flex-shrink:0" @click="removeItem(idx)" :disabled="form.items.length <= 1">
+                  <input v-model.number="item.qty" type="number" min="1" class="finp finp-sm finp-num" placeholder="SL"/>
+                  <MoneyInput v-model="item.price" :input-class="'finp finp-sm money-finp'" :suffix="''" placeholder="0"/>
+                  <button type="button" class="act-btn del-btn" @click="removeItem(idx)" :disabled="form.items.length <= 1">
                     <Trash2 :size="11"/>
                   </button>
                 </div>
@@ -362,19 +362,19 @@
               <label class="flabel">Danh sách mặt hàng <span class="req">*</span></label>
               <div class="items-form-list">
                 <div class="items-form-hd">
-                  <span style="flex:2">Mặt hàng</span>
-                  <span style="flex:.75;text-align:center">SL</span>
-                  <span style="flex:1">Giá</span>
-                  <span style="width:26px"></span>
+                  <span>Mặt hàng</span>
+                  <span>SL</span>
+                  <span>Giá</span>
+                  <span></span>
                 </div>
                 <div v-for="(item, idx) in form.items" :key="idx" class="item-form-row">
-                  <select v-model="item.name" class="finp finp-sm" style="flex:2">
+                  <select v-model="item.name" class="finp finp-sm">
                     <option value="">Chọn mặt hàng</option>
                     <option v-for="p in products" :key="p.name" :value="p.name">{{ p.name }}</option>
                   </select>
-                  <input v-model.number="item.qty" type="number" min="1" class="finp finp-sm finp-num" style="flex:.75" placeholder="SL"/>
-                  <MoneyInput v-model="item.price" :input-class="'finp finp-sm finp-num'" :suffix="''" style="flex:1" placeholder="0"/>
-                  <button type="button" class="act-btn del-btn" style="flex-shrink:0" @click="removeItem(idx)" :disabled="form.items.length <= 1">
+                  <input v-model.number="item.qty" type="number" min="1" class="finp finp-sm finp-num" placeholder="SL"/>
+                  <MoneyInput v-model="item.price" :input-class="'finp finp-sm money-finp'" :suffix="''" placeholder="0"/>
+                  <button type="button" class="act-btn del-btn" @click="removeItem(idx)" :disabled="form.items.length <= 1">
                     <Trash2 :size="11"/>
                   </button>
                 </div>
@@ -1072,19 +1072,75 @@ col.col-act    { width: 96px; }
 .finp:focus { border-color:var(--c-primary); box-shadow:0 0 0 3px rgba(5,150,105,.08); background:#fff; }
 .finp.finp-err { border-color:var(--c-danger); }
 .finp.ftarea { resize:none; }
-.finp.finp-sm { padding:6px 8px; font-size:12px; }
+.finp.finp-sm { min-height:32px; padding:6px 9px; font-size:12px; border-radius:7px; }
 .finp.finp-num { text-align:center; }
 .err-msg { font-size:11px; color:var(--c-danger); }
 
 /* Items form */
-.items-form-list  { display:flex; flex-direction:column; gap:6px; }
-.items-form-hd { display:flex; gap:6px; font-size:10px; font-weight:700; color:var(--c-txt-3); text-transform:uppercase; padding:0 2px; }
-.item-form-row { display:flex; align-items:center; gap:6px; }
+.items-form-list  {
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+  padding:10px;
+  background:rgba(248,250,252,.75);
+  border:1px solid var(--c-border);
+  border-radius:10px;
+}
+.items-form-hd,
+.item-form-row {
+  display:grid;
+  grid-template-columns:minmax(0, 1fr) 58px 92px 32px;
+  gap:8px;
+  align-items:center;
+  width:100%;
+  box-sizing:border-box;
+}
+.item-form-row {
+  padding:6px;
+  border:1px solid rgba(148,163,184,.22);
+  border-radius:10px;
+  background:#fff;
+  overflow:hidden;
+}
+.items-form-hd {
+  font-size:9.5px;
+  font-weight:700;
+  color:var(--c-txt-3);
+  text-transform:uppercase;
+  padding:0 2px 1px;
+  letter-spacing:.35px;
+}
+.items-form-hd span:nth-child(2),
+.items-form-hd span:nth-child(3) { text-align:center; }
+.item-form-row > * { min-width:0; }
+.item-form-row .finp {
+  background:#fff;
+  border:1.5px solid rgba(148,163,184,.26);
+  border-radius:8px;
+}
+.item-form-row .del-btn {
+  width:32px;
+  height:32px;
+  border-radius:7px;
+  flex-shrink:0;
+  justify-self:center;
+}
+.item-form-row .finp-num {
+  font-variant-numeric:tabular-nums;
+}
+.item-form-row :deep(.money-input-wrap) {
+  width:100%;
+  min-width:0;
+}
+.item-form-row :deep(.money-input-wrap input) {
+  padding-left:8px;
+  padding-right:8px;
+}
 .add-item-btn {
   display:inline-flex; align-items:center; gap:6px;
-  padding:6px 12px; border-radius:var(--r-md); align-self:flex-start;
+  padding:7px 11px; border-radius:7px; align-self:flex-start;
   border:1.5px dashed rgba(5,150,105,.35); background:transparent; color:var(--c-primary);
-  font-size:12px; font-weight:600; cursor:pointer; font-family:inherit; transition:all var(--t);
+  font-size:12px; font-weight:700; cursor:pointer; font-family:inherit; transition:all var(--t);
 }
 .add-item-btn:hover { background:var(--c-success-bg); border-color:var(--c-primary); }
 
