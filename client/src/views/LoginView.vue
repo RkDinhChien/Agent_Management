@@ -16,183 +16,64 @@
         </div>
       </div>
 
-      <!-- Tab switcher -->
-      <div class="lp-tabs">
-        <div class="tabs-track">
-          <div class="tabs-pill" :class="activeTab === 'login' ? 'pill-left' : 'pill-right'"></div>
-          <button class="tab-btn" :class="{ active: activeTab === 'login' }" @click="switchTab('login')">
-            <LogIn :size="13"/> Đăng nhập
-          </button>
-          <button class="tab-btn" :class="{ active: activeTab === 'register' }" @click="switchTab('register')">
-            <UserPlus :size="13"/> Đăng ký
-          </button>
-        </div>
+      <!-- ── LOGIN FORM ── -->
+      <div class="lp-form-hd">
+        <h2 class="lp-form-title">Chào mừng trở lại</h2>
+        <p class="lp-form-sub">Đăng nhập bằng tài khoản được quản trị viên cấp</p>
       </div>
 
-      <!-- ── LOGIN FORM ── -->
-      <Transition :name="'tf-' + tabDir" mode="out-in">
-        <div v-if="activeTab === 'login'" key="login">
+      <form @submit.prevent="handleLogin" class="lp-form" novalidate>
 
-          <div class="lp-form-hd">
-            <h2 class="lp-form-title">Chào mừng trở lại</h2>
-            <p class="lp-form-sub">Đăng nhập để tiếp tục quản lý hệ thống</p>
+        <div class="lf-group">
+          <label class="lf-label">Tên đăng nhập</label>
+          <div class="lf-field" :class="{ focused: uFocus, err: errors.tenDangNhap }">
+            <User :size="14" class="lf-ico"/>
+            <input v-model="form.tenDangNhap" type="text" class="lf-inp"
+              placeholder="Nhập tên đăng nhập" autocomplete="username"
+              @focus="uFocus=true; clearError('tenDangNhap')" @blur="uFocus=false"/>
           </div>
+          <span class="lf-err" v-if="errors.tenDangNhap"><AlertCircle :size="11"/>{{ errors.tenDangNhap }}</span>
+        </div>
 
-          <form @submit.prevent="handleLogin" class="lp-form" novalidate>
-
-            <div class="lf-group">
-              <label class="lf-label">Tên đăng nhập</label>
-              <div class="lf-field" :class="{ focused: uFocus, err: errors.tenDangNhap }">
-                <User :size="14" class="lf-ico"/>
-                <input v-model="form.tenDangNhap" type="text" class="lf-inp"
-                  placeholder="Nhập tên đăng nhập" autocomplete="username"
-                  @focus="uFocus=true; clearError('tenDangNhap')" @blur="uFocus=false"/>
-              </div>
-              <span class="lf-err" v-if="errors.tenDangNhap"><AlertCircle :size="11"/>{{ errors.tenDangNhap }}</span>
-            </div>
-
-            <div class="lf-group">
-              <div class="lf-label-row">
-                <label class="lf-label">Mật khẩu</label>
-                <a class="lf-forgot" @click.prevent="showForgotModal=true">Quên mật khẩu?</a>
-              </div>
-              <div class="lf-field" :class="{ focused: pFocus, err: errors.matKhau }">
-                <Lock :size="14" class="lf-ico"/>
-                <input v-model="form.matKhau" :type="showPass ? 'text' : 'password'" class="lf-inp"
-                  placeholder="••••••••" autocomplete="current-password"
-                  @focus="pFocus=true; clearError('matKhau')" @blur="pFocus=false"/>
-                <button type="button" class="lf-eye" @click="showPass=!showPass" tabindex="-1">
-                  <Eye v-if="!showPass" :size="14"/><EyeOff v-else :size="14"/>
-                </button>
-              </div>
-              <span class="lf-err" v-if="errors.matKhau"><AlertCircle :size="11"/>{{ errors.matKhau }}</span>
-            </div>
-
-            <label class="lf-check">
-              <input v-model="form.ghiNho" type="checkbox" class="lf-check-inp"/>
-              <span class="lf-check-box" :class="{ on: form.ghiNho }">
-                <Check v-if="form.ghiNho" :size="10"/>
-              </span>
-              <span class="lf-check-lbl">Ghi nhớ đăng nhập</span>
-            </label>
-
-            <div class="lf-login-err" v-if="loginError">
-              <AlertCircle :size="14"/>{{ loginError }}
-            </div>
-
-            <button type="submit" class="lf-submit" :disabled="isLoading">
-              <Loader2 v-if="isLoading" :size="15" class="lf-spin"/>
-              <span>{{ isLoading ? 'Đang xử lý…' : 'Đăng nhập' }}</span>
-              <ArrowRight v-if="!isLoading" :size="15" class="lf-arrow"/>
+        <div class="lf-group">
+          <div class="lf-label-row">
+            <label class="lf-label">Mật khẩu</label>
+            <a class="lf-forgot" @click.prevent="showForgotModal=true">Quên mật khẩu?</a>
+          </div>
+          <div class="lf-field" :class="{ focused: pFocus, err: errors.matKhau }">
+            <Lock :size="14" class="lf-ico"/>
+            <input v-model="form.matKhau" :type="showPass ? 'text' : 'password'" class="lf-inp"
+              placeholder="••••••••" autocomplete="current-password"
+              @focus="pFocus=true; clearError('matKhau')" @blur="pFocus=false"/>
+            <button type="button" class="lf-eye" @click="showPass=!showPass" tabindex="-1">
+              <Eye v-if="!showPass" :size="14"/><EyeOff v-else :size="14"/>
             </button>
-
-            <p class="lf-switch-hint">
-              Chưa có tài khoản?
-              <button type="button" class="lf-switch-btn" @click="switchTab('register')">Đăng ký ngay</button>
-            </p>
-          </form>
+          </div>
+          <span class="lf-err" v-if="errors.matKhau"><AlertCircle :size="11"/>{{ errors.matKhau }}</span>
         </div>
 
-        <!-- ── REGISTER FORM ── -->
-        <div v-else key="register">
-          <Transition name="suc-fade" mode="out-in">
-            <div v-if="regSuccess" class="reg-success">
-              <div class="rs-icon"><CheckCircle2 :size="28"/></div>
-              <h3 class="rs-title">Đăng ký thành công!</h3>
-              <p class="rs-sub">Tài khoản đã được tạo. Đang chuyển về đăng nhập…</p>
-            </div>
+        <label class="lf-check">
+          <input v-model="form.ghiNho" type="checkbox" class="lf-check-inp"/>
+          <span class="lf-check-box" :class="{ on: form.ghiNho }">
+            <Check v-if="form.ghiNho" :size="10"/>
+          </span>
+          <span class="lf-check-lbl">Ghi nhớ đăng nhập</span>
+        </label>
 
-            <div v-else key="reg-form">
-              <div class="lp-form-hd">
-                <h2 class="lp-form-title">Tạo tài khoản mới</h2>
-                <p class="lp-form-sub">Điền thông tin để bắt đầu sử dụng hệ thống</p>
-              </div>
-
-              <form @submit.prevent="handleRegister" class="lp-form" novalidate>
-
-                <div class="lf-row2">
-                  <div class="lf-group">
-                    <label class="lf-label">Họ và tên <span class="req">*</span></label>
-                    <div class="lf-field sm" :class="{ focused: rnFocus, err: regErrors.hoTen }">
-                      <UserRound :size="13" class="lf-ico"/>
-                      <input v-model="regForm.hoTen" type="text" class="lf-inp"
-                        placeholder="Nguyễn Văn A"
-                        @focus="rnFocus=true; delete regErrors.hoTen" @blur="rnFocus=false"/>
-                    </div>
-                    <span class="lf-err" v-if="regErrors.hoTen"><AlertCircle :size="11"/>{{ regErrors.hoTen }}</span>
-                  </div>
-                  <div class="lf-group">
-                    <label class="lf-label">Tên đăng nhập <span class="req">*</span></label>
-                    <div class="lf-field sm" :class="{ focused: ruFocus, err: regErrors.tenDangNhap }">
-                      <AtSign :size="13" class="lf-ico"/>
-                      <input v-model="regForm.tenDangNhap" type="text" class="lf-inp"
-                        placeholder="admin123"
-                        @focus="ruFocus=true; delete regErrors.tenDangNhap" @blur="ruFocus=false"/>
-                    </div>
-                    <span class="lf-err" v-if="regErrors.tenDangNhap"><AlertCircle :size="11"/>{{ regErrors.tenDangNhap }}</span>
-                  </div>
-                </div>
-
-                <div class="lf-group">
-                  <label class="lf-label">Email <span class="req">*</span></label>
-                  <div class="lf-field" :class="{ focused: reFocus, err: regErrors.email }">
-                    <Mail :size="14" class="lf-ico"/>
-                    <input v-model="regForm.email" type="email" class="lf-inp"
-                      placeholder="ten@example.com" autocomplete="email"
-                      @focus="reFocus=true; delete regErrors.email" @blur="reFocus=false"/>
-                  </div>
-                  <span class="lf-err" v-if="regErrors.email"><AlertCircle :size="11"/>{{ regErrors.email }}</span>
-                </div>
-
-                <div class="lf-group">
-                  <label class="lf-label">Mật khẩu <span class="req">*</span></label>
-                  <div class="lf-field" :class="{ focused: rpFocus, err: regErrors.matKhau }">
-                    <Lock :size="14" class="lf-ico"/>
-                    <input v-model="regForm.matKhau" :type="showRegPass ? 'text' : 'password'"
-                      class="lf-inp" placeholder="Tối thiểu 6 ký tự"
-                      @focus="rpFocus=true; delete regErrors.matKhau" @blur="rpFocus=false"/>
-                    <button type="button" class="lf-eye" @click="showRegPass=!showRegPass" tabindex="-1">
-                      <Eye v-if="!showRegPass" :size="14"/><EyeOff v-else :size="14"/>
-                    </button>
-                  </div>
-                  <div class="str-bar" v-if="regForm.matKhau">
-                    <div class="str-track">
-                      <div class="str-fill" :style="{ width: (passStrength/4*100)+'%', background: strColor }"></div>
-                    </div>
-                    <span class="str-lbl" :style="{ color: strColor }">{{ strLabel }}</span>
-                  </div>
-                  <span class="lf-err" v-if="regErrors.matKhau"><AlertCircle :size="11"/>{{ regErrors.matKhau }}</span>
-                </div>
-
-                <div class="lf-group">
-                  <label class="lf-label">Xác nhận mật khẩu <span class="req">*</span></label>
-                  <div class="lf-field" :class="{ focused: rcFocus, err: regErrors.xacNhan }">
-                    <Lock :size="14" class="lf-ico"/>
-                    <input v-model="regForm.xacNhan" :type="showRegConf ? 'text' : 'password'"
-                      class="lf-inp" placeholder="Nhập lại mật khẩu"
-                      @focus="rcFocus=true; delete regErrors.xacNhan" @blur="rcFocus=false"/>
-                    <button type="button" class="lf-eye" @click="showRegConf=!showRegConf" tabindex="-1">
-                      <Eye v-if="!showRegConf" :size="14"/><EyeOff v-else :size="14"/>
-                    </button>
-                  </div>
-                  <span class="lf-err" v-if="regErrors.xacNhan"><AlertCircle :size="11"/>{{ regErrors.xacNhan }}</span>
-                </div>
-
-                <button type="submit" class="lf-submit" :disabled="isRegLoading">
-                  <Loader2 v-if="isRegLoading" :size="15" class="lf-spin"/>
-                  <span>{{ isRegLoading ? 'Đang tạo tài khoản…' : 'Tạo tài khoản' }}</span>
-                  <Sparkles v-if="!isRegLoading" :size="15" class="lf-arrow"/>
-                </button>
-
-                <p class="lf-switch-hint">
-                  Đã có tài khoản?
-                  <button type="button" class="lf-switch-btn" @click="switchTab('login')">Đăng nhập</button>
-                </p>
-              </form>
-            </div>
-          </Transition>
+        <div class="lf-login-err" v-if="loginError">
+          <AlertCircle :size="14"/>{{ loginError }}
         </div>
-      </Transition>
+
+        <button type="submit" class="lf-submit" :disabled="isLoading">
+          <Loader2 v-if="isLoading" :size="15" class="lf-spin"/>
+          <span>{{ isLoading ? 'Đang xử lý…' : 'Đăng nhập' }}</span>
+          <ArrowRight v-if="!isLoading" :size="15" class="lf-arrow"/>
+        </button>
+
+        <p class="lf-switch-hint">
+          Chưa có tài khoản? Liên hệ quản trị viên để được cấp quyền truy cập.
+        </p>
+      </form>
 
       <p class="lp-card-foot">© 2026 Agentix · SE104 · Nhập môn Công nghệ Phần mềm</p>
     </div>
@@ -213,25 +94,16 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed } from 'vue';
+import { ref, reactive } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '../stores/auth';
 import {
-  User, UserRound, Lock, Eye, EyeOff, Check, AlertCircle,
-  CheckCircle2, ArrowRight, Loader2, LogIn, UserPlus,
-  Mail, AtSign, Sparkles,
+  User, Lock, Eye, EyeOff, Check, AlertCircle,
+  ArrowRight, Loader2, Mail,
 } from 'lucide-vue-next';
 
 const router    = useRouter();
 const authStore = useAuthStore();
-
-/* ── Tab state ── */
-const activeTab = ref('login');
-const tabDir    = ref('left');
-const switchTab = (tab) => {
-  tabDir.value = tab === 'register' ? 'left' : 'right';
-  activeTab.value = tab;
-};
 
 /* ── Login form ── */
 const form     = reactive({ tenDangNhap: '', matKhau: '', ghiNho: false });
@@ -266,55 +138,6 @@ const handleLogin = async () => {
 
 const remembered = localStorage.getItem('rememberedUser');
 if (remembered) { form.tenDangNhap = remembered; form.ghiNho = true; }
-
-/* ── Register form ── */
-const regForm    = reactive({ hoTen: '', tenDangNhap: '', email: '', matKhau: '', xacNhan: '' });
-const regErrors  = reactive({});
-const showRegPass  = ref(false);
-const showRegConf  = ref(false);
-const isRegLoading = ref(false);
-const regSuccess   = ref(false);
-const rnFocus = ref(false); const ruFocus = ref(false);
-const reFocus = ref(false); const rpFocus = ref(false); const rcFocus = ref(false);
-
-const passStrength = computed(() => {
-  const p = regForm.matKhau;
-  if (!p) return 0;
-  let s = 0;
-  if (p.length >= 6)  s++;
-  if (p.length >= 10) s++;
-  if (/[A-Z]/.test(p)) s++;
-  if (/[0-9]/.test(p)) s++;
-  if (/[^A-Za-z0-9]/.test(p)) s++;
-  return Math.min(s, 4);
-});
-const strColor = computed(() => ['#e2e8f0','#ef4444','#f59e0b','#3b82f6','#10b981'][passStrength.value]);
-const strLabel = computed(() => ['','Yếu','Trung bình','Khá','Mạnh'][passStrength.value]);
-
-const validateReg = () => {
-  const e = {};
-  if (!regForm.hoTen.trim()) e.hoTen = 'Nhập họ và tên';
-  if (!regForm.tenDangNhap.trim() || regForm.tenDangNhap.length < 4) e.tenDangNhap = 'Tối thiểu 4 ký tự';
-  if (!regForm.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(regForm.email)) e.email = 'Email không hợp lệ';
-  if (!regForm.matKhau || regForm.matKhau.length < 6) e.matKhau = 'Tối thiểu 6 ký tự';
-  if (regForm.xacNhan !== regForm.matKhau) e.xacNhan = 'Mật khẩu không khớp';
-  Object.keys(regErrors).forEach(k => delete regErrors[k]);
-  Object.assign(regErrors, e);
-  return Object.keys(e).length === 0;
-};
-
-const handleRegister = async () => {
-  if (!validateReg()) return;
-  isRegLoading.value = true;
-  await new Promise(r => setTimeout(r, 1400));
-  isRegLoading.value = false;
-  regSuccess.value = true;
-  setTimeout(() => {
-    regSuccess.value = false;
-    form.tenDangNhap = regForm.tenDangNhap;
-    switchTab('login');
-  }, 2600);
-};
 </script>
 
 <style scoped>
@@ -409,29 +232,6 @@ const handleRegister = async () => {
   line-height: 1.3;
 }
 
-/* ── Tab switcher ── */
-.lp-tabs { margin-bottom: 20px; }
-.tabs-track {
-  position: relative; display: flex;
-  background: #f1f5f9; border-radius: 10px; padding: 4px;
-}
-.tabs-pill {
-  position: absolute; top: 4px; bottom: 4px;
-  width: calc(50% - 4px);
-  background: white; border-radius: 7px;
-  box-shadow: 0 1px 6px rgba(15,23,42,.1);
-  transition: transform .24s cubic-bezier(.4,0,.2,1);
-}
-.tabs-pill.pill-left  { transform: translateX(0); }
-.tabs-pill.pill-right { transform: translateX(100%); }
-.tab-btn {
-  flex: 1; position: relative; z-index: 1; border: none; background: transparent;
-  display: flex; align-items: center; justify-content: center; gap: 6px;
-  font-size: 12.5px; font-weight: 600; padding: 8px 10px;
-  color: #94a3b8; cursor: pointer; transition: color .18s; font-family: inherit; border-radius: 6px;
-}
-.tab-btn.active { color: #0f172a; }
-
 /* ── Form heading ── */
 .lp-form-hd { margin-bottom: 18px; }
 .lp-form-title { font-size: 1.18rem; font-weight: 800; color: #0f172a; margin: 0 0 4px; letter-spacing: -.45px; }
@@ -439,11 +239,9 @@ const handleRegister = async () => {
 
 /* ── Form layout ── */
 .lp-form { display: flex; flex-direction: column; gap: 13px; }
-.lf-row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .lf-group { display: flex; flex-direction: column; gap: 5px; }
 .lf-label-row { display: flex; justify-content: space-between; align-items: center; }
 .lf-label { font-size: 11.5px; font-weight: 700; color: #374151; }
-.req { color: #ef4444; }
 .lf-forgot { font-size: 11px; color: #059669; font-weight: 600; text-decoration: none; cursor: pointer; }
 .lf-forgot:hover { color: #047857; text-decoration: underline; }
 
@@ -464,12 +262,6 @@ const handleRegister = async () => {
 .lf-eye { border: none; background: transparent; cursor: pointer; color: #94a3b8; padding: 4px; display: flex; align-items: center; transition: color .14s; flex-shrink: 0; }
 .lf-eye:hover { color: #475569; }
 .lf-err { display: flex; align-items: center; gap: 4px; font-size: 11px; color: #ef4444; font-weight: 500; }
-
-/* Password strength */
-.str-bar { display: flex; align-items: center; gap: 8px; margin-top: 4px; }
-.str-track { flex: 1; height: 3px; background: #e2e8f0; border-radius: 2px; overflow: hidden; }
-.str-fill  { height: 100%; border-radius: 2px; transition: width .3s ease, background .3s; }
-.str-lbl   { font-size: 10.5px; font-weight: 700; white-space: nowrap; min-width: 58px; text-align: right; }
 
 /* Checkbox */
 .lf-check { display: flex; align-items: center; gap: 8px; cursor: pointer; user-select: none; }
@@ -513,17 +305,6 @@ const handleRegister = async () => {
 
 /* Switch hint */
 .lf-switch-hint { text-align: center; font-size: 12.5px; color: #94a3b8; margin: 0; font-weight: 500; }
-.lf-switch-btn { background: none; border: none; color: #059669; font-weight: 700; cursor: pointer; font-family: inherit; font-size: inherit; padding: 0; }
-.lf-switch-btn:hover { color: #047857; text-decoration: underline; }
-
-/* Register success */
-.reg-success {
-  display: flex; flex-direction: column; align-items: center; text-align: center;
-  padding: 24px 16px; gap: 10px; animation: cardIn .28s ease;
-}
-.rs-icon { width: 56px; height: 56px; border-radius: 50%; background: #ecfdf5; color: #059669; display: flex; align-items: center; justify-content: center; }
-.rs-title { font-size: 1.05rem; font-weight: 800; color: #0f172a; margin: 0; }
-.rs-sub   { font-size: .83rem; color: #64748b; margin: 0; line-height: 1.55; }
 
 /* Card footer */
 .lp-card-foot {
@@ -551,21 +332,9 @@ const handleRegister = async () => {
 .fm-desc  { font-size: 13px; color: #64748b; margin: 0; line-height: 1.55; }
 .fm-email { display: flex; align-items: center; gap: 7px; font-size: 13px; font-weight: 700; color: #059669; background: #ecfdf5; border: 1px solid rgba(5,150,105,.15); border-radius: 8px; padding: 8px 16px; }
 
-/* ── Transitions ── */
-.tf-left-enter-active, .tf-left-leave-active,
-.tf-right-enter-active,.tf-right-leave-active { transition: all .2s cubic-bezier(.4,0,.2,1); }
-.tf-left-enter-from  { opacity:0; transform: translateX(16px); }
-.tf-left-leave-to    { opacity:0; transform: translateX(-16px); }
-.tf-right-enter-from { opacity:0; transform: translateX(-16px); }
-.tf-right-leave-to   { opacity:0; transform: translateX(16px); }
-
-.suc-fade-enter-active,.suc-fade-leave-active { transition: all .18s ease; }
-.suc-fade-enter-from,.suc-fade-leave-to { opacity:0; transform: scale(.96); }
-
 /* ══ RESPONSIVE ══ */
 @media (max-width: 520px) {
   .lp { padding: 24px 16px; align-items: flex-start; padding-top: 40px; }
   .lp-card { border-radius: 18px; padding: 28px 22px 22px; }
-  .lf-row2 { grid-template-columns: 1fr; }
 }
 </style>
