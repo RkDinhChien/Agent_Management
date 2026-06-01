@@ -76,7 +76,8 @@ const getById = async (req, res) => {
 const create = async (req, res) => {
   const t = await sequelize.transaction();
   try {
-    const { MaDaiLy, NgayLapPhieu, chiTiets } = req.body;
+    const { MaDaiLy, NgayLapPhieu, chiTiets, TienTra: tienTraRaw } = req.body;
+    const tienTra = Math.max(0, parseFloat(tienTraRaw) || 0);
 
     if (!chiTiets || chiTiets.length === 0) {
       return res.status(400).json({
@@ -158,9 +159,10 @@ const create = async (req, res) => {
     }
 
     // 
+    const tienTraFinal = Math.min(tienTra, tongTien);
     const insertSql = 'INSERT INTO PHIEUXUATHANG (MaDaiLy, NgayLapPhieu, TongTien, TienTra) VALUES (?, ?, ?, ?)';
     await sequelize.query(insertSql, {
-      replacements: [MaDaiLy, NgayLapPhieu || new Date(), tongTien, 0],
+      replacements: [MaDaiLy, NgayLapPhieu || new Date(), tongTien, tienTraFinal],
       transaction: t,
     });
     const [lastInsert] = await sequelize.query('SELECT LAST_INSERT_ID() AS MaPhieuXuat', {
@@ -194,12 +196,15 @@ const create = async (req, res) => {
       });
     }
 
-    // QĐ7: Cập nhật tiền nợ
-    await DaiLy.increment('TongNo', {
-      by: tongTien,
-      where: { MaDaiLy },
-      transaction: t,
-    });
+    // QĐ7: Cập nhật tiền nợ (chỉ phần chưa trả)
+    const noThem = tongTien - tienTraFinal;
+    if (noThem > 0) {
+      await DaiLy.increment('TongNo', {
+        by: noThem,
+        where: { MaDaiLy },
+        transaction: t,
+      });
+    }
 
     await t.commit();
 

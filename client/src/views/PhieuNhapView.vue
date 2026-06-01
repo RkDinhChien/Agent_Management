@@ -195,7 +195,7 @@
                 </td>
                 <td class="col-actions">
                   <div class="act-group">
-                    <button class="act-btn view-btn" title="Xem chi tiết" @click.stop="openView(r)"><Eye :size="13"/></button>
+                    <button class="act-btn edit-btn" title="Sửa phiếu" @click.stop="openEdit(r)"><Edit2 :size="13"/></button>
                     <button class="act-btn del-btn" title="Xóa phiếu" @click.stop="askDelete(r)"><Trash2 :size="13"/></button>
                   </div>
                 </td>
@@ -318,7 +318,7 @@
                     <option v-for="p in products" :key="p.name" :value="p.name">{{ p.name }}</option>
                   </select>
                   <input v-model.number="item.qty" type="number" min="1" class="finp finp-sm finp-num" style="flex:.75" placeholder="SL"/>
-                  <input v-model.number="item.price" type="number" min="0" step="0.01" class="finp finp-sm finp-num" style="flex:1" placeholder="0.00"/>
+                  <MoneyInput v-model="item.price" :input-class="'finp finp-sm finp-num'" :suffix="''" style="flex:1" placeholder="0"/>
                   <button type="button" class="act-btn del-btn" style="flex-shrink:0" @click="removeItem(idx)" :disabled="form.items.length <= 1">
                     <Trash2 :size="11"/>
                   </button>
@@ -373,7 +373,7 @@
                     <option v-for="p in products" :key="p.name" :value="p.name">{{ p.name }}</option>
                   </select>
                   <input v-model.number="item.qty" type="number" min="1" class="finp finp-sm finp-num" style="flex:.75" placeholder="SL"/>
-                  <input v-model.number="item.price" type="number" min="0" step="0.01" class="finp finp-sm finp-num" style="flex:1" placeholder="0.00"/>
+                  <MoneyInput v-model="item.price" :input-class="'finp finp-sm finp-num'" :suffix="''" style="flex:1" placeholder="0"/>
                   <button type="button" class="act-btn del-btn" style="flex-shrink:0" @click="removeItem(idx)" :disabled="form.items.length <= 1">
                     <Trash2 :size="11"/>
                   </button>
@@ -443,6 +443,8 @@
 <script setup>
 import { ref, computed, reactive, onMounted, watch } from 'vue';
 import api from '../services/api';
+import { parseError } from '../utils/errorMessages';
+import MoneyInput from '../components/MoneyInput.vue';
 import {
   Search, Plus, Download, X, Eye, CheckCircle, CheckCircle2, XCircle,
   Trash2, PackageOpen, Package, Building2, CalendarDays,
@@ -707,19 +709,28 @@ const submitCreate = async () => {
   }
 };
 
-const submitEdit = () => {
+const submitEdit = async () => {
   errors.items = '';
   const validItems = form.value.items.filter(i => i.name && i.qty > 0);
   if (!validItems.length) { errors.items = 'Thêm ít nhất 1 mặt hàng hợp lệ'; return; }
-  const found = receipts.value.find(r => r.id === selectedId.value);
-  if (!found) return;
-  const d = new Date(form.value.date);
-  found.date      = d.toLocaleDateString('vi-VN');
-  found.rawDate   = form.value.date;
-  found.items     = validItems.map(i => ({ ...i }));
-  found.total     = formTotal.value;
-  showToast(`Đã cập nhật phiếu ${found.code}`);
-  panelMode.value = 'view';
+  try {
+    const payload = {
+      NgayLapPhieu: form.value.date,
+      chiTiets: validItems.map(i => {
+        const prod = products.value.find(p => p.name === i.name);
+        return { MaMatHang: prod?.id, SoLuongNhap: i.qty, DonGiaNhap: i.price };
+      }),
+    };
+    const res = await api.put(`/phieu-nhap/${selectedId.value}`, payload);
+    if (res.data?.status === 'success') {
+      showToast(`Đã cập nhật phiếu nhập thành công`);
+      await loadReceipts();
+      await loadProducts();
+      panelMode.value = 'view';
+    }
+  } catch (err) {
+    showToast(err.response?.data?.message || 'Lỗi khi cập nhật phiếu nhập', 'danger');
+  }
 };
 
 const exportCSV = () => {
@@ -920,8 +931,8 @@ col.col-act    { width: 96px; }
 }
 .view-btn { background:rgba(5,150,105,.08); color:#059669; }
 .view-btn:hover { background:rgba(5,150,105,.18); transform:scale(1.1); }
-.edit-btn { background:rgba(15,23,42,.06); color:#64748b; }
-.edit-btn:hover { background:rgba(15,23,42,.12); color:#1e293b; transform:scale(1.1); }
+.edit-btn { background:rgba(37,99,235,.08); color:#2563eb; }
+.edit-btn:hover { background:rgba(37,99,235,.18); transform:scale(1.1); }
 .ok-btn   { background:rgba(5,150,105,.1); color:#059669; }
 .ok-btn:hover { background:#059669; color:white; transform:scale(1.1); }
 .del-btn  { background:rgba(239,68,68,.08); color:#dc2626; }

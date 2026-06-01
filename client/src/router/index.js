@@ -34,12 +34,6 @@ const routes = [
         meta: { permission: 'DaiLyView' },
       },
       {
-        path: 'dai-ly',
-        name: 'DaiLy',
-        component: () => import('../views/DaiLyView.vue'),
-        meta: { permission: 'DaiLyView' },
-      },
-      {
         path: 'mat-hang',
         name: 'MatHang',
         component: () => import('../views/MatHangView.vue'),

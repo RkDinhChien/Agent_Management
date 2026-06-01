@@ -203,7 +203,7 @@
                 </td>
                 <td class="col-actions">
                   <div class="act-group">
-                    <button class="act-btn view-btn" data-tooltip="Xem chi tiết" @click.stop="openView(r)"><Eye :size="13"/></button>
+                    <button class="act-btn edit-btn" data-tooltip="Sửa phiếu" @click.stop="openEdit(r)"><Edit2 :size="13"/></button>
                     <button class="act-btn del-btn" data-tooltip="Xóa phiếu" @click.stop="askDelete(r)"><Trash2 :size="13"/></button>
                   </div>
                 </td>
@@ -302,18 +302,34 @@
             <div class="items-section">
               <p class="recent-title">Danh sách mặt hàng</p>
               <div class="items-hd">
-                <span style="flex:2">Mặt hàng</span>
-                <span style="flex:.7;text-align:center">SL</span>
-                <span style="flex:1;text-align:right">Thành tiền</span>
+                <span style="flex:1.6;min-width:0">Mặt hàng</span>
+                <span style="width:32px;flex-shrink:0;text-align:center">SL</span>
+                <span style="width:80px;flex-shrink:0;text-align:right">Đơn giá</span>
+                <span style="width:88px;flex-shrink:0;text-align:right">Thành tiền</span>
               </div>
               <div class="item-row" v-for="item in selectedReceipt.items" :key="item.name">
-                <span class="item-name" style="flex:2">{{ item.name }}</span>
-                <span style="flex:.7;text-align:center;color:#64748b;font-size:12px">{{ item.qty.toLocaleString('vi-VN') }}</span>
-                <span style="flex:1;text-align:right;font-weight:700;font-size:12px;font-variant-numeric:tabular-nums">{{ fmtVND(item.qty * item.price) }}</span>
+                <span class="item-name" style="flex:1.6;min-width:0">{{ item.name }}</span>
+                <span style="width:32px;flex-shrink:0;text-align:center;color:#64748b;font-size:12px">{{ item.qty.toLocaleString('vi-VN') }}</span>
+                <span style="width:80px;flex-shrink:0;text-align:right;color:#475569;font-size:12px;font-variant-numeric:tabular-nums">{{ fmtVND(item.price) }}</span>
+                <span style="width:88px;flex-shrink:0;text-align:right;font-weight:700;font-size:12px;font-variant-numeric:tabular-nums">{{ fmtVND(item.qty * item.price) }}</span>
               </div>
               <div class="items-total">
                 <span>Tổng cộng</span>
                 <strong>{{ fmtVND(selectedReceipt.total) }}</strong>
+              </div>
+
+              <!-- Thanh toán -->
+              <div class="payment-summary">
+                <div class="ps-row">
+                  <span class="ps-lbl">Đã trả</span>
+                  <span class="ps-val ps-paid">{{ fmtVND(selectedReceipt.tienTra) }}</span>
+                </div>
+                <div class="ps-row ps-conlai-row">
+                  <span class="ps-lbl">Còn lại (nợ)</span>
+                  <span class="ps-val" :class="selectedReceipt.conLai > 0 ? 'conlai-debt' : 'conlai-clear'">
+                    {{ fmtVND(selectedReceipt.conLai) }}
+                  </span>
+                </div>
               </div>
             </div>
           </div>
@@ -360,7 +376,7 @@
                 <div class="items-form-hd">
                   <span style="flex:2">Mặt hàng</span>
                   <span style="flex:.75;text-align:center">SL</span>
-                  <span style="flex:1">Giá (Tr)</span>
+                  <span style="flex:1">Đơn giá</span>
                   <span style="width:26px"></span>
                 </div>
                 <div v-for="(item, idx) in form.items" :key="idx" class="item-form-row">
@@ -369,7 +385,7 @@
                     <option v-for="p in products" :key="p.name" :value="p.name">{{ p.name }}</option>
                   </select>
                   <input v-model.number="item.qty" type="number" min="1" class="finp finp-sm finp-num" style="flex:.75" placeholder="SL"/>
-                  <input v-model.number="item.price" type="number" min="0" step="0.001" class="finp finp-sm finp-num" style="flex:1" placeholder="0.00" readonly/>
+                  <input :value="item.price ? item.price.toLocaleString('vi-VN') : ''" type="text" class="finp finp-sm finp-num" style="flex:1;background:#f8fafc" placeholder="0" readonly/>
                   <button type="button" class="act-btn del-btn" style="flex-shrink:0" @click="removeItem(idx)" :disabled="form.items.length <= 1"><Trash2 :size="11"/></button>
                 </div>
                 <button type="button" class="add-item-btn" @click="addItem"><Plus :size="13"/> Thêm mặt hàng</button>
@@ -416,19 +432,9 @@
                 ⚠ Đại lý gần đạt hạn mức nợ
               </span>
             </div>
-            <div class="field-row">
-              <div class="field">
-                <label class="flabel">Ngày xuất <span class="req">*</span></label>
-                <input v-model="form.date" type="date" class="finp" :max="today"/>
-              </div>
-              <div class="field">
-                <label class="flabel">Người lập</label>
-                <input v-model="form.createdBy" class="finp" placeholder="Tên người lập"/>
-              </div>
-            </div>
             <div class="field full">
-              <label class="flabel">Ghi chú</label>
-              <textarea v-model="form.note" class="finp ftarea" rows="2" placeholder="Ghi chú thêm…"></textarea>
+              <label class="flabel">Ngày xuất <span class="req">*</span></label>
+              <input v-model="form.date" type="date" class="finp" :max="today"/>
             </div>
             <div class="field full">
               <label class="flabel">Danh sách mặt hàng <span class="req">*</span></label>
@@ -436,7 +442,7 @@
                 <div class="items-form-hd">
                   <span style="flex:2">Mặt hàng</span>
                   <span style="flex:.75;text-align:center">SL</span>
-                  <span style="flex:1">Giá xuất (Tr)</span>
+                  <span style="flex:1">Đơn giá</span>
                   <span style="width:26px"></span>
                 </div>
                 <div v-for="(item, idx) in form.items" :key="idx" class="item-form-row">
@@ -454,7 +460,25 @@
             </div>
             <div class="limit-row">
               <Package :size="11"/>
-              Tổng cộng (ước tính): <strong>{{ fmtVND(formTotal) }}</strong>
+              Tổng cộng: <strong>{{ fmtVND(formTotal) }}</strong>
+            </div>
+
+            <div class="payment-block">
+              <div class="field full">
+                <label class="flabel">Số tiền trả ngay</label>
+                <MoneyInput
+                  v-model="form.tienTra"
+                  :input-class="['finp', form.tienTra > formTotal ? 'finp-err' : '']"
+                  placeholder="0"
+                />
+                <span class="err-msg" v-if="form.tienTra > formTotal">Tiền trả không được vượt tổng tiền</span>
+              </div>
+              <div class="conlai-row">
+                <span class="conlai-lbl">Còn lại (nợ)</span>
+                <span class="conlai-val" :class="formConLai > 0 ? 'conlai-debt' : 'conlai-clear'">
+                  {{ fmtVND(formConLai) }}
+                </span>
+              </div>
             </div>
           </div>
           <div class="fc-footer">
@@ -514,6 +538,8 @@
 <script setup>
 import { ref, computed, reactive, onMounted, watch } from 'vue';
 import api from '../services/api';
+import { parseError } from '../utils/errorMessages';
+import MoneyInput from '../components/MoneyInput.vue';
 import {
   Search, Plus, Download, X, Eye, XCircle,
   Trash2, PackageOpen, Package, CalendarDays,
@@ -605,7 +631,8 @@ const loadReceipts = async () => {
       agentId: r.MaDaiLy,
       agent: r.daiLy?.TenDaiLy || 'Đại lý',
       total: parseFloat(r.TongTien) || (r.chiTiets || []).reduce((s, ct) => s + (parseFloat(ct.ThanhTien) || (parseFloat(ct.SoLuongXuat) * parseFloat(ct.DonGiaXuat))), 0) || 0,
-      remain: parseFloat(r.ConLai) || 0,
+      tienTra: parseFloat(r.TienTra) || 0,
+      conLai: parseFloat(r.ConLai) || 0,
       status: 'delivered',
       createdBy: 'Admin',
       items: (r.chiTiets || []).map(ct => {
@@ -768,11 +795,13 @@ const debtClass      = (id) => {
 
 /* ── Form ── */
 const today     = new Date().toISOString().split('T')[0];
-const emptyForm = () => ({ agentId: '', date: today, items: [{ name: '', qty: 1, price: 0 }] });
+const emptyForm = () => ({ agentId: '', date: today, tienTra: 0, items: [{ name: '', qty: 1, price: 0 }] });
+
 const form      = ref(emptyForm());
 const errors    = reactive({ agent: '', items: '' });
 const formAgent = computed(() => form.value.agentId ? getAgent(Number(form.value.agentId)) : null);
-const formTotal = computed(() => form.value.items.reduce((s, i) => s + (i.qty || 0) * (i.price || 0), 0));
+const formTotal  = computed(() => form.value.items.reduce((s, i) => s + (i.qty || 0) * (i.price || 0), 0));
+const formConLai = computed(() => Math.max(0, formTotal.value - (form.value.tienTra || 0)));
 
 const addItem    = () => form.value.items.push({ name: '', qty: 1, price: 0 });
 const removeItem = (i) => { if (form.value.items.length > 1) form.value.items.splice(i, 1); };
@@ -851,6 +880,7 @@ const submitCreate = async () => {
     const payload = {
       MaDaiLy: Number(form.value.agentId),
       NgayLapPhieu: form.value.date,
+      TienTra: form.value.tienTra || 0,
       chiTiets: validItems.map(i => {
         const prod = products.value.find(p => p.name === i.name);
         return {
@@ -1079,6 +1109,8 @@ const exportCSV = () => {
   border: 1px solid rgba(139, 92, 246, 0.2);
   padding: 3px 9px;
   border-radius: var(--r-pill);
+  white-space: nowrap;
+  display: inline-block;
 }
 .col-total { min-width:110px; }
 .total-num { font-weight:700; font-size:13px; font-variant-numeric:tabular-nums; }
@@ -1097,8 +1129,8 @@ const exportCSV = () => {
 }
 .view-btn { background:rgba(5,150,105,.08); color:#059669; }
 .view-btn:hover { background:rgba(5,150,105,.18); transform:scale(1.1); }
-.edit-btn { background:rgba(15,23,42,.06); color:#64748b; }
-.edit-btn:hover { background:rgba(15,23,42,.12); color:#1e293b; transform:scale(1.1); }
+.edit-btn { background:rgba(37,99,235,.08); color:#2563eb; }
+.edit-btn:hover { background:rgba(37,99,235,.18); transform:scale(1.1); }
 .ok-btn   { background:rgba(5,150,105,.1); color:#059669; }
 .ok-btn:hover { background:#059669; color:white; transform:scale(1.1); }
 .del-btn  { background:rgba(239,68,68,.08); color:#dc2626; }
@@ -1168,12 +1200,13 @@ const exportCSV = () => {
 .ig-val { color:var(--c-txt-2); font-weight:500; flex:1; min-width:0; }
 
 /* Items section */
-.items-section { padding:14px 18px; border-bottom:1px solid var(--c-border); }
+.items-section { padding:14px 18px 18px; }
 .recent-title  { font-size:11px; font-weight:700; color:var(--c-txt-3); text-transform:uppercase; letter-spacing:.6px; margin:0 0 10px; }
-.items-hd  { display:flex; gap:8px; font-size:10px; font-weight:700; color:var(--c-txt-3); text-transform:uppercase; padding-bottom:6px; border-bottom:1px solid var(--c-border-s); margin-bottom:4px; }
-.item-row  { display:flex; align-items:center; gap:8px; padding:7px 0; border-bottom:1px solid var(--c-border-s); }
+.items-hd  { display:flex; gap:6px; font-size:10px; font-weight:700; color:var(--c-txt-3); text-transform:uppercase; padding-bottom:6px; border-bottom:1px solid var(--c-border-s); margin-bottom:4px; }
+.items-hd span { white-space:nowrap; overflow:hidden; }
+.item-row  { display:flex; align-items:center; gap:6px; padding:7px 0; border-bottom:1px solid var(--c-border-s); }
 .item-row:last-of-type { border-bottom:none; }
-.item-name { font-size:12.5px; font-weight:600; color:var(--c-txt); }
+.item-name { font-size:12.5px; font-weight:600; color:var(--c-txt); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .items-total { display:flex; justify-content:space-between; align-items:center; padding:10px 12px; margin-top:8px; background:var(--c-success-bg); border-radius:var(--r-md); border:1px solid rgba(91,157,250,.12); }
 .items-total span   { font-size:12px; font-weight:600; color:var(--c-primary); }
 .items-total strong { font-size:15px; font-weight:900; color:var(--c-primary); font-variant-numeric:tabular-nums; }
@@ -1382,6 +1415,21 @@ const exportCSV = () => {
 .add-item-btn:hover { background:var(--c-success-bg); border-color:var(--c-primary); }
 .limit-row { display:flex; align-items:center; gap:5px; font-size:11px; color:var(--c-txt-3); background:var(--c-bg); border-radius:var(--r-sm); padding:7px 10px; border:1px dashed var(--c-border); }
 .limit-row strong { color:var(--c-primary); font-weight:800; margin-left:4px; }
+.payment-summary { display:flex; flex-direction:column; gap:0; border:1px solid var(--c-border); border-radius:var(--r-md); overflow:hidden; margin-top:10px; }
+.ps-row { display:flex; justify-content:space-between; align-items:center; padding:9px 13px; background:#fff; border-bottom:1px solid var(--c-border-s); }
+.ps-row:last-child { border-bottom:none; }
+.ps-conlai-row { background:#f8fafc; }
+.ps-lbl { font-size:12px; font-weight:600; color:var(--c-txt-3); }
+.ps-val { font-size:14px; font-weight:800; font-variant-numeric:tabular-nums; }
+.ps-paid { color:#059669; }
+
+.payment-block { display:flex; flex-direction:column; gap:8px; padding:12px 14px; background:#f8fafc; border:1px solid var(--c-border); border-radius:var(--r-md); }
+.conlai-row { display:flex; justify-content:space-between; align-items:center; padding:8px 10px; border-radius:var(--r-md); background:#fff; border:1px solid var(--c-border); }
+.conlai-lbl { font-size:12px; font-weight:700; color:var(--c-txt-3); }
+.conlai-val { font-size:15px; font-weight:900; font-variant-numeric:tabular-nums; }
+.conlai-debt  { color:#ef4444; }
+.conlai-clear { color:#059669; }
+
 .fc-footer { padding:14px 18px; border-top:1px solid var(--c-border); display:flex; justify-content:space-between; align-items:center; gap:8px; }
 
 /* ══ BUTTONS ══ */

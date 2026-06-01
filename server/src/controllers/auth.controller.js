@@ -53,10 +53,6 @@ const login = async (req, res) => {
       MaChucNang: cn.MaChucNang,
       TenChucNang: cn.TenChucNang,
       TenManHinhDuocLoad: cn.TenManHinhDuocLoad,
-      Xem: cn.PhanQuyen?.Xem ?? true,
-      Them: cn.PhanQuyen?.Them ?? true,
-      Sua: cn.PhanQuyen?.Sua ?? true,
-      Xoa: cn.PhanQuyen?.Xoa ?? true,
     }));
 
     // Tạo JWT token
@@ -122,10 +118,6 @@ const getMe = async (req, res) => {
       MaChucNang: cn.MaChucNang,
       TenChucNang: cn.TenChucNang,
       TenManHinhDuocLoad: cn.TenManHinhDuocLoad,
-      Xem: cn.PhanQuyen?.Xem ?? true,
-      Them: cn.PhanQuyen?.Them ?? true,
-      Sua: cn.PhanQuyen?.Sua ?? true,
-      Xoa: cn.PhanQuyen?.Xoa ?? true,
     }));
 
     res.json({

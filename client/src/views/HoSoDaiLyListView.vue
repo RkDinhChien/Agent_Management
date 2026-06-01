@@ -670,6 +670,7 @@
 import { ref, computed, useTemplateRef, onMounted, watch } from 'vue';
 const imgInputRef = useTemplateRef('imgInputRef');
 import api from '../services/api';
+import { parseError } from '../utils/errorMessages';
 import {
   Search, Edit2, Trash2, Plus, Download, X, Info,
   AlertCircle, Upload, ImageIcon,

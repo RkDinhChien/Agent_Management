@@ -12,7 +12,7 @@ const ChucNang = sequelize.define('ChucNang', {
     allowNull: false,
   },
   TenManHinhDuocLoad: {
-    type: DataTypes.STRING(100),
+    type: DataTypes.STRING(30),
   },
 }, {
   tableName: 'CHUCNANG',

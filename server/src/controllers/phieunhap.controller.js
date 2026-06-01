@@ -133,6 +133,56 @@ const create = async (req, res) => {
   }
 };
 
+/**
+ * PUT /api/phieu-nhap/:id
+ * Cập nhật phiếu nhập: xóa chi tiết cũ, hoàn tồn kho, rồi thêm chi tiết mới
+ */
+const update = async (req, res) => {
+  const t = await sequelize.transaction();
+  try {
+    const { NgayLapPhieu, chiTiets } = req.body;
+    const phieu = await PhieuNhapHang.findByPk(req.params.id, {
+      include: [{ model: ChiTiet_PhieuNhap, as: 'chiTiets' }],
+      transaction: t,
+    });
+    if (!phieu) {
+      await t.rollback();
+      return res.status(404).json({ status: 'error', message: 'Không tìm thấy phiếu nhập.' });
+    }
+
+    // Hoàn tồn kho từ chi tiết cũ
+    for (const ct of phieu.chiTiets) {
+      await MatHang.decrement('TonKho', { by: ct.SoLuongNhap, where: { MaMatHang: ct.MaMatHang }, transaction: t });
+    }
+    await ChiTiet_PhieuNhap.destroy({ where: { MaPhieuNhap: phieu.MaPhieuNhap }, transaction: t });
+
+    // Thêm chi tiết mới
+    let tongTien = 0;
+    for (const ct of chiTiets) {
+      const sl = Number(ct.SoLuongNhap) || 0;
+      const dg = Number(ct.DonGiaNhap) || 0;
+      tongTien += sl * dg;
+      await sequelize.query(
+        'INSERT INTO CHITIET_PHIEUNHAP (MaPhieuNhap, MaMatHang, SoLuongNhap, DonGiaNhap) VALUES (?,?,?,?)',
+        { replacements: [phieu.MaPhieuNhap, ct.MaMatHang, sl, dg], transaction: t }
+      );
+      await MatHang.increment('TonKho', { by: sl, where: { MaMatHang: ct.MaMatHang }, transaction: t });
+    }
+
+    await phieu.update({ NgayLapPhieu: NgayLapPhieu || phieu.NgayLapPhieu, TongTien: tongTien }, { transaction: t });
+    await t.commit();
+
+    const result = await PhieuNhapHang.findByPk(phieu.MaPhieuNhap, {
+      include: [{ model: ChiTiet_PhieuNhap, as: 'chiTiets', include: [{ model: MatHang, as: 'matHang', include: [{ model: DonViTinh, as: 'dvt' }] }] }],
+    });
+    res.json({ status: 'success', message: 'Cập nhật phiếu nhập thành công.', data: result });
+  } catch (error) {
+    await t.rollback();
+    console.error('PhieuNhap update error:', error);
+    res.status(500).json({ status: 'error', message: 'Lỗi server.' });
+  }
+};
+
 const remove = async (req, res) => {
   const t = await sequelize.transaction();
   try {
@@ -166,5 +216,5 @@ const remove = async (req, res) => {
   }
 };
 
-module.exports = { getAll, getById, create, remove };
+module.exports = { getAll, getById, create, update, remove };
 

@@ -2,7 +2,7 @@
   <div class="hosodaily-page">
     <!-- Back Button -->
     <div class="page-nav">
-      <button class="btn-back" @click="$router.push('/dai-ly')">
+      <button class="btn-back" @click="$router.push('/dai-ly-list')">
         <ChevronLeft :size="18" /> Quay lại
       </button>
     </div>
@@ -17,7 +17,7 @@
     <div v-else-if="!daiLy" class="error-state">
       <AlertCircle :size="48" />
       <p>Không tìm thấy đại lý này</p>
-      <button class="btn-primary" @click="$router.push('/dai-ly')">Quay lại danh sách</button>
+      <button class="btn-primary" @click="$router.push('/dai-ly-list')">Quay lại danh sách</button>
     </div>
 
     <!-- Main Content -->

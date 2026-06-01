@@ -180,7 +180,7 @@
           </div>
           <div class="if-field">
             <label>Hạn mức nợ (VNĐ) <span class="req">*</span></label>
-            <input v-model.number="loaiForm.hanMucNo" type="number" min="0" step="500000" class="finp" placeholder="VD: 10000000"/>
+            <MoneyInput v-model="loaiForm.hanMucNo" input-class="finp" placeholder="VD: 10.000.000"/>
           </div>
           <div class="if-actions">
             <button class="btn-sec" @click="resetLoai" v-if="loaiForm.id"><X :size="14"/> Hủy</button>
@@ -316,6 +316,8 @@
 <script setup>
 import { ref, reactive, onMounted } from 'vue';
 import api from '../services/api';
+import { parseError } from '../utils/errorMessages';
+import MoneyInput from '../components/MoneyInput.vue';
 import {
   SlidersHorizontal, Users, Ruler, MapPin,
   Plus, Save, X, Pencil, Trash2,
@@ -385,17 +387,34 @@ const loaiForm = reactive({ id: null, ten: '', hanMucNo: '' });
 const resetLoai  = () => { loaiForm.id = null; loaiForm.ten = ''; loaiForm.hanMucNo = ''; };
 const editLoai   = (l) => { loaiForm.id = l.id; loaiForm.ten = l.ten; loaiForm.hanMucNo = l.hanMucNo; };
 const deleteLoai = async (id) => {
-  if (!confirm('Xóa loại đại lý này?')) return;
+  const loai = loais.value.find(l => l.id === id);
+  if (!confirm(`Xóa loại đại lý "${loai?.ten}"?`)) return;
   try {
     await api.delete(`/loai-dai-ly/${id}`);
     await loadLoais();
   } catch (err) {
-    alert(err.response?.data?.message || 'Không thể xóa loại đại lý.');
+    const msg = err.response?.data?.message || '';
+    if (msg.includes('đại lý') || err.response?.status === 400) {
+      alert(`Không thể xóa "${loai?.ten}": đang có đại lý thuộc loại này.`);
+    } else {
+      alert(msg || 'Không thể xóa loại đại lý.');
+    }
   }
 };
 const submitLoai = async () => {
-  if (!loaiForm.ten.trim() || !loaiForm.hanMucNo) return;
-  const payload = { TenLoaiDaiLy: loaiForm.ten.trim(), TienNoToiDa: Number(loaiForm.hanMucNo) };
+  const ten = loaiForm.ten.trim();
+  if (!ten || !loaiForm.hanMucNo) return;
+  const hanMuc = Number(loaiForm.hanMucNo);
+
+  // Trùng tên
+  const dupTen = loais.value.find(l => l.ten.toLowerCase() === ten.toLowerCase() && l.id !== loaiForm.id);
+  if (dupTen) { alert(`Loại đại lý "${ten}" đã tồn tại.`); return; }
+
+  // Trùng hạn mức nợ (khác tên)
+  const dupHan = loais.value.find(l => Number(l.hanMucNo) === hanMuc && l.id !== loaiForm.id && l.ten.toLowerCase() !== ten.toLowerCase());
+  if (dupHan) { alert(`Đã tồn tại "${dupHan.ten}" có mức nợ trùng (${hanMuc.toLocaleString('vi-VN')}đ).`); return; }
+
+  const payload = { TenLoaiDaiLy: ten, TienNoToiDa: hanMuc };
   try {
     if (loaiForm.id) {
       await api.put(`/loai-dai-ly/${loaiForm.id}`, payload);
@@ -427,17 +446,28 @@ const dvtForm = reactive({ id: null, ten: '' });
 const resetDvt  = () => { dvtForm.id = null; dvtForm.ten = ''; };
 const editDvt   = (d) => { dvtForm.id = d.id; dvtForm.ten = d.ten; };
 const deleteDvt = async (id) => {
-  if (!confirm('Xóa đơn vị tính này?')) return;
+  const dvt = dvts.value.find(d => d.id === id);
+  if (!confirm(`Xóa đơn vị tính "${dvt?.ten}"?`)) return;
   try {
     await api.delete(`/don-vi-tinh/${id}`);
     await loadDvts();
   } catch (err) {
-    alert(err.response?.data?.message || 'Không thể xóa đơn vị tính.');
+    const msg = err.response?.data?.message || '';
+    if (msg.includes('mặt hàng') || err.response?.status === 400) {
+      alert(`Không thể xóa "${dvt?.ten}": đang được dùng bởi mặt hàng.`);
+    } else {
+      alert(msg || 'Không thể xóa đơn vị tính.');
+    }
   }
 };
 const submitDvt = async () => {
-  if (!dvtForm.ten.trim()) return;
-  const payload = { TenDVT: dvtForm.ten.trim() };
+  const ten = dvtForm.ten.trim();
+  if (!ten) return;
+
+  const dup = dvts.value.find(d => d.ten.toLowerCase() === ten.toLowerCase() && d.id !== dvtForm.id);
+  if (dup) { alert(`Đơn vị tính "${ten}" đã tồn tại.`); return; }
+
+  const payload = { TenDVT: ten };
   try {
     if (dvtForm.id) {
       await api.put(`/don-vi-tinh/${dvtForm.id}`, payload);
@@ -476,17 +506,28 @@ const quanForm = reactive({ id: null, ten: '' });
 const resetQuan  = () => { quanForm.id = null; quanForm.ten = ''; };
 const editQuan   = (q) => { quanForm.id = q.id; quanForm.ten = q.ten; };
 const deleteQuan = async (id) => {
-  if (!confirm('Xóa quận này?')) return;
+  const quan = quans.value.find(q => q.id === id);
+  if (!confirm(`Xóa quận "${quan?.ten}"?`)) return;
   try {
     await api.delete(`/quan/${id}`);
     await loadQuans();
   } catch (err) {
-    alert(err.response?.data?.message || 'Không thể xóa quận.');
+    const msg = err.response?.data?.message || '';
+    if (msg.includes('đại lý') || err.response?.status === 400) {
+      alert(`Không thể xóa "${quan?.ten}": đang có đại lý thuộc quận này.`);
+    } else {
+      alert(msg || 'Không thể xóa quận.');
+    }
   }
 };
 const submitQuan = async () => {
-  if (!quanForm.ten.trim()) return;
-  const payload = { TenQuan: quanForm.ten.trim() };
+  const ten = quanForm.ten.trim();
+  if (!ten) return;
+
+  const dup = quans.value.find(q => q.ten.toLowerCase() === ten.toLowerCase() && q.id !== quanForm.id);
+  if (dup) { alert(`Quận "${ten}" đã tồn tại.`); return; }
+
+  const payload = { TenQuan: ten };
   try {
     if (quanForm.id) {
       await api.put(`/quan/${quanForm.id}`, payload);

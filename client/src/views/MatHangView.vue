@@ -230,7 +230,6 @@
                 </td>
                 <td class="col-actions">
                   <div class="action-group">
-                    <button class="act-btn view-btn" title="Xem" @click.stop="openView(r)"><Eye :size="13"/></button>
                     <button class="act-btn edit-btn" title="Sửa" @click.stop="openEdit(r)"><Edit2 :size="13"/></button>
                     <button class="act-btn del-btn" title="Xóa" @click.stop="askDelete(r)"><Trash2 :size="13"/></button>
                   </div>
@@ -375,26 +374,13 @@
               <span class="err-msg" v-if="errors.name">{{ errors.name }}</span>
             </div>
 
-            <div class="field-row">
-              <div class="field">
-                <label class="flabel">Đơn vị tính (DVT)</label>
-                <select v-model="form.dvt" class="finp">
-                  <option value="">— Chọn DVT —</option>
-                  <option v-for="d in dvts" :key="d">{{ d }}</option>
-                </select>
-              </div>
-              <div class="field">
-                <label class="flabel">Giá nhập (Tr) <span class="req">*</span></label>
-                <input v-model.number="form.buyPrice" type="number" min="0" step="0.001" class="finp finp-num" :class="{ 'finp-err': errors.buyPrice }" placeholder="0.000"/>
-                <span class="err-msg" v-if="errors.buyPrice">{{ errors.buyPrice }}</span>
-              </div>
+            <div class="field full">
+              <label class="flabel">Đơn vị tính (DVT)</label>
+              <select v-model="form.dvt" class="finp">
+                <option value="">— Chọn DVT —</option>
+                <option v-for="d in dvts" :key="d">{{ d }}</option>
+              </select>
             </div>
-
-            <div class="field">
-              <label class="flabel">Tồn kho ban đầu</label>
-              <input v-model.number="form.stock" type="number" min="0" class="finp finp-num" placeholder="0"/>
-            </div>
-
 
           </div>
 
@@ -424,27 +410,19 @@
               <span class="err-msg" v-if="errors.name">{{ errors.name }}</span>
             </div>
 
-            <div class="field-row">
-              <div class="field">
-                <label class="flabel">Đơn vị tính (DVT)</label>
-                <select v-model="form.dvt" class="finp">
-                  <option value="">— Chọn DVT —</option>
-                  <option v-for="d in dvts" :key="d">{{ d }}</option>
-                </select>
-              </div>
+            <div class="field full">
+              <label class="flabel">Đơn vị tính (DVT)</label>
+              <select v-model="form.dvt" class="finp">
+                <option value="">— Chọn DVT —</option>
+                <option v-for="d in dvts" :key="d">{{ d }}</option>
+              </select>
             </div>
 
-            <div class="field">
-              <label class="flabel">Giá nhập (Tr) <span class="req">*</span></label>
-              <input v-model.number="form.buyPrice" type="number" min="0" step="0.001" class="finp finp-num" :class="{ 'finp-err': errors.buyPrice }" placeholder="0.000"/>
-              <span class="err-msg" v-if="errors.buyPrice">{{ errors.buyPrice }}</span>
+            <div class="field full">
+              <label class="flabel">Tồn kho</label>
+              <input :value="form.stock?.toLocaleString('vi-VN')" type="text" class="finp finp-num" style="background:#f8fafc" readonly/>
+              <span style="font-size:11px;color:#94a3b8">Tồn kho được cập nhật tự động qua phiếu nhập/xuất</span>
             </div>
-
-            <div class="field">
-              <label class="flabel">Tồn kho hiện tại</label>
-              <input v-model.number="form.stock" type="number" min="0" class="finp finp-num" placeholder="0"/>
-            </div>
-
 
           </div>
 
@@ -501,6 +479,7 @@
 <script setup>
 import { ref, computed, reactive, watch, onMounted } from 'vue';
 import api from '../services/api';
+import { parseError } from '../utils/errorMessages';
 import {
   Search, Plus, Download, X, Eye, Trash2, PackageOpen,
   Package, Edit2, Tag, Layers, BarChart2, CheckCircle,
@@ -517,13 +496,15 @@ const SortIcon = {
 
 /* ── Constants ── */
 const categories = ['Đèn LED', 'Đèn', 'Thiết bị điện', 'Dây cáp'];
-const dvts = ref(['Cái', 'Bộ', 'Mét', 'Cuộn', 'Hộp']);
+const dvts    = ref(['Cái', 'Bộ', 'Mét', 'Cuộn', 'Hộp']);
+const dvtList = ref([]);
 
 const loadDvts = async () => {
   try {
     const res = await api.get('/don-vi-tinh');
     const items = res.data?.data || res.data || [];
     if (items.length) {
+      dvtList.value = items;
       dvts.value.splice(0, dvts.value.length, ...items.map((d) => d.TenDVT || 'Cái'));
     }
   } catch (err) {
@@ -545,15 +526,20 @@ const products = ref([]);
 const loadProducts = async () => {
   try {
     const res = await api.get('/mat-hang');
-    products.value = (res.data?.data || res.data || []).map(p => ({
-      ...p,
-      id: p.MaMatHang,
-      code: p.MaMatHang ? `MH-${String(p.MaMatHang).padStart(3, '0')}` : '??',
-      name: p.TenMatHang,
-      dvt: p.dvt?.TenDVT || 'Cái',
-      buyPrice: parseFloat(p.DonGiaHienTai) / 1_000_000 || 0,
-      stock: p.TonKho || 0
-    }));
+    products.value = (res.data?.data || res.data || []).map(p => {
+      const donGia = parseFloat(p.DonGiaHienTai) || 0;
+      return {
+        ...p,
+        id:        p.MaMatHang,
+        code:      `MH-${String(p.MaMatHang).padStart(3, '0')}`,
+        name:      p.TenMatHang,
+        dvt:       p.dvt?.TenDVT || 'Cái',
+        category:  p.dvt?.TenDVT || 'Hàng hóa',
+        buyPrice:  donGia / 1_000_000,
+        sellPrice: (donGia * 1.02) / 1_000_000,
+        stock:     p.TonKho || 0,
+      };
+    });
   } catch (err) {
     console.warn('Failed to load products', err?.response?.status || err.message);
   }
@@ -703,45 +689,67 @@ const openEdit = (p) => {
 
 const closePanel = () => { selectedId.value = null; panelMode.value = 'view'; };
 
-const submitAdd = () => {
-  errors.name = ''; errors.buyPrice = '';
-  if (!form.value.name.trim())                       { errors.name     = 'Vui lòng nhập tên mặt hàng'; return; }
-  if (!form.value.buyPrice || form.value.buyPrice <= 0) { errors.buyPrice = 'Giá nhập phải lớn hơn 0'; return; }
-  const newId = Math.max(...products.value.map(p => p.id)) + 1;
-  const code  = `MH-${String(newId).padStart(3, '0')}`;
-  products.value.push({
-    id: newId, code,
-    name:      form.value.name.trim(),
-    dvt:       form.value.dvt      || dvts.value[0],
-    buyPrice:  form.value.buyPrice,
-    stock:     form.value.stock || 0,
-  });
-  showToast(`Đã thêm mặt hàng ${form.value.name}`);
-  closePanel();
+const submitAdd = async () => {
+  errors.name = '';
+  const name = form.value.name.trim();
+  if (!name) { errors.name = 'Vui lòng nhập tên mặt hàng'; return; }
+
+  const dup = products.value.find(p => p.name.toLowerCase() === name.toLowerCase());
+  if (dup) { errors.name = `Mặt hàng "${name}" đã tồn tại.`; return; }
+
+  const dvtObj = dvts.value.find(d => d === form.value.dvt) ?? dvts.value[0];
+  const dvtId  = dvtList.value.find(d => d.TenDVT === dvtObj)?.MaDVT;
+  try {
+    const res = await api.post('/mat-hang', { TenMatHang: name, MaDVT: dvtId, DonGiaHienTai: 0, TonKho: 0 });
+    if (res.data?.status === 'success') {
+      showToast(`Đã thêm mặt hàng ${name}`);
+      await loadProducts();
+      closePanel();
+    }
+  } catch (err) {
+    errors.name = err.response?.data?.message || 'Lỗi khi thêm mặt hàng';
+  }
 };
 
-const submitEdit = () => {
-  errors.name = ''; errors.buyPrice = '';
-  if (!form.value.name.trim())                       { errors.name     = 'Vui lòng nhập tên mặt hàng'; return; }
-  if (!form.value.buyPrice || form.value.buyPrice <= 0) { errors.buyPrice = 'Giá nhập phải lớn hơn 0'; return; }
-  const found = products.value.find(p => p.id === selectedId.value);
-  if (!found) return;
-  found.name      = form.value.name.trim();
-  found.dvt       = form.value.dvt      || found.dvt;
-  found.buyPrice  = form.value.buyPrice;
-  found.stock     = form.value.stock;
-  showToast(`Đã cập nhật ${found.name}`);
-  panelMode.value = 'view';
+const submitEdit = async () => {
+  errors.name = '';
+  const name = form.value.name.trim();
+  if (!name) { errors.name = 'Vui lòng nhập tên mặt hàng'; return; }
+
+  const dup = products.value.find(p => p.name.toLowerCase() === name.toLowerCase() && p.id !== selectedId.value);
+  if (dup) { errors.name = `Mặt hàng "${name}" đã tồn tại.`; return; }
+
+  const dvtObj = dvts.value.find(d => d === form.value.dvt) ?? form.value.dvt;
+  const dvtId  = dvtList.value.find(d => d.TenDVT === dvtObj)?.MaDVT;
+  try {
+    const res = await api.put(`/mat-hang/${selectedId.value}`, { TenMatHang: name, MaDVT: dvtId });
+    if (res.data?.status === 'success') {
+      showToast(`Đã cập nhật ${name}`);
+      await loadProducts();
+      panelMode.value = 'view';
+    }
+  } catch (err) {
+    errors.name = err.response?.data?.message || 'Lỗi khi cập nhật mặt hàng';
+  }
 };
 
 const askDelete     = (p) => { deleteTarget.value = p; };
-const confirmDelete = () => {
-  const name  = deleteTarget.value.name;
-  const delId = deleteTarget.value.id;
-  products.value = products.value.filter(p => p.id !== delId);
-  if (selectedId.value === delId) closePanel();
+const confirmDelete = async () => {
+  const target = deleteTarget.value;
   deleteTarget.value = null;
-  showToast(`Đã xóa mặt hàng ${name}`, 'danger');
+  try {
+    await api.delete(`/mat-hang/${target.id}`);
+    if (selectedId.value === target.id) closePanel();
+    showToast(`Đã xóa mặt hàng ${target.name}`, 'danger');
+    await loadProducts();
+  } catch (err) {
+    const msg = err.response?.data?.message || '';
+    if (msg.includes('phiếu') || msg.includes('nghiệp vụ') || err.response?.status === 400) {
+      showToast(`Không thể xóa "${target.name}" vì đã có phiếu nhập hoặc phiếu xuất liên quan.`, 'danger');
+    } else {
+      showToast(msg || 'Không thể xóa mặt hàng này.', 'danger');
+    }
+  }
 };
 
 const exportCSV = () => {

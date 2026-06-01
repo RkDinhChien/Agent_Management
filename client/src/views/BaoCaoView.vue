@@ -78,51 +78,45 @@
       <!-- KPI Row — cs-col pattern (integrated in dark banner) -->
       <div class="ctx-stats">
 
+        <!-- KPI 1: Tổng doanh thu + sparkline -->
         <div class="cs-col">
           <div class="cs-lbl-row">
             <span class="cs-ic"><BarChart2 :size="11"/></span>
             <span class="cs-lbl">Tổng doanh thu</span>
           </div>
           <strong class="cs-num">
-            {{ fmtSummary(totalRevenue) }}
+            {{ fmtM(totalRevenue) }}
           </strong>
-          <span class="cs-delta" v-if="revDelta !== 0" :class="revDelta >= 0 ? 'cs-up' : 'cs-down'">
-            <TrendingUp v-if="revDelta >= 0" :size="10"/>
+          <span class="cs-delta" :class="revDelta >= 0 ? 'cs-up' : 'cs-down'">
+            <TrendingUp v-if="revDelta>=0" :size="10"/>
             <TrendingDown v-else :size="10"/>
-            {{ Math.abs(revDelta).toFixed(1) }}% so với tháng trước
-          </span>
-          <span class="cs-delta cs-up" v-else>
-            Không thay đổi so với tháng trước
+            {{ Math.abs(revDelta) }}% so tháng trước
           </span>
           <div class="spark-wrap">
             <div v-for="(h,i) in revSpark" :key="i"
                  class="spark-bar" :class="{ 'spark-active': i === revSpark.length-1 }"
                  :style="{ height: (h/maxRevSpark*100)+'%' }"></div>
           </div>
-          <span class="cs-lbl" style="margin-top:2px">Số liệu tháng {{ filterMonth }}/{{ filterYear }}</span>
+          <span class="cs-lbl" style="margin-top:2px">Doanh số tháng này</span>
         </div>
         <div class="cs-sep"></div>
 
+        <!-- KPI 2: Tổng thu tiền + sparkline -->
         <div class="cs-col">
           <div class="cs-lbl-row">
             <span class="cs-ic"><CircleDollarSign :size="11"/></span>
             <span class="cs-lbl">Tổng thu tiền</span>
           </div>
           <strong class="cs-num">
-            {{ fmtSummary(totalCollected) }}
+            {{ fmtM(totalCollected) }}
           </strong>
-          <span class="cs-delta cs-up" v-if="collectDelta !== 0">
-            <TrendingUp :size="10"/> {{ Math.abs(collectDelta).toFixed(1) }}% so với tháng trước
-          </span>
-          <span class="cs-delta cs-up" v-else>
-            Tương đương tháng trước
-          </span>
+          <span class="cs-delta cs-up"><TrendingUp :size="10"/> {{ collectDelta }}% so tháng trước</span>
           <div class="spark-wrap">
             <div v-for="(h,i) in colSpark" :key="i"
                  class="spark-bar" :class="{ 'spark-active': i === colSpark.length-1 }"
                  :style="{ height: (h/maxColSpark*100)+'%' }"></div>
           </div>
-          <span class="cs-lbl" style="margin-top:2px">Thực thu ghi nhận</span>
+          <span class="cs-lbl" style="margin-top:2px">Thực thu xác nhận</span>
         </div>
         <div class="cs-sep"></div>
 
@@ -136,7 +130,7 @@
               <strong class="cs-num" style="display:block;margin-bottom:2px">
                 {{ collectRatePct }}<span style="font-size:14px;font-weight:600;color:#94a3b8">%</span>
               </strong>
-              <span class="cs-delta cs-up">{{ fmtVND(totalCollected) }} / {{ fmtVND(totalDebt) }}</span>
+              <span class="cs-delta cs-up">{{ fmtM(totalCollected) }} / {{ fmtM(totalDebt) }}</span>
             </div>
           </div>
           <div class="donut-legend">
@@ -175,11 +169,11 @@
       <!-- Month progress -->
       <div class="ctx-timeline">
         <div class="ctl-row">
-          <span class="ctl-label">Tháng {{ filterMonth }} · Ngày {{ _now.getDate() }}/{{ new Date(_now.getFullYear(), filterMonth, 0).getDate() }}</span>
-          <span class="ctl-pct">{{ monthProgressPct }}% tiến độ tháng</span>
+          <span class="ctl-label">T{{ filterMonth }}/{{ filterYear }} · Nhìn vào số liệu, hiểu xu hướng, ra quyết định chuẩn xác</span>
+          <span class="ctl-pct">{{ fmtM(totalRevenue) }} doanh thu</span>
         </div>
         <div class="ctl-track">
-          <div class="ctl-fill" :style="{ width: monthProgressPct + '%' }"></div>
+          <div class="ctl-fill" :style="{ width: Math.min(totalRevenue/300*100,100) + '%' }"></div>
         </div>
       </div>
     </div>
@@ -196,7 +190,7 @@
         </button>
       </div>
       <span class="stab-meta" v-if="reportTab==='doanh-so'">
-        {{ filteredDs.length }} đại lý &nbsp;·&nbsp; T{{ filterMonth }}/{{ filterYear }} &nbsp;·&nbsp; Tổng <strong>{{ fmtVND(totalRevenue) }}</strong>
+        {{ filteredDs.length }} đại lý &nbsp;·&nbsp; T{{ filterMonth }}/{{ filterYear }} &nbsp;·&nbsp; Tổng <strong>{{ fmtM(totalRevenue) }}</strong>
       </span>
       <span class="stab-meta" v-else>
         {{ filteredCn.length }} đại lý &nbsp;·&nbsp;
@@ -205,6 +199,53 @@
         </span>
       </span>
     </div>
+
+    <!-- ══ BỘ LỌC BÁO CÁO ══ -->
+    <div class="filter-bar">
+      <div class="fb-label">
+        <SlidersHorizontal :size="14"/>
+        <span>Bộ lọc báo cáo</span>
+      </div>
+      <div class="fb-divider"></div>
+      <div class="fb-section">
+        <span class="fb-section-lbl">Mối quan tâm</span>
+        <div class="fb-radios">
+          <label class="fb-radio" :class="{ active: mqtFilter==='doanh-thu' }">
+            <input type="radio" v-model="mqtFilter" value="doanh-thu"/>
+            <span class="fb-radio-dot"></span>Doanh thu
+          </label>
+          <label class="fb-radio" :class="{ active: mqtFilter==='cong-no' }">
+            <input type="radio" v-model="mqtFilter" value="cong-no"/>
+            <span class="fb-radio-dot"></span>Công nợ
+          </label>
+          <label class="fb-radio" :class="{ active: mqtFilter==='vuot-han' }">
+            <input type="radio" v-model="mqtFilter" value="vuot-han"/>
+            <span class="fb-radio-dot"></span>Vượt hạn mức
+          </label>
+          <label class="fb-radio" :class="{ active: mqtFilter==='tan-suat' }">
+            <input type="radio" v-model="mqtFilter" value="tan-suat"/>
+            <span class="fb-radio-dot"></span>Tần suất xuất
+          </label>
+        </div>
+      </div>
+      <div class="fb-divider"></div>
+      <div class="fb-section">
+        <span class="fb-section-lbl">Thời gian</span>
+        <div class="fb-time-row">
+          <select class="fb-sel fb-sel-period" v-model="filterPeriod">
+            <option value="this">Tháng này</option>
+            <option value="prev">Tháng trước</option>
+          </select>
+          <select class="fb-sel" v-model="filterMonth">
+            <option v-for="m in 12" :key="m" :value="m">T{{ m }}</option>
+          </select>
+          <select class="fb-sel" v-model="filterYear">
+            <option v-for="y in [2024,2025,2026]" :key="y" :value="y">{{ y }}</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
 
     <!-- ══ DEBT OVERVIEW (cong-no) ══ -->
     <div class="debt-ov-strip" v-if="reportTab==='cong-no'">
@@ -219,7 +260,7 @@
       </div>
       <div class="dov-sep"></div>
       <div class="dov-cell">
-        <span class="dov-num">{{ fmtVND(totalDebt) }}</span>
+        <span class="dov-num">{{ fmtM(totalDebt) }}</span>
         <span class="dov-lbl">Tổng nợ cuối kỳ</span>
       </div>
       <div class="dov-sep"></div>
@@ -232,7 +273,7 @@
     </div>
 
     <!-- ══ MAIN CONTENT AREA ══ -->
-    <div class="list-wrap" :class="{ 'panel-open': selected !== null }">
+    <div class="list-wrap" :class="{ 'panel-open': reportTab === 'doanh-so' || !!selected }">
 
       <!-- ── TABLE ── -->
       <div class="list-card">
@@ -266,7 +307,6 @@
                 <th class="num">SL phiếu xuất</th>
                 <th class="num">Tổng trị giá</th>
                 <th class="num">Tỉ lệ</th>
-                <th class="num">Xếp hạng</th>
               </tr>
             </thead>
             <tbody>
@@ -286,21 +326,16 @@
                   </div>
                 </td>
                 <td class="num">{{ r.slPhieuXuat }}</td>
-                <td class="num fw-700">{{ fmtVND(r.tongTriGia) }}</td>
+                <td class="num fw-700">{{ fmtM(r.tongTriGia) }}</td>
                 <td class="num">
                   <div class="pct-bar-wrap">
                     <div class="pct-bar" :style="{ width: r.tyLe+'%', background: 'var(--c-primary)' }"></div>
                     <span class="pct-txt">{{ r.tyLe }}%</span>
                   </div>
                 </td>
-                <td class="num">
-                  <span class="rank-badge" :class="rankClass(i+1)">
-                    {{ i+1 === 1 ? '🥇' : i+1 === 2 ? '🥈' : i+1 === 3 ? '🥉' : '#'+( i+1) }}
-                  </span>
-                </td>
               </tr>
               <tr v-if="filteredDs.length === 0">
-                <td colspan="5" class="empty-row">Không có dữ liệu</td>
+                <td colspan="4" class="empty-row">Không có dữ liệu</td>
               </tr>
             </tbody>
           </table>
@@ -335,10 +370,10 @@
                     </div>
                   </div>
                 </td>
-                <td class="num">{{ fmtVND(r.noDau) }}</td>
-                <td class="num text-amber">+{{ fmtVND(r.phatSinh) }}</td>
-                <td class="num text-green">-{{ fmtVND(r.daThu) }}</td>
-                <td class="num fw-700" :class="r.noCuoi > r.hanMuc ? 'text-red' : ''">{{ fmtVND(r.noCuoi) }}</td>
+                <td class="num">{{ fmtM(r.noDau) }}</td>
+                <td class="num text-amber">+{{ fmtM(r.phatSinh) }}</td>
+                <td class="num text-green">-{{ fmtM(r.daThu) }}</td>
+                <td class="num fw-700" :class="r.noCuoi > r.hanMuc ? 'text-red' : ''">{{ fmtM(r.noCuoi) }}</td>
                 <td class="num">
                   <span class="no-badge" :class="debtStatusClass(r)">{{ debtStatusLabel(r) }}</span>
                 </td>
@@ -356,15 +391,53 @@
             {{ reportTab==='doanh-so' ? filteredDs.length : filteredCn.length }} đại lý
           </span>
           <span class="foot-total" v-if="reportTab==='doanh-so'">
-            Tổng doanh số: <strong>{{ fmtVND(totalRevenue) }}</strong>
+            Tổng: <strong>{{ fmtM(totalRevenue) }}</strong>
           </span>
           <span class="foot-total" v-else>
-            Tổng nợ cuối kỳ: <strong :class="overDebtAgents > 0 ? 'text-red' : ''">{{ fmtVND(totalDebt) }}</strong>
+            Nợ cuối kỳ: <strong :class="overDebtAgents > 0 ? 'text-red' : ''">{{ fmtM(totalDebt) }}</strong>
           </span>
         </div>
       </div>
 
-      <!-- ══ SIDE PANEL ══ -->
+      <!-- ══ CHART PANEL (luôn hiển thị) ══ -->
+      <div class="chart-panel" v-if="reportTab==='doanh-so' && !selected">
+        <div class="cp-head">
+          <span class="cp-eyebrow">Biểu đồ doanh thu</span>
+          <h4 class="cp-title">Ti trọng theo đại lý</h4>
+        </div>
+
+        <!-- Donut chart -->
+        <div class="cp-donut-wrap">
+          <div class="cp-donut" :style="{ background: donutChartGradient }">
+            <div class="cp-donut-hole">
+              <span class="cp-donut-lbl">TỔNG</span>
+              <span class="cp-donut-val">{{ fmtM(totalRevenue) }}</span>
+              <span class="cp-donut-unit">ĐỒNG</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Legend top 5 -->
+        <div class="cp-legend">
+          <div v-for="(r, i) in filteredDs.slice(0,5)" :key="r.id" class="cp-leg-row">
+            <span class="cp-leg-dot" :style="{ background: DONUT_CLRS[i] }"></span>
+            <span class="cp-leg-name">{{ r.name.replace(/^Đại lý\s*/i,'') }}</span>
+            <span class="cp-leg-pct">{{ r.tyLe }}%</span>
+          </div>
+          <div class="cp-leg-row" v-if="filteredDs.length > 5">
+            <span class="cp-leg-dot" style="background:#e2e8f0"></span>
+            <span class="cp-leg-name">Khác</span>
+            <span class="cp-leg-pct">{{ Math.max(0, 100 - filteredDs.slice(0,5).reduce((s,r)=>s+r.tyLe,0)).toFixed(0) }}%</span>
+          </div>
+        </div>
+
+        <div class="cp-footer">
+          <span>Top 5 đại lý</span>
+          <strong>{{ filteredDs.slice(0,5).reduce((s,r)=>s+r.tyLe,0).toFixed(0) }}% doanh thu</strong>
+        </div>
+      </div>
+
+      <!-- ══ SIDE PANEL (khi click row) ══ -->
       <Transition name="panel">
         <div v-if="selected" class="side-panel">
           <div class="sp-header">
@@ -384,7 +457,7 @@
             <div class="sp-section-label">Doanh số tháng {{ filterMonth }}/{{ filterYear }}</div>
             <dl class="dl-flex">
               <dt>Số phiếu xuất</dt><dd>{{ selected.slPhieuXuat }} phiếu</dd>
-              <dt>Tổng trị giá</dt><dd class="fw-700">{{ fmtVND(selected.tongTriGia) }}</dd>
+              <dt>Tổng trị giá</dt><dd class="fw-700">{{ fmtM(selected.tongTriGia) }}</dd>
               <dt>Tỉ lệ doanh thu</dt><dd>{{ selected.tyLe }}%</dd>
             </dl>
             <!-- Tỉ lệ bar -->
@@ -399,11 +472,11 @@
           <template v-if="selected.tab === 'cong-no'">
             <div class="sp-section-label">Báo cáo công nợ tháng {{ filterMonth }}/{{ filterYear }}</div>
             <dl class="dl-flex">
-              <dt>Nợ đầu kỳ</dt><dd>{{ fmtVND(selected.noDau) }}</dd>
-              <dt>Phát sinh thêm</dt><dd class="text-amber">+{{ fmtVND(selected.phatSinh) }}</dd>
-              <dt>Đã thu trong kỳ</dt><dd class="text-green">-{{ fmtVND(selected.daThu) }}</dd>
-              <dt>Nợ cuối kỳ</dt><dd class="fw-700" :class="selected.noCuoi > selected.hanMuc ? 'text-red':''">{{ fmtVND(selected.noCuoi) }}</dd>
-              <dt>Hạn mức nợ</dt><dd>{{ fmtVND(selected.hanMuc) }}</dd>
+              <dt>Nợ đầu kỳ</dt><dd>{{ fmtM(selected.noDau) }}</dd>
+              <dt>Phát sinh thêm</dt><dd class="text-amber">+{{ fmtM(selected.phatSinh) }}</dd>
+              <dt>Đã thu trong kỳ</dt><dd class="text-green">-{{ fmtM(selected.daThu) }}</dd>
+              <dt>Nợ cuối kỳ</dt><dd class="fw-700" :class="selected.noCuoi > selected.hanMuc ? 'text-red':''">{{ fmtM(selected.noCuoi) }}</dd>
+              <dt>Hạn mức nợ</dt><dd>{{ fmtM(selected.hanMuc) }}</dd>
             </dl>
             <!-- Debt bar -->
             <div class="sp-section-label" style="margin-top:16px;">Mức độ nợ / hạn mức</div>
@@ -415,10 +488,10 @@
               <span :class="selected.noCuoi > selected.hanMuc ? 'text-red' : ''">
                 {{ Math.round(selected.noCuoi/selected.hanMuc*100) }}% hạn mức
               </span>
-              <span>{{ fmtVND(selected.hanMuc) }}</span>
+              <span>{{ fmtM(selected.hanMuc) }}</span>
             </div>
             <div class="debt-over-hint" v-if="selected.noCuoi > selected.hanMuc">
-              <AlertTriangle :size="13"/> Vượt hạn mức {{ fmtVND(selected.noCuoi - selected.hanMuc) }} — cần ưu tiên thu hồi
+              <AlertTriangle :size="13"/> Vượt hạn mức {{ fmtM(selected.noCuoi - selected.hanMuc) }} — cần ưu tiên thu hồi
             </div>
           </template>
 
@@ -456,14 +529,16 @@ import { ref, computed, onMounted, watch } from 'vue';
 import api from '../services/api';
 import {
   Download, Printer, BarChart2, CircleDollarSign, PieChart, AlertTriangle,
-  TrendingUp, TrendingDown, CheckCircle, Search, X, Landmark
+  TrendingUp, TrendingDown, CheckCircle, Search, X, Landmark, SlidersHorizontal
 } from 'lucide-vue-next';
 
 // ── page scope ──────────────────────────────────────────────────
 const _now = new Date();
-const filterMonth = ref(_now.getMonth() + 1);
-const filterYear  = ref(_now.getFullYear());
-const reportTab   = ref('doanh-so');
+const filterMonth  = ref(_now.getMonth() + 1);
+const filterYear   = ref(_now.getFullYear());
+const filterPeriod = ref('this');
+const mqtFilter    = ref('doanh-thu');
+const reportTab    = ref('doanh-so');
 const search      = ref('');
 const sortKey     = ref('val');
 const sortDir     = ref(-1);
@@ -499,134 +574,68 @@ const AGENT_CLR = [
 const agentColor = (id) => AGENT_CLR[id % AGENT_CLR.length];
 const initials   = (name) => name.split(' ').slice(-2).map(w => w[0]).join('').toUpperCase().slice(0,2);
 
-// ── Data from API ────────────────────────────────────────────────────
-const dsRows = ref([]);
+// ── API data ──────────────────────────────────────────────────────
+const dsRows   = ref([]);
 const debtRows = ref([]);
+const loading  = ref(false);
 
 const loadReports = async () => {
+  loading.value = true;
+  selected.value = null;
   try {
-    console.log(`[BaoCao] Loading reports for T${filterMonth.value}/${filterYear.value}`);
     const [dsRes, cnRes] = await Promise.all([
       api.get(`/bao-cao/doanh-so?thang=${filterMonth.value}&nam=${filterYear.value}`),
       api.get(`/bao-cao/cong-no?thang=${filterMonth.value}&nam=${filterYear.value}`),
     ]);
-    
-    console.log('[BaoCao] DS Response:', dsRes.data);
-    console.log('[BaoCao] CN Response:', cnRes.data);
 
-    // Map Doanh so
-    const dsResult = dsRes.data?.data;
-    const rawDs = dsResult?.chiTiet || [];
-    dsRows.value = rawDs.map(r => ({
-      id: r.MaDaiLy,
-      name: r.TenDaiLy,
-      district: r.Quan || 'Quận',
-      slPhieuXuat: r.SoPhieuXuat || r.SoLuongPhieuXuat || 0,
-      tongTriGia: parseFloat(r.TongTriGia) || 0,
-      tyLe: parseFloat(r.TiLe) || 0
+    const M = 1_000_000;
+    dsRows.value = (dsRes.data?.data?.chiTiet || []).map(r => ({
+      id:          r.MaDaiLy,
+      name:        r.TenDaiLy,
+      district:    r.Quan || '',
+      slPhieuXuat: r.SoLuongPhieuXuat || 0,
+      tongTriGia:  (parseFloat(r.TongTriGia) || 0) / M,
+      tyLe:        parseFloat(r.TiLe) || 0,
+      history:     [0, 0, 0, 0, 0, (parseFloat(r.TongTriGia) || 0) / M],
+    })).sort((a, b) => b.tongTriGia - a.tongTriGia);
+
+    debtRows.value = (cnRes.data?.data?.chiTiet || []).map(r => ({
+      id:       r.MaDaiLy,
+      name:     r.TenDaiLy,
+      district: r.Quan || '',
+      noDau:    (parseFloat(r.NoDau)    || 0) / M,
+      phatSinh: (parseFloat(r.PhatSinh) || 0) / M,
+      daThu:    (parseFloat(r.DaThu)    || 0) / M,
+      noCuoi:   (parseFloat(r.NoCuoi)   || 0) / M,
+      hanMuc:   (parseFloat(r.HanMuc)   || 0) / M,
     }));
-
-    // Map Cong no
-    const cnResult = cnRes.data?.data;
-    const rawCn = cnResult?.chiTiet || [];
-    debtRows.value = rawCn.map(r => ({
-      id: r.MaDaiLy,
-      name: r.TenDaiLy,
-      district: r.Quan || 'Quận',
-      noDau: parseFloat(r.NoDau) || 0,
-      phatSinh: parseFloat(r.PhatSinh) || 0,
-      daThu: parseFloat(r.DaThu) || 0,
-      noCuoi: parseFloat(r.NoCuoi) || 0,
-      hanMuc: parseFloat(r.HanMuc) || 0
-    }));
-
-    console.log(`[BaoCao] Mapped ${dsRows.value.length} DS rows and ${debtRows.value.length} CN rows`);
   } catch (err) {
-    console.error('[BaoCao] Failed to load reports:', err?.response?.data || err.message);
+    console.error('Load reports error:', err?.response?.data || err.message);
+  } finally {
+    loading.value = false;
   }
 };
 
-onMounted(() => {
-  loadReports();
-});
-
-watch([filterMonth, filterYear], () => {
-  loadReports();
-});
+onMounted(loadReports);
+watch([filterMonth, filterYear], loadReports);
 
 // ── KPI computeds ─────────────────────────────────────────────────
 const totalRevenue   = computed(() => dsRows.value.reduce((s,r) => s + r.tongTriGia, 0));
 const totalCollected = computed(() => debtRows.value.reduce((s,r) => s + r.daThu, 0));
 const totalDebt      = computed(() => debtRows.value.reduce((s,r) => s + r.noCuoi, 0));
 const overDebtAgents = computed(() => debtRows.value.filter(r => r.noCuoi > r.hanMuc).length);
-// ── Delta calculations ──────────────────────────────────────────────
-const revDelta      = ref(0);
-const collectDelta  = ref(0);
-
-const calculateDeltas = async () => {
-  try {
-    const prevMonth = filterMonth.value === 1 ? 12 : filterMonth.value - 1;
-    const prevYear = filterMonth.value === 1 ? filterYear.value - 1 : filterYear.value;
-    
-    const [dsRes, cnRes] = await Promise.all([
-      api.get(`/bao-cao/doanh-so?thang=${prevMonth}&nam=${prevYear}`),
-      api.get(`/bao-cao/cong-no?thang=${prevMonth}&nam=${prevYear}`),
-    ]);
-
-    const prevRevenue = parseFloat(dsRes.data?.data?.TongDoanhSo) || 0;
-    const prevCollected = (cnRes.data?.data?.chiTiet || []).reduce((s, r) => s + (parseFloat(r.DaThu) || 0), 0);
-
-    // Only show delta if previous month actually had data
-    if (prevRevenue > 0) {
-      revDelta.value = ((totalRevenue.value - prevRevenue) / prevRevenue) * 100;
-    } else {
-      revDelta.value = 0; // no prev data → don't show misleading 100%
-    }
-
-    if (prevCollected > 0) {
-      collectDelta.value = ((totalCollected.value - prevCollected) / prevCollected) * 100;
-    } else {
-      collectDelta.value = 0;
-    }
-  } catch (err) {
-    revDelta.value = 0;
-    collectDelta.value = 0;
-  }
-};
-
-watch([totalRevenue, totalCollected], () => {
-  calculateDeltas();
-});
-
-// Month progress for current month
-const monthProgressPct = computed(() => {
-  const now = _now;
-  // For selected month == current month: use today's date
-  if (filterMonth.value === (now.getMonth() + 1) && filterYear.value === now.getFullYear()) {
-    const days = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
-    return Math.round((now.getDate() / days) * 100);
-  }
-  // For past months: 100%; future months: 0%
-  const selDate = new Date(filterYear.value, filterMonth.value - 1, 1);
-  return selDate < new Date(now.getFullYear(), now.getMonth(), 1) ? 100 : 0;
-});
-
 const collectRatePct = computed(() => {
   const totalPhatSinh = debtRows.value.reduce((s,r) => s + r.phatSinh, 0);
-  if (totalPhatSinh <= 0) return 0;
-  return Math.round((totalCollected.value / totalPhatSinh) * 100);
+  return Math.round(totalCollected.value / totalPhatSinh * 100);
 });
 
-const revSpark    = computed(() => {
-  const base = [158, 174, 162, 198, 217];
-  return [...base, +(totalRevenue.value / 1_000_000).toFixed(1)];
-});
-const maxRevSpark = computed(() => Math.max(...revSpark.value, 1));
-const colSpark    = computed(() => {
-  const base = [120, 135, 128, 155, 168];
-  return [...base, +(totalCollected.value / 1_000_000).toFixed(1)];
-});
-const maxColSpark = computed(() => Math.max(...colSpark.value, 1));
+const revDelta  = 8.3;
+const collectDelta = 5.1;
+
+const revSpark    = [158, 174, 162, 198, 217, +totalRevenue.value.toFixed(1)];
+const maxRevSpark = computed(() => Math.max(...revSpark));
+const colSpark    = [120, 135, 128, 155, 168, +totalCollected.value.toFixed(1)];
+const maxColSpark = computed(() => Math.max(...colSpark));
 
 const debtDonutGradient = computed(() => {
   const pct = collectRatePct.value;
@@ -658,10 +667,26 @@ const filteredCn = computed(() => {
   return rows;
 });
 
+// ── Donut chart ───────────────────────────────────────────────────
+const DONUT_CLRS = ['#059669','#0d9488','#0284c7','#f59e0b','#dc2626','#7c3aed'];
+
+const donutChartGradient = computed(() => {
+  const rows = filteredDs.value.slice(0, 5);
+  if (!rows.length) return '#e2e8f0';
+  let deg = 0;
+  const stops = rows.map((r, i) => {
+    const pct = r.tyLe;
+    const d = pct * 3.6;
+    const s = `${DONUT_CLRS[i]} ${deg}deg ${deg + d}deg`;
+    deg += d;
+    return s;
+  });
+  stops.push(`#e2e8f0 ${deg}deg 360deg`);
+  return `conic-gradient(${stops.join(', ')})`;
+});
+
 // ── helpers ───────────────────────────────────────────────────────
-/* ── Helpers ─────────────────────────────────────────────────────── */
-const fmtVND    = (v) => (parseFloat(v) || 0).toLocaleString('vi-VN') + ' ₫';
-const fmtSummary = (v) => fmtVND(v);
+const fmtM = (n) => Math.round((n || 0) * 1_000_000).toLocaleString('vi-VN') + ' ₫';
 
 const rankClass = (i) => i === 1 ? 'rank-gold' : i === 2 ? 'rank-silver' : i === 3 ? 'rank-bronze' : 'rank-other';
 
@@ -695,7 +720,7 @@ const showToast = (msg, type='ok') => {
 
 const exportCSV = () => {
   const rows = reportTab.value === 'doanh-so'
-    ? [['Tên ĐL','Quận','SL Phiếu','Tổng trị giá','Tỉ lệ (%)'],
+    ? [['Tên ĐL','Quận','SL Phiếu','Tổng trị giá (Tr)','Tỉ lệ (%)'],
        ...dsRows.value.map(r => [r.name, r.district, r.slPhieuXuat, r.tongTriGia, r.tyLe])]
     : [['Tên ĐL','Quận','Nợ đầu','Phát sinh','Đã thu','Nợ cuối','Hạn mức'],
        ...debtRows.value.map(r => [r.name, r.district, r.noDau, r.phatSinh, r.daThu, r.noCuoi, r.hanMuc])];
@@ -718,7 +743,7 @@ const exportPrint = () => {
   --c-primary: #059669;
   --c-primary-bg: #f0fdf4;
   --c-primary-light: #34d399;
-  padding: 28px 32px;
+  padding: 4px 0 32px;
   min-height: 100vh;
   background: #f8fafc;
 }
@@ -926,15 +951,14 @@ const exportPrint = () => {
 
 /* ══ LIST CARD ══ */
 .list-card {
-  background: white; border-radius: 12px;
-  border: 1px solid rgba(15,23,42,.07);
-  box-shadow: 0 1px 3px rgba(15,23,42,.05), 0 1px 2px rgba(15,23,42,.04);
+  background: white; border-radius: 20px;
+  box-shadow: 0 2px 12px rgba(0,0,0,.06), 0 0 0 1px rgba(0,0,0,.03);
   overflow: hidden;
 }
 .lc-head {
   display: flex; align-items: center; gap: 12px;
-  padding: 14px 20px; border-bottom: 1px solid rgba(15,23,42,.06);
-  background: #fafcff;
+  padding: 18px 24px; border-bottom: 1px solid #f1f5f9;
+  background: linear-gradient(180deg, #fafcff 0%, white 100%);
 }
 .lc-search {
   display: flex; align-items: center; gap: 8px;
@@ -1013,15 +1037,13 @@ const exportPrint = () => {
 
 /* ══ SIDE PANEL ══ */
 .side-panel {
-  background: linear-gradient(180deg,#fbfdff 0%,#fffaf5 100%); border-radius: 12px;
-  border: 1px solid rgba(15,23,42,.07);
-  box-shadow: 0 1px 3px rgba(15,23,42,.05), 0 1px 2px rgba(15,23,42,.04);
+  background: white; border-radius: 20px;
+  box-shadow: 0 1px 3px rgba(0,0,0,.07);
   overflow-y: auto; max-height: 76vh;
 }
 .sp-header {
   display: flex; align-items: center; gap: 12px;
   padding: 20px 20px 16px; border-bottom: 1px solid #f1f5f9;
-  background: rgba(255,255,255,.72);
 }
 .ap-avatar {
   position: relative; width: 44px; height: 44px; border-radius: 10px; flex-shrink: 0;
@@ -1087,10 +1109,10 @@ const exportPrint = () => {
 .sp-divider { height: 1px; background: #f1f5f9; margin: 16px 0 0; }
 .sp-info-grid {
   display: grid; grid-template-columns: 1fr 1fr;
-  gap: 1px; background: rgba(226,232,240,.72); margin: 0;
+  gap: 1px; background: #f8fafc; margin: 0;
 }
 .sig-item {
-  background: rgba(255,255,255,.76); padding: 12px 20px;
+  background: white; padding: 12px 20px;
 }
 .sig-label { font-size: .62rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; margin-bottom: 3px; }
 .sig-val   { font-size: .82rem; font-weight: 700; color: #1e293b; }
@@ -1099,12 +1121,55 @@ const exportPrint = () => {
 .panel-enter-active, .panel-leave-active { transition: opacity .2s, transform .2s; }
 .panel-enter-from, .panel-leave-to { opacity: 0; transform: translateX(20px); }
 
+/* ══ TOP 3 STRIP ══ */
+.top3-strip {
+  display: grid; grid-template-columns: repeat(3,1fr); gap: 14px; margin-bottom: 18px;
+}
+.t3-card {
+  background: white; border-radius: 16px; padding: 18px 20px;
+  box-shadow: 0 1px 4px rgba(0,0,0,.07);
+  border: 1px solid rgba(0,0,0,.05);
+  display: flex; flex-direction: column; gap: 10px;
+  cursor: pointer; transition: box-shadow .18s, transform .15s;
+  position: relative; overflow: hidden;
+}
+.t3-card:hover { box-shadow: 0 4px 16px rgba(5,150,105,.15); transform: translateY(-2px); }
+.t3-card::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+}
+.t3-r0::before { background: linear-gradient(90deg,#f59e0b,#fbbf24); }
+.t3-r1::before { background: linear-gradient(90deg,#94a3b8,#cbd5e1); }
+.t3-r2::before { background: linear-gradient(90deg,#b45309,#d97706); }
+.t3-medal { font-size: 1.3rem; line-height: 1; }
+.t3-av {
+  position: relative; width: 40px; height: 40px; border-radius: 10px; flex-shrink: 0;
+  border: 1px solid rgba(0,0,0,.1); overflow: hidden; background: white;
+}
+.t3-img { position:absolute; inset:0; width:100%; height:100%; object-fit:contain; padding:4px; box-sizing:border-box; z-index:2; background:white; }
+.t3-init { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:14px; font-weight:800; color:white; }
+.t3-info { flex: 1; }
+.t3-name { font-size: .88rem; font-weight: 800; color: #0f172a; }
+.t3-sub  { font-size: .7rem; color: #94a3b8; }
+.t3-right { display: flex; flex-direction: column; gap: 5px; }
+.t3-val  { font-size: 1.2rem; font-weight: 900; color: #0f172a; letter-spacing: -.4px; }
+.t3-unit { font-size: .75rem; font-weight: 600; color: #94a3b8; }
+.t3-bar-track {
+  height: 5px; background: #f1f5f9; border-radius: 99px; overflow: hidden;
+}
+.t3-bar-fill {
+  height: 100%; border-radius: 99px; transition: width .6s ease;
+}
+.t3-r0 .t3-bar-fill { background: linear-gradient(90deg,#f59e0b,#fbbf24); }
+.t3-r1 .t3-bar-fill { background: linear-gradient(90deg,#64748b,#94a3b8); }
+.t3-r2 .t3-bar-fill { background: linear-gradient(90deg,#b45309,#d97706); }
+.t3-pct { font-size: .7rem; font-weight: 700; color: #94a3b8; }
+
 /* ══ DEBT OVERVIEW STRIP ══ */
 .debt-ov-strip {
   display: flex; align-items: center; gap: 0;
-  background: white; border-radius: 12px;
-  box-shadow: 0 1px 3px rgba(15,23,42,.05), 0 1px 2px rgba(15,23,42,.04);
-  border: 1px solid rgba(15,23,42,.07);
+  background: white; border-radius: 16px;
+  box-shadow: 0 1px 4px rgba(0,0,0,.07);
+  border: 1px solid rgba(0,0,0,.04);
   margin-bottom: 18px; overflow: hidden;
 }
 .dov-cell {
@@ -1138,28 +1203,78 @@ const exportPrint = () => {
 .toast-ok  { background: #059669; }
 .toast-err { background: #dc2626; }
 
-/* ══ TIMELINE / MONTH PROGRESS ══ */
-.ctx-timeline {
-  margin-top: 20px; position: relative; z-index: 2;
+/* ══ BỘ LỌC BÁO CÁO ══ */
+.filter-bar {
+  display: flex; align-items: center;
+  background: white; border-radius: 12px; margin-bottom: 18px;
+  border: 1px solid rgba(15,23,42,.07); border-left: 3px solid #059669;
+  box-shadow: 0 1px 3px rgba(15,23,42,.05); padding: 0 4px;
 }
-.ctl-row {
-  display: flex; justify-content: space-between; align-items: center;
-  margin-bottom: 6px;
+.fb-label {
+  display: flex; align-items: center; gap: 8px; padding: 14px 16px;
+  font-size: 12px; font-weight: 800; color: #0f172a; white-space: nowrap; flex-shrink: 0;
 }
-.ctl-label {
-  font-size: .72rem; font-weight: 700; color: #334155; letter-spacing: .2px;
+.fb-divider { width: 1px; background: #f1f5f9; align-self: stretch; margin: 8px 4px; }
+.fb-section { display: flex; flex-direction: column; gap: 4px; padding: 8px 14px; }
+.fb-section-lbl {
+  font-size: 9px; font-weight: 800; color: #94a3b8;
+  text-transform: uppercase; letter-spacing: .8px;
 }
-.ctl-pct {
-  font-size: .7rem; font-weight: 700; color: #059669;
+.fb-radios { display: flex; align-items: center; gap: 4px; }
+.fb-radio {
+  display: flex; align-items: center; gap: 6px; padding: 5px 12px;
+  border-radius: 20px; cursor: pointer; font-size: 12.5px; font-weight: 600;
+  color: #475569; border: 1.5px solid transparent; transition: all .14s; user-select: none;
 }
-.ctl-track {
-  height: 5px; background: rgba(5,150,105,.12); border-radius: 99px; overflow: hidden;
+.fb-radio input { display: none; }
+.fb-radio-dot {
+  width: 13px; height: 13px; border-radius: 50%; border: 1.5px solid #cbd5e1;
+  flex-shrink: 0; transition: all .14s;
 }
-.ctl-fill {
-  height: 100%;
-  background: linear-gradient(90deg, #34d399, #059669);
-  border-radius: 99px;
-  transition: width .8s ease;
+.fb-radio.active { background: #f0fdf4; border-color: #059669; color: #059669; }
+.fb-radio.active .fb-radio-dot { border-color: #059669; background: #059669; box-shadow: inset 0 0 0 3px white; }
+.fb-time-row { display: flex; align-items: center; gap: 6px; }
+.fb-sel {
+  background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px;
+  padding: 4px 8px; font-size: 12px; font-weight: 600; color: #374151; cursor: pointer; outline: none;
 }
+.fb-sel:focus { border-color: #059669; }
+.fb-sel-period { min-width: 100px; }
 
+/* ══ CHART PANEL ══ */
+.list-wrap { grid-template-columns: 1fr 260px !important; }
+.chart-panel {
+  background: white; border-radius: 12px; border: 1px solid rgba(15,23,42,.07);
+  box-shadow: 0 1px 3px rgba(15,23,42,.05); padding: 18px 16px;
+  display: flex; flex-direction: column; gap: 14px;
+  position: sticky; top: 16px; max-height: calc(100vh - 200px); overflow-y: auto;
+}
+.cp-head { display: flex; flex-direction: column; gap: 2px; }
+.cp-eyebrow { font-size: 9.5px; font-weight: 800; color: #94a3b8; text-transform: uppercase; letter-spacing: .6px; }
+.cp-title { font-size: 14px; font-weight: 800; color: #0f172a; margin: 0; }
+.cp-donut-wrap { display: flex; justify-content: center; }
+.cp-donut {
+  width: 160px; height: 160px; border-radius: 50%;
+  mask: radial-gradient(circle, transparent 44%, black 45%);
+  -webkit-mask: radial-gradient(circle, transparent 44%, black 45%);
+  position: relative;
+}
+.cp-donut-hole {
+  position: absolute; inset: 0; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 1px;
+}
+.cp-donut-lbl  { font-size: 9px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: .5px; }
+.cp-donut-val  { font-size: 22px; font-weight: 900; color: #0f172a; line-height: 1; letter-spacing: -.5px; }
+.cp-donut-unit { font-size: 9px; font-weight: 700; color: #64748b; }
+.cp-legend { display: flex; flex-direction: column; gap: 8px; }
+.cp-leg-row { display: flex; align-items: center; gap: 8px; font-size: 12px; }
+.cp-leg-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+.cp-leg-name { flex: 1; color: #374151; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cp-leg-pct { font-weight: 700; color: #0f172a; font-variant-numeric: tabular-nums; }
+.cp-footer {
+  display: flex; justify-content: space-between; align-items: center;
+  padding-top: 10px; border-top: 1px solid #f1f5f9;
+  font-size: 11px; color: #64748b;
+}
+.cp-footer strong { color: #059669; font-weight: 800; }
 </style>

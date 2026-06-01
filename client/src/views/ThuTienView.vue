@@ -203,7 +203,7 @@
                 </td>
                 <td class="col-actions">
                   <div class="action-group">
-                    <button class="act-btn view-btn" title="Xem" @click.stop="openView(r)"><Eye :size="13"/></button>
+                    <button class="act-btn edit-btn" title="Sửa" @click.stop="openEdit(r)"><Edit2 :size="13"/></button>
                     <button class="act-btn del-btn" title="Xóa" @click.stop="askDelete(r)"><Trash2 :size="13"/></button>
                   </div>
                 </td>
@@ -300,6 +300,32 @@
 
         </template>
 
+        <!-- ─ EDIT MODE ─ -->
+        <template v-else-if="panelMode === 'edit' && selectedReceipt">
+          <div class="fc-hd">
+            <div>
+              <h3 class="fc-title">Sửa phiếu thu</h3>
+              <span class="fc-sub">{{ selectedReceipt.code }} · {{ selectedReceipt.agent }}</span>
+            </div>
+            <span class="mode-chip" style="background:#eff6ff;color:#1d4ed8;border:1px solid rgba(29,78,216,.2)">Sửa</span>
+          </div>
+          <div class="fc-body">
+            <div class="field full">
+              <label class="flabel">Ngày thu <span class="req">*</span></label>
+              <input v-model="editForm.date" type="date" class="finp" :max="today"/>
+            </div>
+            <div class="field full">
+              <label class="flabel">Số tiền thu <span class="req">*</span></label>
+              <MoneyInput v-model="editForm.amount" :input-class="['finp', errors.amount ? 'finp-err' : '']" placeholder="0"/>
+              <span class="err-msg" v-if="errors.amount">{{ errors.amount }}</span>
+            </div>
+          </div>
+          <div class="fc-footer">
+            <button class="btn-ghost" @click="panelMode = 'view'"><X :size="12"/> Hủy</button>
+            <button class="btn-p" @click="submitEdit">Lưu thay đổi</button>
+          </div>
+        </template>
+
         <!-- ─ CREATE MODE ─ -->
         <template v-else-if="panelMode === 'create'">
           <div class="fc-hd">
@@ -338,16 +364,16 @@
             </div>
 
             <div class="field full">
-              <label class="flabel">Số tiền thu (Tr) <span class="req">*</span></label>
-              <input v-model.number="form.amount" type="number" min="0" step="0.1" class="finp" :class="{ 'finp-err': errors.amount }" placeholder="0.0"/>
+              <label class="flabel">Số tiền thu <span class="req">*</span></label>
+              <MoneyInput v-model="form.amount" :input-class="['finp', errors.amount ? 'finp-err' : '']" placeholder="0"/>
               <span class="err-msg" v-if="errors.amount">{{ errors.amount }}</span>
               <!-- Mini progress bar: amount vs debt -->
               <div class="amt-hint" v-if="formAgent && form.amount > 0">
                 <div class="amt-hint-bar">
-                  <div class="amt-hint-fill" :style="{ width: Math.min(form.amount / (formAgent.debt / 1_000_000) * 100, 100) + '%' }"></div>
+                  <div class="amt-hint-fill" :style="{ width: Math.min(form.amount / (formAgent.debt || 1) * 100, 100) + '%' }"></div>
                 </div>
                 <span class="amt-hint-txt">
-                  Thu {{ fmtSummary(form.amount) }} / {{ fmtMoney(formAgent.debt) }} nợ
+                  Thu {{ fmtVND(form.amount) }} / {{ fmtVND(formAgent.debt) }} nợ
                   ({{ Math.round(Math.min(form.amount / (formAgent.debt || 1) * 100, 100)) }}%)
                 </span>
               </div>
@@ -407,10 +433,12 @@
 <script setup>
 import { ref, computed, reactive, onMounted, watch } from 'vue';
 import api from '../services/api';
+import MoneyInput from '../components/MoneyInput.vue';
+import { parseError } from '../utils/errorMessages';
 import {
-  Search, Plus, Download, X, Eye, XCircle, CheckCircle,
-  Trash2, PackageOpen, CalendarDays, UserRound, FileText,
-  Clock, Wallet, Building2, Banknote, CreditCard, Smartphone,
+  Search, Plus, Download, X, XCircle, CheckCircle,
+  Trash2, PackageOpen, CalendarDays, Edit2,
+  Clock, Banknote, CreditCard, Smartphone,
 } from 'lucide-vue-next';
 
 /* ── Sort icon ── */
@@ -464,7 +492,9 @@ const loadReceipts = async () => {
       rawDate: r.NgayThuTien,
       agentId: r.MaDaiLy,
       agent: r.daiLy?.TenDaiLy || 'Đại lý',
-      amount: parseFloat(r.SoTienThu) || 0
+      amount: parseFloat(r.SoTienThu) || 0,
+      status: 'confirmed',
+      method: 'Tiền mặt'
     }));
   } catch (err) {
     console.warn('Failed to load receipts', err?.response?.status || err.message);
@@ -498,6 +528,13 @@ const avatarInit = (name) => name.replace(/^Đại lý\s*/i,'').trim().charAt(0)
 const selectedId   = ref(null);
 const panelMode    = ref('view');
 const deleteTarget = ref(null);
+
+const STATUS = { confirmed: 'Đã xác nhận', pending: 'Đang xử lý' };
+
+const panelVisible    = computed(() => selectedId.value !== null || panelMode.value === 'create');
+const selectedReceipt = computed(() => receipts.value.find(r => r.id === selectedId.value) || null);
+const confirmedCount  = computed(() => receipts.value.filter(r => r.status === 'confirmed').length);
+const pendingCount    = computed(() => receipts.value.filter(r => r.status === 'pending').length);
 
 /* ── Computed ── */
 const hasFilter = computed(() => searchQ.value || filterAgent.value || filterStatus.value);
@@ -553,14 +590,9 @@ const monthName      = ['Tháng 1','Tháng 2','Tháng 3','Tháng 4','Tháng 5','
 /* ── Helpers ── */
 const getAgent     = (id) => agents.value.find(a => a.id === id);
 /* ── Helpers ── */
-const fmtVND = (v) => v.toLocaleString('vi-VN') + ' ₫';
-const fmtTr  = (v) => v.toFixed(1) + ' Tr';
-const fmtSummary = (v) => {
-  if (v >= 1_000_000_000) return (v / 1_000_000_000).toFixed(1) + ' Tỷ';
-  if (v >= 1_000_000) return (v / 1_000_000).toFixed(0) + ' Triệu';
-  return fmtVND(v);
-};
-const fmtMoney     = (v) => (v || 0).toLocaleString('vi-VN') + ' ₫';
+const fmtVND     = (v) => (v || 0).toLocaleString('vi-VN') + ' ₫';
+const fmtSummary = (v) => fmtVND(v);
+const fmtMoney   = (v) => fmtVND(v);
 const methodClass  = (method) => {
   if (method === 'Chuyển khoản') return 'method-transfer';
   if (method === 'Ví điện tử') return 'method-wallet';
@@ -588,7 +620,7 @@ const debtClass = (id) => {
 const debtAfterPayment = (r) => {
   const a = getAgent(r.agentId);
   if (!a) return 0;
-  return a.debt - r.amount * 1_000_000;
+  return a.debt - r.amount;
 };
 const debtRemainPct = (r) => {
   const a = getAgent(r.agentId);
@@ -670,6 +702,39 @@ const showToast = (msg, type = 'success') => {
 /* ── Actions ── */
 const openView = (r) => { selectedId.value = r.id; panelMode.value = 'view'; };
 
+const editForm = ref({ date: '', amount: 0 });
+const openEdit = (r) => {
+  selectedId.value = r.id;
+  editForm.value = {
+    date: r.rawDate ? r.rawDate.split('T')[0] : today,
+    amount: r.amount,
+  };
+  errors.amount = '';
+  panelMode.value = 'edit';
+};
+
+const submitEdit = async () => {
+  errors.amount = '';
+  if (!editForm.value.amount || editForm.value.amount <= 0) {
+    errors.amount = 'Vui lòng nhập số tiền hợp lệ';
+    return;
+  }
+  try {
+    const res = await api.put(`/phieu-thu/${selectedId.value}`, {
+      NgayThuTien: editForm.value.date,
+      SoTienThu: editForm.value.amount,
+    });
+    if (res.data?.status === 'success') {
+      showToast('Đã cập nhật phiếu thu thành công');
+      await loadReceipts();
+      await loadAgents();
+      panelMode.value = 'view';
+    }
+  } catch (err) {
+    showToast(parseError(err, 'cập nhật phiếu thu'), 'danger');
+  }
+};
+
 const openCreate = () => {
   selectedId.value = null;
   panelMode.value  = 'create';
@@ -690,7 +755,7 @@ const confirmDelete = async () => {
     loadReceipts();
     loadAgents();
   } catch (err) {
-    showToast(err.response?.data?.message || 'Không thể xóa phiếu thu', 'danger');
+    showToast(parseError(err, 'xóa phiếu thu'), 'danger');
   }
 };
 
@@ -701,8 +766,8 @@ const submitCreate = async () => {
   const amt  = Number(form.value.amount);
   if (!amt || amt <= 0) { errors.amount = 'Vui lòng nhập số tiền hợp lệ'; return; }
   
-  if (agnt && amt * 1_000_000 > agnt.debt) {
-    errors.amount = `Số tiền vượt quá nợ hiện tại (${fmtMoney(agnt.debt)})`;
+  if (agnt && amt > agnt.debt) {
+    errors.amount = `Số tiền vượt quá nợ hiện tại (${fmtVND(agnt.debt)})`;
     return;
   }
 
@@ -710,7 +775,7 @@ const submitCreate = async () => {
     const res = await api.post('/phieu-thu', {
       MaDaiLy: Number(form.value.agentId),
       NgayThuTien: form.value.date,
-      SoTienThu: amt * 1_000_000
+      SoTienThu: amt
     });
     
     if (res.data?.status === 'success') {
@@ -720,12 +785,12 @@ const submitCreate = async () => {
       closePanel();
     }
   } catch (err) {
-    showToast(err.response?.data?.message || 'Lỗi khi lập phiếu thu', 'danger');
+    showToast(parseError(err, 'lập phiếu thu'), 'danger');
   }
 };
 
 const exportCSV = () => {
-  const cols = ['Mã phiếu', 'Ngày thu', 'Đại lý', 'Số tiền thu (Tr)'];
+  const cols = ['Mã phiếu', 'Ngày thu', 'Đại lý', 'Số tiền thu (đ)'];
   const rows = sortedList.value.map(r => [r.code, r.date, r.agent, r.amount]);
   const csv = [cols, ...rows].map(row => row.map(v => `"${v ?? ''}"`).join(',')).join('\n');
   const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
@@ -936,6 +1001,8 @@ const exportCSV = () => {
 }
 .view-btn { background:rgba(155,114,245,.08); color:var(--c-primary); }
 .view-btn:hover { background:rgba(155,114,245,.18); }
+.edit-btn { background:rgba(37,99,235,.08); color:#2563eb; }
+.edit-btn:hover { background:rgba(37,99,235,.18); }
 .ok-btn   { background:rgba(16,185,129,.1); color:#059669; }
 .ok-btn:hover { background:rgba(16,185,129,.2); }
 .del-btn  { background:rgba(239,68,68,.08); color:var(--c-danger); }

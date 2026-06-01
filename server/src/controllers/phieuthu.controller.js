@@ -121,4 +121,47 @@ const remove = async (req, res) => {
   }
 };
 
-module.exports = { getAll, create, remove };
+/**
+ * PUT /api/phieu-thu/:id
+ */
+const update = async (req, res) => {
+  const t = await sequelize.transaction();
+  try {
+    const { NgayThuTien, SoTienThu } = req.body;
+    const phieu = await PhieuThuTien.findByPk(req.params.id, { transaction: t });
+    if (!phieu) {
+      await t.rollback();
+      return res.status(404).json({ status: 'error', message: 'Không tìm thấy phiếu thu.' });
+    }
+
+    const oldAmount = parseFloat(phieu.SoTienThu) || 0;
+    const newAmount = parseFloat(SoTienThu) || 0;
+    const diff = newAmount - oldAmount;
+
+    // Cập nhật TongNo: hoàn lại cũ rồi trừ mới
+    if (diff !== 0) {
+      await DaiLy.increment('TongNo', {
+        by: -diff,
+        where: { MaDaiLy: phieu.MaDaiLy },
+        transaction: t,
+      });
+    }
+
+    await phieu.update(
+      { NgayThuTien: NgayThuTien || phieu.NgayThuTien, SoTienThu: newAmount },
+      { transaction: t }
+    );
+
+    await t.commit();
+    const result = await PhieuThuTien.findByPk(phieu.MaPhieuThu, {
+      include: [{ model: DaiLy, as: 'daiLy' }],
+    });
+    res.json({ status: 'success', message: 'Cập nhật phiếu thu thành công.', data: result });
+  } catch (error) {
+    await t.rollback();
+    console.error('PhieuThu update error:', error);
+    res.status(500).json({ status: 'error', message: 'Lỗi server.' });
+  }
+};
+
+module.exports = { getAll, create, update, remove };

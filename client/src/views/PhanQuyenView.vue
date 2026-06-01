@@ -286,6 +286,7 @@
 <script setup>
 import { ref, reactive, computed, watch, onMounted } from 'vue';
 import api from '../services/api';
+import { parseError } from '../utils/errorMessages';
 import {
   Users, UserCheck, ShieldCheck, Plus, Save, X, Pencil, Trash2,
   Eye, EyeOff, CheckSquare, XSquare,
@@ -323,12 +324,18 @@ const nhomForm = reactive({ id: null, ten: '' });
 const resetNhom  = () => { nhomForm.id = null; nhomForm.ten = ''; };
 const editNhom   = (n) => { nhomForm.id = n.id; nhomForm.ten = n.ten; };
 const deleteNhom = async (id) => {
-  if (!confirm('Xóa nhóm này?')) return;
+  const nhom = nhoms.value.find(n => n.id === id);
+  if (!confirm(`Xóa nhóm "${nhom?.name || ''}"?\n\nHành động này không thể hoàn tác.`)) return;
   try {
     await api.delete(`/nhom-nguoi-dung/${id}`);
     await loadNhomNguoiDung();
   } catch (err) {
-    alert(err.response?.data?.message || 'Không thể xóa nhóm');
+    const msg = err.response?.data?.message || '';
+    if (msg.includes('người dùng') || msg.includes('user')) {
+      alert(`Không thể xóa nhóm "${nhom?.name}": nhóm này còn người dùng thuộc về. Hãy chuyển hoặc xóa người dùng trước.`);
+    } else {
+      alert(msg || 'Không thể xóa nhóm này.');
+    }
   }
 };
 const submitNhom = async () => {

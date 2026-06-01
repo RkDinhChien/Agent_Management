@@ -133,12 +133,14 @@
             <div class="rc-body">
               <div class="rc-title-row">
                 <h4 class="rc-title">Quy định mở đại lý — trạng thái khu vực</h4>
-                <span class="badge-full">Đã đầy</span>
+                <span class="badge-full" :style="{ background: isDistrictFull ? '' : '#dcfce7', color: isDistrictFull ? '' : '#059669' }">
+                  {{ isDistrictFull ? 'Đã đầy' : `Còn ${thamSo.soDaiLyToiDa - stats.tongDaiLy} chỗ` }}
+                </span>
               </div>
               <p class="rc-desc">Quận 1 đã đạt giới hạn mở đại lý theo QĐ-1. Xem hồ sơ chờ hoặc đề xuất quận thay thế.</p>
               <div class="rc-btns">
-                <button class="btn-p">Kiểm tra hồ sơ chờ</button>
-                <button class="btn-o">Đề xuất quận khác</button>
+                <button class="btn-p" @click="router.push('/dai-ly-list')">Kiểm tra hồ sơ chờ</button>
+                <button class="btn-o" @click="router.push('/dai-ly-list')">Đề xuất quận khác</button>
               </div>
             </div>
             <div class="rc-art">
@@ -160,7 +162,7 @@
               <h4 class="bc-title">Phân bố loại đại lý</h4>
               <select class="psel sm"><option>Thành phố</option></select>
             </div>
-            <div class="bc-macro">120 ĐL</div>
+            <div class="bc-macro">{{ stats.tongDaiLy }} ĐL</div>
             <div class="pie-wrap">
               <div class="pie-legend">
                 <div class="ple"><i class="ldot" style="background:#10B981"></i>Đại lý loại 1 <strong>33%</strong></div>
@@ -179,15 +181,19 @@
               </div>
               <select class="psel sm"><option>Trong tháng</option></select>
             </div>
-            <div class="bc-macro">75%</div>
-            <span class="trend up"><ArrowUpRight :size="12"/>17,5% so với tháng trước</span>
+            <div class="bc-macro">{{ collectRatePct }}%</div>
+            <span class="trend" :class="collectRatePct >= 50 ? 'up' : 'down'">
+              <ArrowUpRight v-if="collectRatePct >= 50" :size="12"/>
+              <ArrowDownRight v-else :size="12"/>
+              Tỷ lệ doanh thu còn lại
+            </span>
             <div class="gauge-block">
               <div class="gauge-meta">
                 <span>Tỷ lệ hoàn nợ</span>
-                <strong>75%</strong>
+                <strong>{{ collectRatePct }}%</strong>
               </div>
               <div class="gauge-track">
-                <div class="gauge-fill" style="width:75%"></div>
+                <div class="gauge-fill" :style="{ width: collectRatePct + '%' }"></div>
               </div>
             </div>
             <p class="gauge-note">Tính bằng Tổng Thu chia cho Tổng Nợ phát sinh đầu kỳ.</p>
@@ -196,7 +202,7 @@
           <CardShell card-id="expansion" class="bot-card">
             <div class="bc-head">
               <h4 class="bc-title">Mở rộng đại lý</h4>
-              <button class="ghost-btn">+ Thêm</button>
+              <button class="ghost-btn" @click="router.push('/dai-ly-list')">+ Thêm</button>
             </div>
             <div class="goal-list">
               <span class="goal-yr">Năm nay</span>
@@ -233,30 +239,20 @@
             <select class="psel sm"><option>7 Ngày</option></select>
           </div>
           <div class="tx-list">
-            <div class="tx-row">
-              <div class="tx-icon i-green"><ArrowUpRight :size="13"/></div>
-              <div class="tx-info"><strong>Phiếu thu tiền nợ</strong><span>Đại lý Tân Bình · 25/02/2026</span></div>
-              <span class="tx-val c-green">+15,0 Tr</span>
+            <div v-if="!transactions.length" class="tx-row">
+              <div class="tx-info"><span style="color:#94a3b8">Chưa có giao dịch nào</span></div>
             </div>
-            <div class="tx-row">
-              <div class="tx-icon i-blue"><Package :size="13"/></div>
-              <div class="tx-info"><strong>Phiếu xuất hàng mới</strong><span>Đại lý Quận 1 · 25/02/2026</span></div>
-              <span class="tx-val c-red">−32,4 Tr</span>
-            </div>
-            <div class="tx-row">
-              <div class="tx-icon i-slate"><FileText :size="13"/></div>
-              <div class="tx-info"><strong>Hóa đơn nhập hàng</strong><span>NCC Philips · 21/02/2026</span></div>
-              <span class="tx-val c-muted">−90,0 Tr</span>
-            </div>
-            <div class="tx-row">
-              <div class="tx-icon i-amber"><Store :size="13"/></div>
-              <div class="tx-info"><strong>Tiếp nhận đại lý</strong><span>Hồ sơ Quận 3 · 21/02/2026</span></div>
-              <span class="tx-val c-muted">Hoạt động</span>
-            </div>
-            <div class="tx-row last-row">
-              <div class="tx-icon i-green"><Users :size="13"/></div>
-              <div class="tx-info"><strong>Phiếu thu tiền nợ</strong><span>Đại lý Hóc Môn · 15/02/2026</span></div>
-              <span class="tx-val c-green">+12,6 Tr</span>
+            <div
+              v-for="(t, i) in transactions" :key="i"
+              class="tx-row" :class="{ 'last-row': i === transactions.length - 1 }"
+            >
+              <div class="tx-icon" :class="t.type === 'thu' ? 'i-green' : t.type === 'xuat' ? 'i-blue' : 'i-slate'">
+                <ArrowUpRight v-if="t.type === 'thu'" :size="13"/>
+                <Package     v-else-if="t.type === 'xuat'" :size="13"/>
+                <FileText    v-else :size="13"/>
+              </div>
+              <div class="tx-info"><strong>{{ t.label }}</strong><span>{{ t.sub }}</span></div>
+              <span class="tx-val" :class="t.color">{{ t.val }}</span>
             </div>
           </div>
         </CardShell>
@@ -270,64 +266,37 @@
                 <span class="panel-sub">Top đại lý nổi bật trong tháng</span>
               </div>
             </div>
-            <span class="month-chip">Tháng 2</span>
+            <span class="month-chip">Thực tế</span>
           </div>
           <div class="lb-list">
-            <div class="lb-row">
-              <div class="lb-rank gold">1</div>
-              <div class="lb-av">
-                <img src="https://upload.wikimedia.org/wikipedia/commons/5/52/Philips_logo_new.svg" class="av-logo" alt="Philips" @error="e => e.target.style.display='none'"/>
-                <span class="av-init" style="background:#0066A1">T</span>
-              </div>
-              <div class="lb-info">
-                <strong>Đại lý Tuấn Phát</strong>
-                <div class="lb-meta">
-                  <span class="lb-tag">Q.1</span>
-                  <div class="lb-bar"><div class="lb-fill gold-fill" style="width:88%"></div></div>
-                  <span class="lb-pct">88%</span>
-                </div>
-              </div>
-              <div class="lb-right">
-                <span class="lb-score">120 Tr</span>
-                <Award :size="13" class="award-gold"/>
-              </div>
+            <div v-if="!topAgents.length" class="lb-row">
+              <span style="color:#94a3b8;font-size:13px">Chưa có dữ liệu</span>
             </div>
-            <div class="lb-row">
-              <div class="lb-rank green">2</div>
+            <div
+              v-for="(a, i) in topAgents" :key="a.id"
+              class="lb-row" :class="{ 'last-row': i === topAgents.length - 1 }"
+            >
+              <div class="lb-rank" :class="['gold','green','red'][i] || 'red'">{{ i + 1 }}</div>
               <div class="lb-av">
-                <img src="https://upload.wikimedia.org/wikipedia/commons/8/8d/LG_logo_%282014%29.svg" class="av-logo" alt="LG" @error="e => e.target.style.display='none'"/>
-                <span class="av-init" style="background:#A50034">L</span>
+                <span class="av-init" :style="{ background: ['#059669','#0284c7','#dc2626'][i] || '#64748b' }">
+                  {{ a.name.replace(/^Đại lý\s*/i,'').charAt(0) }}
+                </span>
               </div>
               <div class="lb-info">
-                <strong>Đại lý Lan Anh</strong>
+                <strong>{{ a.name }}</strong>
                 <div class="lb-meta">
-                  <span class="lb-tag">Q.3</span>
-                  <div class="lb-bar"><div class="lb-fill green-fill" style="width:82%"></div></div>
-                  <span class="lb-pct">82%</span>
+                  <span class="lb-tag">{{ a.district }}</span>
+                  <div class="lb-bar">
+                    <div class="lb-fill" :class="['gold-fill','green-fill','red-fill'][i]"
+                      :style="{ width: (a.hanMuc ? Math.min(a.tongNo/a.hanMuc*100,100) : 50) + '%' }">
+                    </div>
+                  </div>
+                  <span class="lb-pct">{{ a.hanMuc ? Math.round(a.tongNo/a.hanMuc*100) : '—' }}%</span>
                 </div>
               </div>
               <div class="lb-right">
-                <span class="lb-score">95 Tr</span>
-                <Award :size="13" class="award-green"/>
-              </div>
-            </div>
-            <div class="lb-row last-row">
-              <div class="lb-rank red">3</div>
-              <div class="lb-av">
-                <img src="/logos/panasonic.svg" class="av-logo" alt="Panasonic" @error="e => e.target.style.display='none'"/>
-                <span class="av-init" style="background:#003087">Q</span>
-              </div>
-              <div class="lb-info">
-                <strong>Đại lý Quốc Khánh</strong>
-                <div class="lb-meta">
-                  <span class="lb-tag">Q.5</span>
-                  <div class="lb-bar"><div class="lb-fill red-fill" style="width:78%"></div></div>
-                  <span class="lb-pct">78%</span>
-                </div>
-              </div>
-              <div class="lb-right">
-                <span class="lb-score">82 Tr</span>
-                <Award :size="13" class="award-red"/>
+                <span class="lb-score">{{ fmtVND(a.tongNo) }}</span>
+                <Award :size="13" :class="['award-gold','award-green','award-red'][i]"/>
               </div>
             </div>
           </div>
@@ -339,23 +308,23 @@
               <h4 class="panel-title">Quản trị hệ thống</h4>
               <span class="panel-sub">Hạn mức nợ &amp; hành động</span>
             </div>
-            <button class="ghost-btn">Tùy chỉnh</button>
+            <button class="ghost-btn" @click="router.push('/cai-dat')">Tùy chỉnh</button>
           </div>
           <div class="cm-mock">
             <div class="cm-top-row">
               <span class="cm-lbl">Hạn mức nợ tối đa</span>
               <span class="cm-badge">Q.Định Số 1</span>
             </div>
-            <div class="cm-value">{{ (stats.tongNo / 1_000_000).toFixed(1) }} / 50.0 Tr</div>
-            <div class="cm-track"><div class="cm-fill" style="width:65%"></div></div>
-            <p class="cm-note">Đã sử dụng 65% • Còn 17,5 Tr</p>
+            <div class="cm-value">{{ fmtVND(stats.tongNo) }} / {{ fmtVND(thamSo.soDaiLyToiDa * 10_000_000) }}</div>
+            <div class="cm-track"><div class="cm-fill" :style="{ width: debtLimitUsedPct + '%' }"></div></div>
+            <p class="cm-note">Đã sử dụng {{ debtLimitUsedPct }}% • Còn {{ fmtVND(Math.max(0, thamSo.soDaiLyToiDa * 10_000_000 - stats.tongNo)) }}</p>
             <div class="cm-bot-row">
               <span class="cm-muted">Áp dụng toàn hệ thống</span>
               <span class="cm-active-badge">Hoạt động</span>
             </div>
           </div>
           <div class="quick-actions">
-            <div class="qa-btn qa-green" @click="$router.push('/dai-ly')">
+            <div class="qa-btn qa-green" @click="$router.push('/dai-ly-list')">
               <div class="qa-icon"><Plus :size="15"/></div>
               <span>Thêm đại lý</span>
             </div>
@@ -376,21 +345,21 @@
           <div class="modal-hd">
             <div class="modal-agent-info">
               <strong>{{ activeOffender.name }}</strong>
-              <span>{{ activeOffender.district }} · Vượt hạn mức +{{ activeOffender.overLimit }} Tr</span>
+              <span>{{ activeOffender.district }} · Vượt hạn mức +{{ fmtVND(Number(activeOffender.overLimit) * 1_000_000) }}</span>
             </div>
-            <button class="btn-o sm" @click="closeModal">Đóng</button>
+            <button class="modal-btn modal-btn-close" @click="closeModal">Đóng</button>
           </div>
           <div class="modal-body">
             <div class="modal-stats">
               <div class="mstat"><span>Quận</span><strong>{{ activeOffender.district }}</strong></div>
-              <div class="mstat"><span>Nợ vượt</span><strong class="danger-txt">+{{ activeOffender.overLimit }} Tr</strong></div>
+              <div class="mstat"><span>Nợ vượt</span><strong class="danger-txt">+{{ fmtVND(Number(activeOffender.overLimit) * 1_000_000) }}</strong></div>
               <div class="mstat"><span>Trạng thái</span><strong>Cần theo dõi</strong></div>
             </div>
             <p class="modal-note">{{ activeOffender.note }}</p>
             <div v-if="actionFeedback" class="modal-feedback">{{ actionFeedback }}</div>
             <div class="modal-actions">
-              <button class="btn-p" @click="sendReminder(activeOffender)">Gửi nhắc nhở</button>
-              <button class="btn-danger" @click="lockAccount(activeOffender)">Khoá tạm thời</button>
+              <button class="modal-btn modal-btn-primary" @click="sendReminder(activeOffender)">Gửi nhắc nhở</button>
+              <button class="modal-btn modal-btn-danger" @click="lockAccount(activeOffender)">Khoá tạm thời</button>
             </div>
           </div>
         </div>
@@ -401,15 +370,15 @@
 
 <script setup>
 import { computed, ref, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
 import api from '../services/api';
 
+const router = useRouter();
+
 /* ── Helpers ── */
-const fmtVND = (v) => v.toLocaleString('vi-VN') + ' ₫';
-const fmtSummary = (v) => {
-  if (v >= 1_000_000_000) return (v / 1_000_000_000).toFixed(1) + ' Tỷ';
-  if (v >= 1_000_000) return (v / 1_000_000).toFixed(0) + ' Triệu';
-  return fmtVND(v);
-};
+const fmtVND = (v) => (v || 0).toLocaleString('vi-VN') + ' ₫';
+const fmtSummary = (v) => fmtVND(v);
+const fmtDate = (d) => d ? new Date(d).toLocaleDateString('vi-VN') : '';
 import {
   BarChart2, LineChart, ArrowUpRight, ArrowDownRight, Edit2,
   Users, Truck, Store, Plus, FileText, Package, Award
@@ -418,6 +387,10 @@ import CardShell from '../components/CardShell.vue';
 
 /* ─── Data ─── */
 const districtOptions = ref([]);
+const debtOffenders   = ref([]);
+const transactions    = ref([]);
+const thamSo          = ref({ soDaiLyToiDa: 100, tiLeGiaXuat: 1.02 });
+const topAgents       = ref([]);
 
 const stats = ref({
   tongDaiLy: 0,
@@ -427,15 +400,74 @@ const stats = ref({
   doanhSoTheoThang: []
 });
 
+/* ─── Computed ─── */
+const collectRatePct = computed(() => {
+  if (!stats.value.tongDoanhSo) return 0;
+  const collected = debtOffenders.value.reduce((s, d) => s, 0);
+  // Tỷ lệ thu = (tongDoanhSo - tongNo) / tongDoanhSo
+  const rate = stats.value.tongDoanhSo > 0
+    ? Math.round(((stats.value.tongDoanhSo - stats.value.tongNo) / stats.value.tongDoanhSo) * 100)
+    : 0;
+  return Math.max(0, Math.min(100, rate));
+});
 
+const isDistrictFull = computed(() =>
+  stats.value.tongDaiLy >= thamSo.value.soDaiLyToiDa
+);
+
+const debtLimitUsedPct = computed(() => {
+  const limit = thamSo.value.soDaiLyToiDa * 10_000_000;
+  return limit > 0 ? Math.min(Math.round(stats.value.tongNo / limit * 100), 100) : 0;
+});
+
+/* ─── Load functions ─── */
 const loadDistricts = async () => {
   try {
     const res = await api.get('/quan');
-    const data = res.data?.data || res.data || [];
-    districtOptions.value = data.map(q => q.TenQuan);
-  } catch (err) {
-    console.warn('Failed to load districts', err);
-  }
+    districtOptions.value = (res.data?.data || res.data || []).map(q => q.TenQuan);
+  } catch (err) { console.warn('Failed to load districts', err); }
+};
+
+const loadThamSo = async () => {
+  try {
+    const res = await api.get('/tham-so');
+    const d = res.data?.data || res.data;
+    if (d) thamSo.value = { soDaiLyToiDa: d.SoDaiLyToiDa || 100, tiLeGiaXuat: d.TiLeTinhDonGiaXuat || 1.02 };
+  } catch (err) { console.warn('Failed to load thamso', err); }
+};
+
+const loadTransactions = async () => {
+  try {
+    const [xuatRes, nhapRes, thuRes] = await Promise.all([
+      api.get('/phieu-xuat'),
+      api.get('/phieu-nhap'),
+      api.get('/phieu-thu'),
+    ]);
+    const xuat = (xuatRes.data?.data || []).map(r => ({
+      type: 'xuat', icon: 'package', color: 'c-red',
+      label: 'Phiếu xuất hàng',
+      sub: `${r.daiLy?.TenDaiLy || 'Đại lý'} · ${fmtDate(r.NgayLapPhieu)}`,
+      val: `−${fmtVND(r.TongTien)}`,
+      date: r.NgayLapPhieu,
+    }));
+    const nhap = (nhapRes.data?.data || []).map(r => ({
+      type: 'nhap', icon: 'file', color: 'c-muted',
+      label: 'Phiếu nhập hàng',
+      sub: `NCC · ${fmtDate(r.NgayLapPhieu)}`,
+      val: `−${fmtVND(r.TongTien)}`,
+      date: r.NgayLapPhieu,
+    }));
+    const thu = (thuRes.data?.data || []).map(r => ({
+      type: 'thu', icon: 'arrow-up', color: 'c-green',
+      label: 'Phiếu thu tiền nợ',
+      sub: `${r.daiLy?.TenDaiLy || 'Đại lý'} · ${fmtDate(r.NgayThuTien)}`,
+      val: `+${fmtVND(r.SoTienThu)}`,
+      date: r.NgayThuTien,
+    }));
+    transactions.value = [...xuat, ...nhap, ...thu]
+      .sort((a, b) => new Date(b.date) - new Date(a.date))
+      .slice(0, 5);
+  } catch (err) { console.warn('Failed to load transactions', err); }
 };
 
 const loadDashboard = async () => {
@@ -445,11 +477,18 @@ const loadDashboard = async () => {
     if (data) {
       if (data.topDebtors) {
         debtOffenders.value = data.topDebtors.map(d => ({
+          id: d.MaDaiLy,
           name: d.TenDaiLy,
-          district: d.quan?.TenQuan || 'Unknown',
+          district: d.quan?.TenQuan || '',
           overLimit: (Number(d.TongNo) / 1_000_000).toFixed(1),
-          note: `Công nợ hiện tại: ${Number(d.TongNo).toLocaleString()} VNĐ`
+          tongNo: Number(d.TongNo),
+          hanMuc: Number(d.loaiDaiLy?.TienNoToiDa) || 0,
+          note: `Công nợ hiện tại: ${fmtVND(Number(d.TongNo))}`,
         }));
+        // Top agents by sales = sorted by debt (biggest creditor = most active)
+        topAgents.value = [...debtOffenders.value]
+          .sort((a, b) => b.tongNo - a.tongNo)
+          .slice(0, 3);
       }
       stats.value = {
         tongDaiLy: data.tongDaiLy || 0,
@@ -459,16 +498,15 @@ const loadDashboard = async () => {
         doanhSoTheoThang: data.doanhSoTheoThang || []
       };
     }
-  } catch (err) {
-    console.warn('Dashboard load failed', err);
-  }
+  } catch (err) { console.warn('Dashboard load failed', err); }
 };
 
 onMounted(() => {
   loadDashboard();
   loadDistricts();
+  loadThamSo();
+  loadTransactions();
 });
-const debtOffenders = ref([]);
 
 /* ─── State ─── */
 const selectedDistrict = ref('Tất cả quận');
@@ -488,23 +526,22 @@ const visibleOffenders = computed(() => {
 /* ─── Actions ─── */
 const openModal = (o) => {
   if (!o) return;
-  activeOffender.value  = o;
-  modalOpen.value       = true;
-  actionFeedback.value  = '';
+  activeOffender.value = o;
+  modalOpen.value      = true;
+  actionFeedback.value = '';
 };
 const closeModal = () => { modalOpen.value = false; };
 
 const sendReminder = (o) => {
   if (!o) return;
-  activeOffender.value  = o;
-  modalOpen.value       = true;
-  actionFeedback.value  = `Đã ghi nhận gửi nhắc cho ${o.name}.`;
+  closeModal();
+  router.push('/thu-tien');
 };
+
 const lockAccount = (o) => {
   if (!o) return;
-  activeOffender.value  = o;
-  modalOpen.value       = true;
-  actionFeedback.value  = `Đã đề xuất khoá tạm thời cho ${o.name}.`;
+  closeModal();
+  router.push('/dai-ly-list');
 };
 </script>
 
@@ -1183,35 +1220,56 @@ const lockAccount = (o) => {
    ║          MODAL                           ║
    ╚══════════════════════════════════════════╝ */
 .modal-bg {
-  position: fixed; inset: 0; z-index: 100;
-  background: rgba(15,23,42,.45);
+  position: fixed; inset: 0; z-index: 9999;
+  background: rgba(15,23,42,.5);
   backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
   display: flex; align-items: center; justify-content: center; padding: 20px;
+  font-family: 'Inter', 'Be Vietnam Pro', ui-sans-serif, system-ui, sans-serif;
 }
 .modal-box {
   width: min(500px, 100%);
-  background: var(--c-surface);
+  background: #ffffff;
   border-radius: 16px;
-  border: 1px solid var(--c-border);
-  box-shadow: var(--sh-modal);
+  border: 1px solid rgba(15,23,42,.08);
+  box-shadow: 0 20px 60px rgba(15,23,42,.2), 0 4px 16px rgba(15,23,42,.08);
   overflow: hidden;
 }
 .modal-hd {
   padding: 16px 20px;
-  border-bottom: 1px solid var(--c-border);
+  border-bottom: 1px solid rgba(15,23,42,.07);
   display: flex; justify-content: space-between; align-items: flex-start; gap: 12px;
+  background: #fff;
 }
 .modal-agent-info { display: flex; flex-direction: column; gap: 3px; }
-.modal-agent-info strong { font-size: 15px; font-weight: 700; }
-.modal-agent-info span   { font-size: 12px; color: var(--c-txt-3); }
-.modal-body  { padding: 18px 20px; display: flex; flex-direction: column; gap: 14px; }
+.modal-agent-info strong { font-size: 15px; font-weight: 700; color: #0f172a; }
+.modal-agent-info span   { font-size: 12px; color: #94a3b8; }
+.modal-body  { padding: 18px 20px; display: flex; flex-direction: column; gap: 14px; background: #f8fafc; }
 .modal-stats { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; }
-.mstat { background: var(--c-bg); border-radius: var(--r-md); padding: 10px 12px; }
-.mstat span   { display: block; font-size: 10px; color: var(--c-txt-3); margin-bottom: 3px; }
-.mstat strong { font-size: 14px; font-weight: 700; }
-.modal-note     { font-size: 12px; color: var(--c-txt-2); line-height: 1.55; margin: 0; }
-.modal-feedback { font-size: 12px; color: var(--c-success); background: var(--c-success-bg); border: 1px solid rgba(16,185,129,.15); padding: 10px 12px; border-radius: var(--r-md); }
+.mstat { background: #ffffff; border-radius: 8px; padding: 10px 12px; border: 1px solid rgba(15,23,42,.06); }
+.mstat span   { display: block; font-size: 10px; color: #94a3b8; margin-bottom: 3px; font-weight: 600; text-transform: uppercase; letter-spacing: .3px; }
+.mstat strong { font-size: 14px; font-weight: 700; color: #0f172a; }
+.modal-note     { font-size: 12px; color: #475569; line-height: 1.55; margin: 0; }
+.modal-feedback { font-size: 12px; color: #059669; background: #f0fdf4; border: 1px solid rgba(16,185,129,.2); padding: 10px 12px; border-radius: 8px; font-weight: 600; }
 .modal-actions  { display: flex; gap: 10px; flex-wrap: wrap; }
+
+.modal-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 9px 18px; border-radius: 8px; border: none;
+  font-size: 13px; font-weight: 600; cursor: pointer;
+  font-family: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  transition: all .15s;
+}
+.modal-btn-close {
+  background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0;
+  padding: 6px 14px; font-size: 12px;
+}
+.modal-btn-close:hover { background: #e2e8f0; }
+.modal-btn-primary { background: #059669; color: #fff; }
+.modal-btn-primary:hover { background: #047857; transform: translateY(-1px); }
+.modal-btn-danger  { background: #ef4444; color: #fff; }
+.modal-btn-danger:hover  { background: #dc2626; }
+.danger-txt { color: #ef4444; }
 
 /* ╔══════════════════════════════════════════╗
    ║          RESPONSIVE                      ║

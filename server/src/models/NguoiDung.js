@@ -7,7 +7,6 @@ const NguoiDung = sequelize.define('NguoiDung', {
     type: DataTypes.STRING(30),
     primaryKey: true,
     allowNull: false,
-
   },
   MatKhau: {
     type: DataTypes.STRING(100),
@@ -34,7 +33,6 @@ const NguoiDung = sequelize.define('NguoiDung', {
   },
 });
 
-// Instance method: kiểm tra mật khẩu
 NguoiDung.prototype.kiemTraMatKhau = async function (password) {
   return bcrypt.compare(password, this.MatKhau);
 };

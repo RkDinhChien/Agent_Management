@@ -113,8 +113,7 @@ const hasPermission = (screenName) => {
 
 const isActive = (path) => {
   if (path === '/dashboard') return route.path === '/dashboard';
-  if (path === '/dai-ly-list') return route.path === '/dai-ly-list';
-  if (path === '/dai-ly') return route.path === '/dai-ly';
+  if (path === '/dai-ly-list') return route.path.startsWith('/dai-ly');
   return route.path.startsWith(path);
 };
 const handleLogout = () => { authStore.logout(); router.push('/login'); };

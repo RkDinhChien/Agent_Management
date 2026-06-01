@@ -11,7 +11,7 @@ INSERT INTO NHOMNGUOIDUNG (TenNhom) VALUES
 
 
 -- Chức năng hệ thống
-INSERT INTO CHUCNANG (TenChucNang, TenManHinh) VALUES
+INSERT INTO CHUCNANG (TenChucNang, TenManHinhDuocLoad) VALUES
   ('Tiếp nhận đại lý', 'DaiLyView'),
   ('Lập phiếu nhập hàng', 'PhieuNhapView'),
   ('Lập phiếu xuất hàng', 'PhieuXuatView'),
@@ -28,7 +28,7 @@ INSERT INTO PHANQUYEN (MaNhom, MaChucNang) VALUES
 
 
 -- Tài khoản admin mặc định (password: admin123 - đã hash bcrypt)
-INSERT INTO NGUOIDUNG (TenDangNhap, MatKhau, MaNhom) VALUES
+INSERT INTO NGUOIDUNG (TenNguoiDung, MatKhau, MaNhom) VALUES
   ('admin', '$2b$10$QHnckkacG1dHmFB2/6/I..hESZwMp5Hxxkp9VeJN6Pv71RHTComem', 1);
 
 -- ============================================================
