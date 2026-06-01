@@ -70,9 +70,13 @@ const create = async (req, res) => {
     // Tính tổng tiền
     let tongTien = 0;
     const processedDetails = chiTiets.map((ct) => {
-      const thanhTien = ct.SoLuongNhap * ct.DonGiaNhap;
-      tongTien += thanhTien;
-      return { ...ct, ThanhTien: thanhTien };
+      tongTien += ct.SoLuongNhap * ct.DonGiaNhap;
+      return {
+        MaMatHang: ct.MaMatHang,
+        SoLuongNhap: ct.SoLuongNhap,
+        DonGiaNhap: ct.DonGiaNhap
+        // ThanhTien is a GENERATED ALWAYS AS column — MySQL computes it automatically
+      };
     });
 
     // Tạo phiếu nhập
