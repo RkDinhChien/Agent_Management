@@ -19,19 +19,16 @@
       <!-- Tab switcher -->
       <div class="lp-tabs">
         <div class="tabs-track">
-          <div class="tabs-pill" :class="activeTab === 'login' ? 'pill-left' : 'pill-right'"></div>
-          <button class="tab-btn" :class="{ active: activeTab === 'login' }" @click="switchTab('login')">
+          <div class="tabs-pill pill-left"></div>
+          <button class="tab-btn active">
             <LogIn :size="13"/> Đăng nhập
-          </button>
-          <button class="tab-btn" :class="{ active: activeTab === 'register' }" @click="switchTab('register')">
-            <UserPlus :size="13"/> Đăng ký
           </button>
         </div>
       </div>
 
       <!-- ── LOGIN FORM ── -->
-      <Transition :name="'tf-' + tabDir" mode="out-in">
-        <div v-if="activeTab === 'login'" key="login">
+      <Transition name="tf-left" mode="out-in">
+        <div key="login">
 
           <div class="lp-form-hd">
             <h2 class="lp-form-title">Chào mừng trở lại</h2>
@@ -86,111 +83,10 @@
               <ArrowRight v-if="!isLoading" :size="15" class="lf-arrow"/>
             </button>
 
-            <p class="lf-switch-hint">
-              Chưa có tài khoản?
-              <button type="button" class="lf-switch-btn" @click="switchTab('register')">Đăng ký ngay</button>
+            <p class="lf-switch-hint" style="color:#475569;">
+              Nếu bạn chưa có tài khoản, vui lòng liên hệ quản trị viên để được cấp quyền.
             </p>
           </form>
-        </div>
-
-        <!-- ── REGISTER FORM ── -->
-        <div v-else key="register">
-          <Transition name="suc-fade" mode="out-in">
-            <div v-if="regSuccess" class="reg-success">
-              <div class="rs-icon"><CheckCircle2 :size="28"/></div>
-              <h3 class="rs-title">Đăng ký thành công!</h3>
-              <p class="rs-sub">Tài khoản đã được tạo. Đang chuyển về đăng nhập…</p>
-            </div>
-
-            <div v-else key="reg-form">
-              <div class="lp-form-hd">
-                <h2 class="lp-form-title">Tạo tài khoản mới</h2>
-                <p class="lp-form-sub">Điền thông tin để bắt đầu sử dụng hệ thống</p>
-              </div>
-
-              <form @submit.prevent="handleRegister" class="lp-form" novalidate>
-
-                <div class="lf-row2">
-                  <div class="lf-group">
-                    <label class="lf-label">Họ và tên <span class="req">*</span></label>
-                    <div class="lf-field sm" :class="{ focused: rnFocus, err: regErrors.hoTen }">
-                      <UserRound :size="13" class="lf-ico"/>
-                      <input v-model="regForm.hoTen" type="text" class="lf-inp"
-                        placeholder="Nguyễn Văn A"
-                        @focus="rnFocus=true; delete regErrors.hoTen" @blur="rnFocus=false"/>
-                    </div>
-                    <span class="lf-err" v-if="regErrors.hoTen"><AlertCircle :size="11"/>{{ regErrors.hoTen }}</span>
-                  </div>
-                  <div class="lf-group">
-                    <label class="lf-label">Tên đăng nhập <span class="req">*</span></label>
-                    <div class="lf-field sm" :class="{ focused: ruFocus, err: regErrors.tenDangNhap }">
-                      <AtSign :size="13" class="lf-ico"/>
-                      <input v-model="regForm.tenDangNhap" type="text" class="lf-inp"
-                        placeholder="admin123"
-                        @focus="ruFocus=true; delete regErrors.tenDangNhap" @blur="ruFocus=false"/>
-                    </div>
-                    <span class="lf-err" v-if="regErrors.tenDangNhap"><AlertCircle :size="11"/>{{ regErrors.tenDangNhap }}</span>
-                  </div>
-                </div>
-
-                <div class="lf-group">
-                  <label class="lf-label">Email <span class="req">*</span></label>
-                  <div class="lf-field" :class="{ focused: reFocus, err: regErrors.email }">
-                    <Mail :size="14" class="lf-ico"/>
-                    <input v-model="regForm.email" type="email" class="lf-inp"
-                      placeholder="ten@example.com" autocomplete="email"
-                      @focus="reFocus=true; delete regErrors.email" @blur="reFocus=false"/>
-                  </div>
-                  <span class="lf-err" v-if="regErrors.email"><AlertCircle :size="11"/>{{ regErrors.email }}</span>
-                </div>
-
-                <div class="lf-group">
-                  <label class="lf-label">Mật khẩu <span class="req">*</span></label>
-                  <div class="lf-field" :class="{ focused: rpFocus, err: regErrors.matKhau }">
-                    <Lock :size="14" class="lf-ico"/>
-                    <input v-model="regForm.matKhau" :type="showRegPass ? 'text' : 'password'"
-                      class="lf-inp" placeholder="Tối thiểu 6 ký tự"
-                      @focus="rpFocus=true; delete regErrors.matKhau" @blur="rpFocus=false"/>
-                    <button type="button" class="lf-eye" @click="showRegPass=!showRegPass" tabindex="-1">
-                      <Eye v-if="!showRegPass" :size="14"/><EyeOff v-else :size="14"/>
-                    </button>
-                  </div>
-                  <div class="str-bar" v-if="regForm.matKhau">
-                    <div class="str-track">
-                      <div class="str-fill" :style="{ width: (passStrength/4*100)+'%', background: strColor }"></div>
-                    </div>
-                    <span class="str-lbl" :style="{ color: strColor }">{{ strLabel }}</span>
-                  </div>
-                  <span class="lf-err" v-if="regErrors.matKhau"><AlertCircle :size="11"/>{{ regErrors.matKhau }}</span>
-                </div>
-
-                <div class="lf-group">
-                  <label class="lf-label">Xác nhận mật khẩu <span class="req">*</span></label>
-                  <div class="lf-field" :class="{ focused: rcFocus, err: regErrors.xacNhan }">
-                    <Lock :size="14" class="lf-ico"/>
-                    <input v-model="regForm.xacNhan" :type="showRegConf ? 'text' : 'password'"
-                      class="lf-inp" placeholder="Nhập lại mật khẩu"
-                      @focus="rcFocus=true; delete regErrors.xacNhan" @blur="rcFocus=false"/>
-                    <button type="button" class="lf-eye" @click="showRegConf=!showRegConf" tabindex="-1">
-                      <Eye v-if="!showRegConf" :size="14"/><EyeOff v-else :size="14"/>
-                    </button>
-                  </div>
-                  <span class="lf-err" v-if="regErrors.xacNhan"><AlertCircle :size="11"/>{{ regErrors.xacNhan }}</span>
-                </div>
-
-                <button type="submit" class="lf-submit" :disabled="isRegLoading">
-                  <Loader2 v-if="isRegLoading" :size="15" class="lf-spin"/>
-                  <span>{{ isRegLoading ? 'Đang tạo tài khoản…' : 'Tạo tài khoản' }}</span>
-                  <Sparkles v-if="!isRegLoading" :size="15" class="lf-arrow"/>
-                </button>
-
-                <p class="lf-switch-hint">
-                  Đã có tài khoản?
-                  <button type="button" class="lf-switch-btn" @click="switchTab('login')">Đăng nhập</button>
-                </p>
-              </form>
-            </div>
-          </Transition>
         </div>
       </Transition>
 
@@ -217,21 +113,12 @@ import { ref, reactive, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '../stores/auth';
 import {
-  User, UserRound, Lock, Eye, EyeOff, Check, AlertCircle,
-  CheckCircle2, ArrowRight, Loader2, LogIn, UserPlus,
-  Mail, AtSign, Sparkles,
+  User, Lock, Eye, EyeOff, Check, AlertCircle,
+  ArrowRight, Loader2, LogIn, Mail,
 } from 'lucide-vue-next';
 
 const router    = useRouter();
 const authStore = useAuthStore();
-
-/* ── Tab state ── */
-const activeTab = ref('login');
-const tabDir    = ref('left');
-const switchTab = (tab) => {
-  tabDir.value = tab === 'register' ? 'left' : 'right';
-  activeTab.value = tab;
-};
 
 /* ── Login form ── */
 const form     = reactive({ tenDangNhap: '', matKhau: '', ghiNho: false });
@@ -266,55 +153,6 @@ const handleLogin = async () => {
 
 const remembered = localStorage.getItem('rememberedUser');
 if (remembered) { form.tenDangNhap = remembered; form.ghiNho = true; }
-
-/* ── Register form ── */
-const regForm    = reactive({ hoTen: '', tenDangNhap: '', email: '', matKhau: '', xacNhan: '' });
-const regErrors  = reactive({});
-const showRegPass  = ref(false);
-const showRegConf  = ref(false);
-const isRegLoading = ref(false);
-const regSuccess   = ref(false);
-const rnFocus = ref(false); const ruFocus = ref(false);
-const reFocus = ref(false); const rpFocus = ref(false); const rcFocus = ref(false);
-
-const passStrength = computed(() => {
-  const p = regForm.matKhau;
-  if (!p) return 0;
-  let s = 0;
-  if (p.length >= 6)  s++;
-  if (p.length >= 10) s++;
-  if (/[A-Z]/.test(p)) s++;
-  if (/[0-9]/.test(p)) s++;
-  if (/[^A-Za-z0-9]/.test(p)) s++;
-  return Math.min(s, 4);
-});
-const strColor = computed(() => ['#e2e8f0','#ef4444','#f59e0b','#3b82f6','#10b981'][passStrength.value]);
-const strLabel = computed(() => ['','Yếu','Trung bình','Khá','Mạnh'][passStrength.value]);
-
-const validateReg = () => {
-  const e = {};
-  if (!regForm.hoTen.trim()) e.hoTen = 'Nhập họ và tên';
-  if (!regForm.tenDangNhap.trim() || regForm.tenDangNhap.length < 4) e.tenDangNhap = 'Tối thiểu 4 ký tự';
-  if (!regForm.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(regForm.email)) e.email = 'Email không hợp lệ';
-  if (!regForm.matKhau || regForm.matKhau.length < 6) e.matKhau = 'Tối thiểu 6 ký tự';
-  if (regForm.xacNhan !== regForm.matKhau) e.xacNhan = 'Mật khẩu không khớp';
-  Object.keys(regErrors).forEach(k => delete regErrors[k]);
-  Object.assign(regErrors, e);
-  return Object.keys(e).length === 0;
-};
-
-const handleRegister = async () => {
-  if (!validateReg()) return;
-  isRegLoading.value = true;
-  await new Promise(r => setTimeout(r, 1400));
-  isRegLoading.value = false;
-  regSuccess.value = true;
-  setTimeout(() => {
-    regSuccess.value = false;
-    form.tenDangNhap = regForm.tenDangNhap;
-    switchTab('login');
-  }, 2600);
-};
 </script>
 
 <style scoped>

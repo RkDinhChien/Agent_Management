@@ -71,9 +71,9 @@
     <!-- Footer Tray (Light) -->
     <div class="sidebar-tray-footer">
       <div class="user-pill-glass">
-        <img src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=30&q=80" alt="Admin" />
+        <img src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=30&q=80" :alt="authStore.user?.TenNguoiDung || 'User'" />
         <div class="u-meta-light" v-if="!isCollapsed">
-          <strong>Admin</strong>
+          <strong>{{ authStore.user?.TenNguoiDung || 'User' }}</strong>
           <span>SE104 Hub</span>
         </div>
       </div>

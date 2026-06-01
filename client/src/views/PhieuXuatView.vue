@@ -85,7 +85,7 @@
 
         <!-- KPI 2: Doanh thu + sparkline -->
         <div class="cs-col">
-          <strong class="cs-num">{{ fmtSummary(thisMonthRevenue) }}</strong>
+          <strong class="cs-num">{{ fmtVND(thisMonthRevenue) }}</strong>
           <span class="cs-delta" :class="revDelta >= 0 ? 'cs-up' : 'cs-down'">
             {{ revDelta >= 0 ? '↑' : '↓' }} {{ Math.abs(revDelta).toFixed(1) }}% so với tháng trước
           </span>
@@ -201,8 +201,8 @@
                 <td class="text-right col-total">
                   <span class="total-num">{{ fmtTr(r.total) }}</span>
                 </td>
-                <td class="col-actions">
-                  <div class="act-group">
+                <td class="col-actions" style="text-align: center; vertical-align: middle;">
+                  <div class="act-group" style="display: inline-flex; align-items: center; gap: 8px;">
                     <button class="act-btn edit-btn" data-tooltip="Sửa phiếu" @click.stop="openEdit(r)"><Edit2 :size="13"/></button>
                     <button class="act-btn del-btn" data-tooltip="Xóa phiếu" @click.stop="askDelete(r)"><Trash2 :size="13"/></button>
                   </div>
@@ -395,6 +395,23 @@
             <div class="limit-row">
               <Package :size="11"/>
               Tổng cộng (ước tính): <strong>{{ fmtVND(formTotal) }}</strong>
+            </div>
+            <div class="payment-block">
+              <div class="field full">
+                <label class="flabel">Số tiền trả ngay</label>
+                <MoneyInput
+                  v-model="form.tienTra"
+                  :input-class="['finp', form.tienTra > formTotal ? 'finp-err' : '']"
+                  placeholder="0"
+                />
+                <span class="err-msg" v-if="form.tienTra > formTotal">Tiền trả không được vượt tổng tiền</span>
+              </div>
+              <div class="conlai-row">
+                <span class="conlai-lbl">Còn lại (nợ)</span>
+                <span class="conlai-val" :class="formConLai > 0 ? 'conlai-debt' : 'conlai-clear'">
+                  {{ fmtVND(formConLai) }}
+                </span>
+              </div>
             </div>
           </div>
           <div class="fc-footer">
@@ -632,13 +649,14 @@ const loadReceipts = async () => {
       agent: r.daiLy?.TenDaiLy || 'Đại lý',
       total: parseFloat(r.TongTien) || (r.chiTiets || []).reduce((s, ct) => s + (parseFloat(ct.ThanhTien) || (parseFloat(ct.SoLuongXuat) * parseFloat(ct.DonGiaXuat))), 0) || 0,
       tienTra: parseFloat(r.TienTra) || 0,
-      conLai: parseFloat(r.ConLai) || 0,
+      conLai: Number.isFinite(parseFloat(r.ConLai)) ? Math.max(0, parseFloat(r.ConLai)) : Math.max(0, (parseFloat(r.TongTien) || 0) - (parseFloat(r.TienTra) || 0)),
       status: 'delivered',
       createdBy: 'Admin',
       items: (r.chiTiets || []).map(ct => {
         const prod = products.value.find(p => p.id === ct.MaMatHang);
         const price = parseFloat(ct.DonGiaXuat) || prod?.sellPrice || 0;
         return {
+          id: ct.MaMatHang,
           name: ct.matHang?.TenMatHang || prod?.name || '?',
           qty: ct.SoLuongXuat || 0,
           price: price
@@ -795,7 +813,7 @@ const debtClass      = (id) => {
 
 /* ── Form ── */
 const today     = new Date().toISOString().split('T')[0];
-const emptyForm = () => ({ agentId: '', date: today, tienTra: 0, items: [{ name: '', qty: 1, price: 0 }] });
+const emptyForm = () => ({ agentId: '', date: today, tienTra: 0, items: [{ id: '', name: '', qty: 1, price: 0 }] });
 
 const form      = ref(emptyForm());
 const errors    = reactive({ agent: '', items: '' });
@@ -803,12 +821,21 @@ const formAgent = computed(() => form.value.agentId ? getAgent(Number(form.value
 const formTotal  = computed(() => form.value.items.reduce((s, i) => s + (i.qty || 0) * (i.price || 0), 0));
 const formConLai = computed(() => Math.max(0, formTotal.value - (form.value.tienTra || 0)));
 
-const addItem    = () => form.value.items.push({ name: '', qty: 1, price: 0 });
+const addItem    = () => form.value.items.push({ id: '', name: '', qty: 1, price: 0 });
 const removeItem = (i) => { if (form.value.items.length > 1) form.value.items.splice(i, 1); };
 const onAgentChange = () => {};
 const onProductChange = (item) => {
-  const p = products.value.find(p => p.name === item.name);
-  if (p) item.price = p.sellPrice;
+  // Support select binding by name or id — find by id or by name
+  const p = products.value.find(p => p.id === Number(item.id) || p.id === item.id || p.name === item.name);
+  if (p) {
+    item.id = p.id;
+    item.name = p.name;
+    item.price = p.sellPrice;
+  } else {
+    item.id = '';
+    item.name = '';
+    item.price = 0;
+  }
 };
 
 /* ── Toast ── */
@@ -844,7 +871,7 @@ const openCreate = () => {
 const openEdit = (r) => {
   selectedId.value = r.id;
   panelMode.value  = 'edit';
-  form.value = { agentId: r.agentId, date: r.rawDate, items: r.items.map(i => ({ ...i })) };
+  form.value = { agentId: r.agentId, date: r.rawDate, tienTra: r.tienTra || 0, items: r.items.map(i => ({ ...i })) };
   errors.agent = ''; errors.items = '';
 };
 
@@ -877,19 +904,32 @@ const submitCreate = async () => {
   if (!validItems.length) { errors.items = 'Thêm ít nhất 1 mặt hàng hợp lệ'; return; }
 
   try {
+    // Prevent overpay and coerce tienTra to number
+    const tienTraVal = Number(form.value.tienTra) || 0;
+    if (tienTraVal > formTotal.value) { errors.items = 'Tiền trả không được vượt tổng tiền'; return; }
+
+    const chiTiets = validItems.map(i => {
+      const prod = products.value.find(p => p.name === i.name) || products.value.find(p => p.id === i.id);
+      return {
+        MaMatHang: prod?.id || i.id,
+        SoLuongXuat: i.qty,
+        DonGiaXuat: i.price
+      };
+    });
+
+    // validate MaMatHang present
+    if (chiTiets.some(ct => !ct.MaMatHang)) {
+      errors.items = 'Có mặt hàng chưa xác định mã sản phẩm (chọn lại sản phẩm).';
+      return;
+    }
+
     const payload = {
       MaDaiLy: Number(form.value.agentId),
       NgayLapPhieu: form.value.date,
-      TienTra: form.value.tienTra || 0,
-      chiTiets: validItems.map(i => {
-        const prod = products.value.find(p => p.name === i.name);
-        return {
-          MaMatHang: prod?.id,
-          SoLuongXuat: i.qty,
-          DonGiaXuat: i.price
-        };
-      })
+      TienTra: tienTraVal,
+      chiTiets
     };
+    console.debug('submitEdit payload', payload);
 
     const res = await api.post('/phieu-xuat', payload);
     if (res.data?.status === 'success') {
@@ -910,28 +950,43 @@ const submitEdit = async () => {
   if (!validItems.length) { errors.items = 'Thêm ít nhất 1 mặt hàng hợp lệ'; return; }
   
   try {
+    // coerce and validate
+    const tienTraVal = Number(form.value.tienTra) || 0;
+    if (tienTraVal > formTotal.value) { errors.items = 'Tiền trả không được vượt tổng tiền'; return; }
+
+    const chiTiets = validItems.map(i => {
+      const prod = products.value.find(p => p.name === i.name) || products.value.find(p => p.id === i.id);
+      return {
+        MaMatHang: prod?.id || i.id,
+        SoLuongXuat: i.qty,
+        DonGiaXuat: i.price
+      };
+    });
+
+    if (chiTiets.some(ct => !ct.MaMatHang)) {
+      errors.items = 'Có mặt hàng chưa xác định mã sản phẩm. Vui lòng chọn lại sản phẩm.';
+      return;
+    }
+
     const payload = {
       MaDaiLy: Number(form.value.agentId),
       NgayLapPhieu: form.value.date,
-      chiTiets: validItems.map(i => {
-        const prod = products.value.find(p => p.name === i.name);
-        return {
-          MaMatHang: prod?.id,
-          SoLuongXuat: i.qty,
-          DonGiaXuat: i.price
-        };
-      })
+      TienTra: tienTraVal,
+      chiTiets
     };
 
+    console.debug('submitEdit payload', payload);
     const res = await api.put(`/phieu-xuat/${selectedId.value}`, payload);
     if (res.data?.status === 'success') {
       showToast(`Đã cập nhật phiếu xuất hàng thành công`);
+      // reload receipts from server to ensure authoritative values
       await loadReceipts();
       await loadAgents();
       panelMode.value = 'view';
     }
   } catch (err) {
-    showToast(err.response?.data?.message || 'Lỗi khi cập nhật phiếu xuất', 'danger');
+    console.error('submitEdit error', err.response?.data || err.message);
+    showToast(err.response?.data?.message || err.response?.data?.error || err.message || 'Lỗi khi cập nhật phiếu xuất', 'danger');
   }
 };
 
@@ -1145,7 +1200,7 @@ const exportCSV = () => {
 .side-panel {
   display: flex;
   flex-direction: column;
-  width: 380px;
+  width: 500px;
   flex-shrink: 0;
   height: calc(100vh - 130px);
   max-height: calc(100vh - 130px);
@@ -1404,8 +1459,15 @@ const exportCSV = () => {
 
 /* Items form */
 .items-form-list { display:flex; flex-direction:column; gap:6px; }
-.items-form-hd { display:flex; gap:6px; font-size:10px; font-weight:700; color:var(--c-txt-3); text-transform:uppercase; padding:0 2px; }
-.item-form-row { display:flex; align-items:center; gap:6px; }
+.items-form-hd,
+.item-form-row {
+  display:grid;
+  grid-template-columns: 1.6fr 72px 100px 32px;
+  gap:8px;
+  align-items:center;
+  width:100%;
+  box-sizing:border-box;
+}
 .add-item-btn {
   display:inline-flex; align-items:center; gap:6px;
   padding:6px 12px; border-radius:var(--r-md); align-self:flex-start;

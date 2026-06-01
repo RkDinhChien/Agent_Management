@@ -174,7 +174,7 @@
                 <th><span class="sort-hd" @click="toggleSort('rawDate')">Ngày thu <SortIcon field="rawDate" :sk="sk" :sd="sd"/></span></th>
                 <th>Đại lý</th>
                 <th class="text-right"><span class="sort-hd sort-hd-r" @click="toggleSort('amount')">Số tiền thu <SortIcon field="amount" :sk="sk" :sd="sd"/></span></th>
-                <th class="text-center">Thao tác</th>
+                <th class="text-right" style="text-align: center !important; padding-right: 35px;">Thao tác</th>
               </tr>
             </thead>
             <tbody>

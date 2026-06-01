@@ -1,4 +1,4 @@
-﻿const { sequelize, PhieuNhapHang, ChiTiet_PhieuNhap, MatHang, DonViTinh } = require('../models');
+const { sequelize, PhieuNhapHang, ChiTiet_PhieuNhap, MatHang, DonViTinh } = require('../models');
 
 /**
  * GET /api/phieu-nhap
@@ -94,11 +94,11 @@ const create = async (req, res) => {
       { transaction: t }
     );
 
-    // Chèn chi tiết bằng raw SQL (tránh mapping/validation khác)
+    // chi tiét phiếu nhập
     for (const ct of processedDetails) {
       console.log('Insert detail idx=', ct._index, 'MaMatHang=', ct.MaMatHang, 'SoLuong=', ct.SoLuongNhap, 'DonGia=', ct.DonGiaNhap, 'ThanhTien=', ct.ThanhTien, 'types=', typeof ct.SoLuongNhap, typeof ct.DonGiaNhap, typeof ct.ThanhTien);
 
-            // ThanhTien is a GENERATED column in MySQL; omit it from INSERT so DB computes it
+      // ThanhTien được generate trong DB
       const sql = 'INSERT INTO CHITIET_PHIEUNHAP (MaPhieuNhap, MaMatHang, SoLuongNhap, DonGiaNhap) VALUES (?, ?, ?, ?)';
       await sequelize.query(sql, {
         replacements: [phieu.MaPhieuNhap, ct.MaMatHang, ct.SoLuongNhap, ct.DonGiaNhap],

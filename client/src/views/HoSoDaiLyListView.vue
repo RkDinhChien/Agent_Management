@@ -1,6 +1,12 @@
 <template>
   <div class="dl">
 
+    <!-- Notification banner -->
+    <div v-if="notification" :class="['notice', notification.type]">
+      <span class="notice-msg">{{ notification.message }}</span>
+      <button class="notice-close" @click="notification = null">×</button>
+    </div>
+
     <!-- ══ Context banner (title + stats in one card) ══ -->
     <div class="ctx-card">
 
@@ -141,7 +147,7 @@
             <span class="cs-lbl">Tổng công nợ</span>
           </div>
           <div class="cs-num-row">
-            <strong class="cs-num">{{ fmtMoneyShort(totalDebt) }}</strong>
+            <strong class="cs-num">{{ fmtMoney(totalDebt) }}</strong>
           </div>
           <div class="cs-delta" :class="debtDelta >= 0 ? 'cs-down' : 'cs-up'">
             {{ debtDelta >= 0 ? '↑' : '↓' }} {{ Math.abs(debtDelta).toFixed(1) }}% so với tháng trước
@@ -510,20 +516,7 @@
             </button>
           </div>
 
-          <!-- Recent activity (mock) -->
-          <div class="recent-section">
-            <p class="recent-title">Hoạt động gần đây</p>
-            <div class="recent-list">
-              <div class="recent-row" v-for="tx in mockActivity(selectedAgent)" :key="tx.id">
-                <div class="rec-dot" :style="{ background: tx.color }"></div>
-                <div class="rec-body">
-                  <span class="rec-lbl">{{ tx.label }}</span>
-                  <span class="rec-date">{{ tx.date }}</span>
-                </div>
-                <span class="rec-amt" :class="tx.type">{{ tx.amt }}</span>
-              </div>
-            </div>
-          </div>
+          <!-- Recent activity removed per request -->
         </template>
 
         <!-- ── ADD / EDIT form ── -->
@@ -771,6 +764,12 @@ const removeImage = () => {
 };
 const form   = ref(emptyForm());
 const errors = ref({});
+const notification = ref(null);
+
+const showNotification = (type, message, timeout = 6000) => {
+  notification.value = { type, message };
+  if (timeout > 0) setTimeout(() => { notification.value = null; }, timeout);
+};
 
 /* ─── KPI ─── */
 const overLimitCount = computed(() => agents.value.filter(a => isOverLimit(a)).length);
@@ -901,7 +900,7 @@ const agentLogoUrl   = (a) => a?.customImage ?? agentBrand(a).logo ?? null;
 const loaiLabel = (id) => loaiOptions.value.find(l => l.id === id)?.ten ?? '—';
 const quanLabel = (id) => quanOptions.value.find(q => q.id === id)?.ten ?? '—';
 const fmtDate   = (d)  => d ? new Date(d + 'T00:00:00').toLocaleDateString('vi-VN') : '—';
-const fmtMoney  = (n)  => (n != null && n !== '') ? parseFloat(n).toLocaleString('vi-VN') + ' ₫' : '—';
+const fmtMoney  = (n)  => (n != null && n !== '') ? parseFloat(n).toLocaleString('vi-VN') + 'đ' : '—';
 const fmtMoneyShort = (n) => {
   if (n >= 1_000_000_000) return (n / 1_000_000_000).toFixed(1) + ' Tỷ';
   if (n >= 1_000_000)     return (n / 1_000_000).toFixed(1) + ' Tr';
@@ -918,12 +917,7 @@ const debtStatusText  = (a) => isOverLimit(a) ? 'Vượt hạn mức nợ' : deb
 const currentLimit    = computed(() => loaiOptions.value.find(l => l.id === Number(form.value.MaLoaiDaiLy))?.noToiDa ?? 0);
 const isOverLimitForm = computed(() => currentLimit.value > 0 && form.value.TongNo > currentLimit.value);
 
-/* ─── Mock activity ─── */
-const mockActivity = (a) => [
-  { id: 1, label: 'Phiếu xuất hàng',  date: '12/05/2026', amt: '−2,4 Tr', type: 'neg', color: '#3B82F6' },
-  { id: 2, label: 'Thu tiền nợ',      date: '08/05/2026', amt: '+1,0 Tr', type: 'pos', color: '#10B981' },
-  { id: 3, label: 'Phiếu xuất hàng',  date: '01/05/2026', amt: '−3,8 Tr', type: 'neg', color: '#3B82F6' },
-];
+/* Recent activity removed - no mock data */
 
 /* ─── Computed list ─── */
 const filteredAgents = computed(() => {
@@ -1008,14 +1002,17 @@ const submitForm = async () => {
       if (res.data?.status === 'success') {
         selectedId.value = res.data.data.MaDaiLy;
         await loadAgents();
+        showNotification('success', res.data.message || 'Thêm đại lý thành công.');
       }
     } else {
       await api.put(`/dai-ly/${selectedId.value}`, payload);
       await loadAgents();
+      showNotification('success', 'Cập nhật đại lý thành công.');
     }
     panelMode.value = 'view';
   } catch (err) {
-    alert(err.response?.data?.message || 'Có lỗi xảy ra khi lưu đại lý');
+    const msg = err.response?.data?.message || 'Có lỗi xảy ra khi lưu đại lý';
+    showNotification('error', msg);
   }
 };
 
@@ -1028,8 +1025,10 @@ const confirmDelete = async () => {
     await api.delete(`/dai-ly/${target.MaDaiLy}`);
     await loadAgents();
     if (selectedId.value === target.MaDaiLy) { selectedId.value = null; panelMode.value = 'view'; }
+    showNotification('success', 'Xóa đại lý thành công.');
   } catch (err) {
-    alert(err.response?.data?.message || 'Không thể xóa đại lý (có phiếu liên quan)');
+    const msg = err.response?.data?.message || 'Không thể xóa đại lý (có phiếu liên quan)';
+    showNotification('error', msg);
   }
 };
 
@@ -1078,6 +1077,24 @@ const exportCSV = () => {
   box-shadow: 0 2px 16px rgba(5,150,105,.07), 0 1px 3px rgba(15,23,42,.04);
   margin-bottom: 18px; overflow: hidden; position: relative;
 }
+.notice {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  width: 420px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  font-weight: 700;
+  box-shadow: 0 10px 30px rgba(2,6,23,0.12);
+  z-index: 9999;
+}
+.notice.success { background: #ecfdf5; color: #065f46; border: 1px solid rgba(5,150,105,.12); }
+.notice.error   { background: #fff1f2; color: #7f1d1d; border: 1px solid rgba(239,68,68,.12); }
+.notice .notice-close { background: transparent; border: none; font-size: 18px; cursor: pointer; color: currentColor; }
+.notice .notice-msg { flex: 1; font-weight: 700; }
 .ctx-card::before {
   content: ''; position: absolute; inset: 0;
   background-image: radial-gradient(rgba(5,150,105,.1) 1px, transparent 1px);

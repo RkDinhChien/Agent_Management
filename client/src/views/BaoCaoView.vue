@@ -200,53 +200,6 @@
       </span>
     </div>
 
-    <!-- ══ BỘ LỌC BÁO CÁO ══ -->
-    <div class="filter-bar">
-      <div class="fb-label">
-        <SlidersHorizontal :size="14"/>
-        <span>Bộ lọc báo cáo</span>
-      </div>
-      <div class="fb-divider"></div>
-      <div class="fb-section">
-        <span class="fb-section-lbl">Mối quan tâm</span>
-        <div class="fb-radios">
-          <label class="fb-radio" :class="{ active: mqtFilter==='doanh-thu' }">
-            <input type="radio" v-model="mqtFilter" value="doanh-thu"/>
-            <span class="fb-radio-dot"></span>Doanh thu
-          </label>
-          <label class="fb-radio" :class="{ active: mqtFilter==='cong-no' }">
-            <input type="radio" v-model="mqtFilter" value="cong-no"/>
-            <span class="fb-radio-dot"></span>Công nợ
-          </label>
-          <label class="fb-radio" :class="{ active: mqtFilter==='vuot-han' }">
-            <input type="radio" v-model="mqtFilter" value="vuot-han"/>
-            <span class="fb-radio-dot"></span>Vượt hạn mức
-          </label>
-          <label class="fb-radio" :class="{ active: mqtFilter==='tan-suat' }">
-            <input type="radio" v-model="mqtFilter" value="tan-suat"/>
-            <span class="fb-radio-dot"></span>Tần suất xuất
-          </label>
-        </div>
-      </div>
-      <div class="fb-divider"></div>
-      <div class="fb-section">
-        <span class="fb-section-lbl">Thời gian</span>
-        <div class="fb-time-row">
-          <select class="fb-sel fb-sel-period" v-model="filterPeriod">
-            <option value="this">Tháng này</option>
-            <option value="prev">Tháng trước</option>
-          </select>
-          <select class="fb-sel" v-model="filterMonth">
-            <option v-for="m in 12" :key="m" :value="m">T{{ m }}</option>
-          </select>
-          <select class="fb-sel" v-model="filterYear">
-            <option v-for="y in [2024,2025,2026]" :key="y" :value="y">{{ y }}</option>
-          </select>
-        </div>
-      </div>
-    </div>
-
-
     <!-- ══ DEBT OVERVIEW (cong-no) ══ -->
     <div class="debt-ov-strip" v-if="reportTab==='cong-no'">
       <div class="dov-cell">

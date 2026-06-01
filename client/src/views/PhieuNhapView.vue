@@ -91,7 +91,7 @@
             <span class="cs-lbl">Tổng giá trị đã duyệt</span>
           </div>
           <div class="cs-num-row">
-            <strong class="cs-num">{{ fmtSummary(thisMonthValue) }}</strong>
+            <strong class="cs-num">{{ fmtVND(thisMonthValue) }}</strong>
           </div>
           <div class="cs-delta" :class="valDelta >= 0 ? 'cs-up' : 'cs-down'">
             {{ valDelta >= 0 ? '↑' : '↓' }} {{ Math.abs(valDelta).toFixed(1) }}% so với tháng trước
@@ -193,8 +193,8 @@
                 <td class="text-right">
                   <span class="total-num">{{ fmtVND(r.total) }}</span>
                 </td>
-                <td class="col-actions">
-                  <div class="act-group">
+                <td class="col-actions" style="text-align: center; vertical-align: middle;">
+                  <div class="act-group" style="display: inline-flex; align-items: center; gap: 8px;">
                     <button class="act-btn edit-btn" title="Sửa phiếu" @click.stop="openEdit(r)"><Edit2 :size="13"/></button>
                     <button class="act-btn del-btn" title="Xóa phiếu" @click.stop="askDelete(r)"><Trash2 :size="13"/></button>
                   </div>
@@ -208,6 +208,8 @@
             </tbody>
           </table>
         </div>
+
+        
 
         <div class="lc-foot" v-if="sortedList.length">
           Hiển thị {{ sortedList.length }} phiếu nhập
@@ -319,9 +321,6 @@
                   </select>
                   <input v-model.number="item.qty" type="number" min="1" class="finp finp-sm finp-num" placeholder="SL"/>
                   <MoneyInput v-model="item.price" :input-class="'finp finp-sm money-finp'" :suffix="''" placeholder="0"/>
-                  <button type="button" class="act-btn del-btn" @click="removeItem(idx)" :disabled="form.items.length <= 1">
-                    <Trash2 :size="11"/>
-                  </button>
                 </div>
                 <button type="button" class="add-item-btn" @click="addItem">
                   <Plus :size="13"/> Thêm mặt hàng
@@ -374,9 +373,6 @@
                   </select>
                   <input v-model.number="item.qty" type="number" min="1" class="finp finp-sm finp-num" placeholder="SL"/>
                   <MoneyInput v-model="item.price" :input-class="'finp finp-sm money-finp'" :suffix="''" placeholder="0"/>
-                  <button type="button" class="act-btn del-btn" @click="removeItem(idx)" :disabled="form.items.length <= 1">
-                    <Trash2 :size="11"/>
-                  </button>
                 </div>
                 <button type="button" class="add-item-btn" @click="addItem">
                   <Plus :size="13"/> Thêm mặt hàng
@@ -620,7 +616,6 @@ const errors = reactive({ items: '' });
 
 const formTotal = computed(() => form.value.items.reduce((s, i) => s + (i.qty || 0) * (i.price || 0), 0));
 const addItem    = () => form.value.items.push({ name: '', qty: 1, price: 0 });
-const removeItem = (i) => { if (form.value.items.length > 1) form.value.items.splice(i, 1); };
 
 /* ── Helpers ── */
 /* ── Helpers ── */
@@ -948,13 +943,15 @@ col.col-act    { width: 96px; }
   display:flex;
   flex-direction:column;
   min-height:500px;
-  width:360px;
+  width:min(460px,100%);
+  min-width:320px;
+  max-width:460px;
   flex-shrink:0;
   max-height:calc(100vh - 200px);
   position:sticky;
   top:16px;
-  overflow:hidden;
-  background:linear-gradient(180deg,#fffaf3 0%,#f8fbff 100%);
+  overflow:auto;
+  background:linear-gradient(180deg,#f7fbff 0%,#f8fff9 100%);
 }
 
 /* Panel header */
@@ -1089,7 +1086,7 @@ col.col-act    { width: 96px; }
 .items-form-hd,
 .item-form-row {
   display:grid;
-  grid-template-columns:minmax(0, 1fr) 58px 92px 32px;
+  grid-template-columns:minmax(0, 1.8fr) minmax(0, 70px) minmax(0, 100px);
   gap:8px;
   align-items:center;
   width:100%;
@@ -1100,7 +1097,7 @@ col.col-act    { width: 96px; }
   border:1px solid rgba(148,163,184,.22);
   border-radius:10px;
   background:#fff;
-  overflow:hidden;
+  overflow:visible;
 }
 .items-form-hd {
   font-size:9.5px;
@@ -1128,6 +1125,10 @@ col.col-act    { width: 96px; }
 .item-form-row .finp-num {
   font-variant-numeric:tabular-nums;
 }
+.item-form-row .finp-sm,
+.item-form-row .money-finp {
+  width:100%;
+}
 .item-form-row :deep(.money-input-wrap) {
   width:100%;
   min-width:0;
@@ -1135,6 +1136,18 @@ col.col-act    { width: 96px; }
 .item-form-row :deep(.money-input-wrap input) {
   padding-left:8px;
   padding-right:8px;
+}
+@media (max-width: 860px) {
+  .items-form-hd,
+  .item-form-row {
+    grid-template-columns: minmax(140px, 1.4fr) minmax(68px, 84px) minmax(90px, 1fr) 32px;
+  }
+}
+@media (max-width: 760px) {
+  .items-form-hd,
+  .item-form-row {
+    grid-template-columns: 1fr 72px 100px 32px;
+  }
 }
 .add-item-btn {
   display:inline-flex; align-items:center; gap:6px;

@@ -166,6 +166,7 @@
           <span class="save-hint" v-if="paramSaved">✓ Đã lưu tham số</span>
           <button class="btn-p" @click="saveParams"><Save :size="14"/> Lưu lại chỉnh sửa</button>
         </div>
+        <p class="form-error" v-if="errors.params">{{ errors.params }}</p>
       </div>
     </div>
 
@@ -190,6 +191,7 @@
             </button>
           </div>
         </div>
+        <p class="form-error" v-if="errors.loai">{{ errors.loai }}</p>
       </div>
 
       <div class="cd-card">
@@ -237,6 +239,7 @@
             </button>
           </div>
         </div>
+        <p class="form-error" v-if="errors.dvt">{{ errors.dvt }}</p>
       </div>
 
       <div class="cd-card">
@@ -282,6 +285,7 @@
             </button>
           </div>
         </div>
+        <p class="form-error" v-if="errors.quan">{{ errors.quan }}</p>
       </div>
 
       <div class="cd-card">
@@ -310,7 +314,32 @@
       </div>
     </div>
 
-  </div>
+    <div class="confirm-modal" v-if="deleteConfirm.open">
+      <div class="confirm-backdrop" @click="closeDeleteConfirm"></div>
+      <div class="confirm-sheet">
+        <h3>Xác nhận xóa</h3>
+        <p>{{ deleteConfirm.message }}</p>
+        <div class="confirm-actions">
+          <button class="btn-sec" @click="closeDeleteConfirm">Hủy</button>
+          <button class="btn-p" @click="performDelete">Xác nhận</button>
+        </div>
+      </div>
+    </div>
+    <!-- Toast snackbar (top-right) rendered into document body -->
+    <teleport to="body">
+      <Transition name="toast">
+        <div v-if="toast.show" class="toast-snack" :class="toast.type">
+          <div class="toast-left">
+            <CheckCircle v-if="toast.type === 'success'" :size="15"/>
+            <XCircle v-else-if="toast.type === 'danger'" :size="15"/>
+          </div>
+          <span class="toast-msg">{{ toast.msg }}</span>
+          <button class="toast-close" @click="closeToast">×</button>
+        </div>
+      </Transition>
+    </teleport>
+
+    </div>
 </template>
 
 <script setup>
@@ -321,7 +350,8 @@ import MoneyInput from '../components/MoneyInput.vue';
 import {
   SlidersHorizontal, Users, Ruler, MapPin,
   Plus, Save, X, Pencil, Trash2,
-  Building, Percent, DollarSign as Coins
+  Building, Percent, DollarSign as Coins,
+  CheckCircle, XCircle
 } from 'lucide-vue-next';
 
 const TABS = [
@@ -333,6 +363,20 @@ const TABS = [
 const tab = ref('thamso');
 
 const fmtMoney = (v) => Number(v).toLocaleString('vi-VN') + ' đ';
+const errors = reactive({ params: '', loai: '', dvt: '', quan: '' });
+const deleteConfirm = reactive({ open: false, type: '', id: null, title: '', message: '' });
+// Toast snackbar (top-right)
+const toast = ref({ show: false, msg: '', type: 'success' });
+let _toastTimer = null;
+const showToast = (msg, type = 'success', duration = 3600) => {
+  clearTimeout(_toastTimer);
+  toast.value = { show: true, msg, type };
+  _toastTimer = setTimeout(() => { toast.value.show = false; }, duration);
+};
+const closeToast = () => {
+  clearTimeout(_toastTimer);
+  toast.value = { show: false, msg: '', type: 'success' };
+};
 
 /* ── Tham số hệ thống ── */
 const params = reactive({ soDaiLyToiDa: 4, tiLeGiaXuat: 2, apDungQDKiemTraSoTienThu: false });
@@ -362,10 +406,11 @@ const saveParams = async () => {
       ApDungQDKiemTraSoTienThu: params.apDungQDKiemTraSoTienThu
     };
     await api.put('/tham-so', payload);
+    errors.params = '';
     paramSaved.value = true;
     setTimeout(() => paramSaved.value = false, 2500);
   } catch (err) {
-    alert('Lỗi khi lưu tham số: ' + (err.response?.data?.message || err.message));
+    errors.params = parseError(err, 'lưu tham số');
   }
 };
 
@@ -386,33 +431,84 @@ const loadLoais = async () => {
 const loaiForm = reactive({ id: null, ten: '', hanMucNo: '' });
 const resetLoai  = () => { loaiForm.id = null; loaiForm.ten = ''; loaiForm.hanMucNo = ''; };
 const editLoai   = (l) => { loaiForm.id = l.id; loaiForm.ten = l.ten; loaiForm.hanMucNo = l.hanMucNo; };
-const deleteLoai = async (id) => {
-  const loai = loais.value.find(l => l.id === id);
-  if (!confirm(`Xóa loại đại lý "${loai?.ten}"?`)) return;
+const openDeleteConfirm = (type, item) => {
+  if (!item || !item.id) return;
+  deleteConfirm.open = true;
+  deleteConfirm.type = type;
+  deleteConfirm.id = item.id;
+  deleteConfirm.title = item.ten;
+  deleteConfirm.message = `Bạn có chắc muốn xóa ${type === 'loai' ? 'loại đại lý' : type === 'dvt' ? 'đơn vị tính' : 'quận'} "${item.ten}"?`;
+  if (type === 'loai') errors.loai = '';
+  if (type === 'dvt') errors.dvt = '';
+  if (type === 'quan') errors.quan = '';
+};
+
+const closeDeleteConfirm = () => {
+  deleteConfirm.open = false;
+  deleteConfirm.type = '';
+  deleteConfirm.id = null;
+  deleteConfirm.title = '';
+  deleteConfirm.message = '';
+};
+
+const performDelete = async () => {
+  const { type, id, title } = deleteConfirm;
+  closeDeleteConfirm();
   try {
-    await api.delete(`/loai-dai-ly/${id}`);
-    await loadLoais();
+    if (type === 'loai') {
+      await api.delete(`/loai-dai-ly/${id}`);
+      await loadLoais();
+      errors.loai = '';
+      showToast(`Đã xóa "${title}"`, 'success');
+    } else if (type === 'dvt') {
+      await api.delete(`/don-vi-tinh/${id}`);
+      await loadDvts();
+      errors.dvt = '';
+      showToast(`Đã xóa "${title}"`, 'success');
+    } else if (type === 'quan') {
+      await api.delete(`/quan/${id}`);
+      await loadQuans();
+      errors.quan = '';
+      showToast(`Đã xóa "${title}"`, 'success');
+    }
   } catch (err) {
-    const msg = err.response?.data?.message || '';
-    if (msg.includes('đại lý') || err.response?.status === 400) {
-      alert(`Không thể xóa "${loai?.ten}": đang có đại lý thuộc loại này.`);
-    } else {
-      alert(msg || 'Không thể xóa loại đại lý.');
+    if (type === 'loai') {
+      errors.loai = parseError(err, 'xóa loại đại lý');
+      showToast(errors.loai, 'danger');
+    } else if (type === 'dvt') {
+      errors.dvt = parseError(err, 'xóa đơn vị tính');
+      showToast(errors.dvt, 'danger');
+    } else if (type === 'quan') {
+      errors.quan = parseError(err, 'xóa quận');
+      showToast(errors.quan, 'danger');
     }
   }
 };
+
+const deleteLoai = (id) => {
+  const loai = loais.value.find(l => l.id === id);
+  openDeleteConfirm('loai', loai);
+};
 const submitLoai = async () => {
+  errors.loai = '';
   const ten = loaiForm.ten.trim();
-  if (!ten || !loaiForm.hanMucNo) return;
+  if (!ten || !loaiForm.hanMucNo) {
+    errors.loai = 'Vui lòng nhập đầy đủ tên loại và hạn mức nợ.';
+    return;
+  }
   const hanMuc = Number(loaiForm.hanMucNo);
 
-  // Trùng tên
   const dupTen = loais.value.find(l => l.ten.toLowerCase() === ten.toLowerCase() && l.id !== loaiForm.id);
-  if (dupTen) { alert(`Loại đại lý "${ten}" đã tồn tại.`); return; }
+  if (dupTen) {
+    errors.loai = `Loại đại lý "${ten}" đã tồn tại.`;
+    return;
+  }
 
-  // Trùng hạn mức nợ (khác tên)
   const dupHan = loais.value.find(l => Number(l.hanMucNo) === hanMuc && l.id !== loaiForm.id && l.ten.toLowerCase() !== ten.toLowerCase());
-  if (dupHan) { alert(`Đã tồn tại "${dupHan.ten}" có mức nợ trùng (${hanMuc.toLocaleString('vi-VN')}đ).`); return; }
+  if (dupHan) {
+    errors.loai = `Đã tồn tại "${dupHan.ten}" có mức nợ trùng (${hanMuc.toLocaleString('vi-VN')} đ).`;
+    return;
+  }
 
   const payload = { TenLoaiDaiLy: ten, TienNoToiDa: hanMuc };
   try {
@@ -423,8 +519,9 @@ const submitLoai = async () => {
     }
     await loadLoais();
     resetLoai();
+    errors.loai = '';
   } catch (err) {
-    alert(err.response?.data?.message || 'Có lỗi khi lưu loại đại lý.');
+    errors.loai = parseError(err, 'lưu loại đại lý');
   }
 };
 
@@ -445,27 +542,23 @@ const loadDvts = async () => {
 const dvtForm = reactive({ id: null, ten: '' });
 const resetDvt  = () => { dvtForm.id = null; dvtForm.ten = ''; };
 const editDvt   = (d) => { dvtForm.id = d.id; dvtForm.ten = d.ten; };
-const deleteDvt = async (id) => {
+const deleteDvt = (id) => {
   const dvt = dvts.value.find(d => d.id === id);
-  if (!confirm(`Xóa đơn vị tính "${dvt?.ten}"?`)) return;
-  try {
-    await api.delete(`/don-vi-tinh/${id}`);
-    await loadDvts();
-  } catch (err) {
-    const msg = err.response?.data?.message || '';
-    if (msg.includes('mặt hàng') || err.response?.status === 400) {
-      alert(`Không thể xóa "${dvt?.ten}": đang được dùng bởi mặt hàng.`);
-    } else {
-      alert(msg || 'Không thể xóa đơn vị tính.');
-    }
-  }
+  openDeleteConfirm('dvt', dvt);
 };
 const submitDvt = async () => {
+  errors.dvt = '';
   const ten = dvtForm.ten.trim();
-  if (!ten) return;
+  if (!ten) {
+    errors.dvt = 'Vui lòng nhập tên đơn vị tính.';
+    return;
+  }
 
   const dup = dvts.value.find(d => d.ten.toLowerCase() === ten.toLowerCase() && d.id !== dvtForm.id);
-  if (dup) { alert(`Đơn vị tính "${ten}" đã tồn tại.`); return; }
+  if (dup) {
+    errors.dvt = `Đơn vị tính "${ten}" đã tồn tại.`;
+    return;
+  }
 
   const payload = { TenDVT: ten };
   try {
@@ -476,8 +569,9 @@ const submitDvt = async () => {
     }
     await loadDvts();
     resetDvt();
+    errors.dvt = '';
   } catch (err) {
-    alert(err.response?.data?.message || 'Có lỗi khi lưu đơn vị tính.');
+    errors.dvt = parseError(err, 'lưu đơn vị tính');
   }
 };
 
@@ -505,27 +599,23 @@ onMounted(() => {
 const quanForm = reactive({ id: null, ten: '' });
 const resetQuan  = () => { quanForm.id = null; quanForm.ten = ''; };
 const editQuan   = (q) => { quanForm.id = q.id; quanForm.ten = q.ten; };
-const deleteQuan = async (id) => {
+const deleteQuan = (id) => {
   const quan = quans.value.find(q => q.id === id);
-  if (!confirm(`Xóa quận "${quan?.ten}"?`)) return;
-  try {
-    await api.delete(`/quan/${id}`);
-    await loadQuans();
-  } catch (err) {
-    const msg = err.response?.data?.message || '';
-    if (msg.includes('đại lý') || err.response?.status === 400) {
-      alert(`Không thể xóa "${quan?.ten}": đang có đại lý thuộc quận này.`);
-    } else {
-      alert(msg || 'Không thể xóa quận.');
-    }
-  }
+  openDeleteConfirm('quan', quan);
 };
 const submitQuan = async () => {
+  errors.quan = '';
   const ten = quanForm.ten.trim();
-  if (!ten) return;
+  if (!ten) {
+    errors.quan = 'Vui lòng nhập tên quận/khu vực.';
+    return;
+  }
 
   const dup = quans.value.find(q => q.ten.toLowerCase() === ten.toLowerCase() && q.id !== quanForm.id);
-  if (dup) { alert(`Quận "${ten}" đã tồn tại.`); return; }
+  if (dup) {
+    errors.quan = `Quận "${ten}" đã tồn tại.`;
+    return;
+  }
 
   const payload = { TenQuan: ten };
   try {
@@ -536,8 +626,9 @@ const submitQuan = async () => {
     }
     await loadQuans();
     resetQuan();
+    errors.quan = '';
   } catch (err) {
-    alert(err.response?.data?.message || 'Có lỗi khi lưu quận.');
+    errors.quan = parseError(err, 'lưu quận');
   }
 };
 </script>
@@ -558,6 +649,75 @@ const submitQuan = async () => {
   display: flex; flex-direction: column; gap: 0;
   color: var(--c-txt); font-size: 14px;
 }
+
+.form-error {
+  margin: 0 0 16px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: var(--c-danger-bg);
+  color: var(--c-danger);
+  border: 1px solid rgba(239,68,68,.15);
+  font-size: 13px;
+}
+
+.confirm-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+}
+.confirm-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(15,23,42,.48);
+  backdrop-filter: blur(1px);
+}
+.confirm-sheet {
+  position: relative;
+  background: white;
+  border-radius: 18px;
+  box-shadow: 0 20px 60px rgba(15,23,42,.18);
+  padding: 26px 24px;
+  max-width: 420px;
+  width: 100%;
+  z-index: 1;
+}
+.confirm-sheet h3 {
+  margin: 0 0 10px;
+  font-size: 18px;
+}
+.confirm-sheet p {
+  margin: 0 0 20px;
+  color: var(--c-txt-2);
+  line-height: 1.6;
+}
+.confirm-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+/* ── Toast (top-right) ── */
+.toast-snack {
+  position: fixed; bottom: 28px; right: 28px; z-index: 500;
+  display: inline-flex; align-items: center; gap: 12px;
+  padding: 12px 16px; border-radius: 12px; min-width: 280px;
+  font-size: 13px; font-weight:600; box-shadow: 0 10px 30px rgba(2,6,23,.18);
+}
+.toast-left { display:inline-flex; align-items:center; margin-right:6px; }
+.toast-close {
+  background: transparent; border: none; color: inherit; font-size: 18px; line-height: 1;
+  padding: 4px 8px; margin-left: 10px; border-radius: 8px; cursor: pointer;
+}
+.toast-close:hover { background: rgba(0,0,0,0.04); }
+.toast-snack.success { background: #ecfdf5; color: #065f46; border:1px solid rgba(16,185,129,.18); }
+.toast-snack.danger  { background: #fef2f2; color: #991b1b; border:1px solid rgba(239,68,68,.18); }
+.toast-msg { flex:1; }
+.toast-enter-active { animation: toastIn .22s ease; }
+.toast-leave-active { animation: toastIn .18s ease reverse; }
+@keyframes toastIn { from { opacity:0; transform:translateY(-8px) scale(.98); } to { opacity:1; transform:none; } }
 
 /* ── Context banner ── */
 .ctx-card {

@@ -196,7 +196,7 @@
                 <th class="text-right">
                   <span class="sort-hd sort-hd-r" @click="toggleSort('stock')">Tồn kho <SortIcon field="stock" :sk="sk" :sd="sd"/></span>
                 </th>
-                <th class="text-center col-actions-head">Thao tác</th>
+                <th class="text-right" style="text-align: center !important; padding-right: 35px;">Thao tác</th>
               </tr>
             </thead>
             <tbody>
@@ -218,7 +218,7 @@
                 </td>
                 <td class="muted">{{ r.dvt }}</td>
                 <td class="text-right">
-                  <span class="price-num">{{ fmtPrice(r.buyPrice) }}</span>
+                  <span class="price-num">{{ fmtVND(r.buyPrice) }}</span>
                 </td>
                 <td class="text-right">
                   <div class="stock-cell" :class="stockClass(r)">
@@ -626,6 +626,7 @@ const stockPct   = (p) => Math.min(p.stock / maxStock.value * 100, 100);
 const stockColor = (p) => p.stock === 0 ? '#dc2626' : p.stock <= 100 ? '#d97706' : '#2e7d32';
 const stockClass = (p) => p.stock === 0 ? 'stock-out' : p.stock <= 100 ? 'stock-low' : 'stock-ok';
 const fmtPrice   = (v) => `${Math.round(Number(v) * 1_000_000).toLocaleString('vi-VN')}đ`;
+const fmtVND     = fmtPrice;
 
 /* ── Filtered & sorted list ── */
 const filteredList = computed(() => {

@@ -160,6 +160,7 @@ const create = async (req, res) => {
 
     // 
     const tienTraFinal = Math.min(tienTra, tongTien);
+    const conLai = Math.max(0, tongTien - tienTraFinal);
     const insertSql = 'INSERT INTO PHIEUXUATHANG (MaDaiLy, NgayLapPhieu, TongTien, TienTra) VALUES (?, ?, ?, ?)';
     await sequelize.query(insertSql, {
       replacements: [MaDaiLy, NgayLapPhieu || new Date(), tongTien, tienTraFinal],
@@ -228,13 +229,14 @@ const create = async (req, res) => {
   } catch (error) {
     await t.rollback();
     console.error('PhieuXuat create error:', error);
-    res.status(500).json({ status: 'error', message: 'Lỗi server.' });
+    res.status(500).json({ status: 'error', message: 'Lỗi server.', error: error.message });
   }
 };
 
 const update = async (req, res) => {
   const t = await sequelize.transaction();
   try {
+    console.debug('PhieuXuat update payload:', req.params.id, req.body);
     const phieuXuat = await PhieuXuatHang.findByPk(req.params.id, {
       include: [{ model: ChiTiet_PhieuXuat, as: 'chiTiets' }],
       transaction: t,
@@ -245,14 +247,38 @@ const update = async (req, res) => {
       return res.status(404).json({ status: 'error', message: 'Không tìm thấy phiếu xuất.' });
     }
 
-    const { MaDaiLy, NgayLapPhieu, chiTiets } = req.body;
-    if (!chiTiets || chiTiets.length === 0) {
+    const { MaDaiLy, NgayLapPhieu, chiTiets, TienTra: tienTraRaw } = req.body;
+    const tienTra = Math.max(0, parseFloat(tienTraRaw) || 0);
+
+    // Basic payload validation to avoid internal server errors
+    if (!MaDaiLy) {
+      await t.rollback();
+      return res.status(400).json({ status: 'error', message: 'MaDaiLy (mã đại lý) không được để trống.' });
+    }
+    if (!chiTiets || !Array.isArray(chiTiets) || chiTiets.length === 0) {
       await t.rollback();
       return res.status(400).json({ status: 'error', message: 'Phiếu xuất phải có ít nhất 1 mặt hàng.' });
     }
+    for (const [idx, ct] of chiTiets.entries()) {
+      if (!ct.MaMatHang) {
+        await t.rollback();
+        return res.status(400).json({ status: 'error', message: `Mặt hàng ở vị trí ${idx + 1} thiếu MaMatHang.` });
+      }
+      if (typeof ct.SoLuongXuat === 'undefined' || isNaN(Number(ct.SoLuongXuat))) {
+        await t.rollback();
+        return res.status(400).json({ status: 'error', message: `Mặt hàng ở vị trí ${idx + 1} có SoLuongXuat không hợp lệ.` });
+      }
+      if (typeof ct.DonGiaXuat === 'undefined' || isNaN(Number(ct.DonGiaXuat))) {
+        await t.rollback();
+        return res.status(400).json({ status: 'error', message: `Mặt hàng ở vị trí ${idx + 1} có DonGiaXuat không hợp lệ.` });
+      }
+    }
+    console.debug('Validated update payload:', { MaDaiLy, NgayLapPhieu, tienTra, chiTietsLength: chiTiets.length });
 
     const oldDetails = phieuXuat.chiTiets || [];
     const oldTotal = parseFloat(phieuXuat.TongTien) || 0;
+    const oldTienTra = parseFloat(phieuXuat.TienTra) || 0;
+    const oldOwed = Math.max(0, oldTotal - oldTienTra);
     const oldAgentId = phieuXuat.MaDaiLy;
 
     // Khôi phục tồn kho và nợ cũ trước khi áp dụng thay đổi
@@ -264,9 +290,9 @@ const update = async (req, res) => {
       });
     }
 
-    if (oldAgentId) {
+    if (oldAgentId && oldOwed > 0) {
       await DaiLy.decrement('TongNo', {
-        by: oldTotal,
+        by: oldOwed,
         where: { MaDaiLy: oldAgentId },
         transaction: t,
       });
@@ -319,13 +345,16 @@ const update = async (req, res) => {
       processedDetails.push({ MaMatHang: ct.MaMatHang, SoLuongXuat: soLuongXuat, DonGiaXuat: donGiaXuat, ThanhTien: thanhTien });
     }
 
+    const tienTraFinal = Math.min(tienTra, tongTien);
+    const conLai = Math.max(0, tongTien - tienTraFinal);
+
     if (kiemTraNo) {
       const tienNoHienTai = parseFloat(daiLy.TongNo) || 0;
       const tienNoToiDa = parseFloat(daiLy.loaiDaiLy?.TienNoToiDa) || 0;
-      const tienNoSauXuat = tienNoHienTai + tongTien;
+      const tienNoSauXuat = tienNoHienTai + conLai;
       if (tienNoSauXuat > tienNoToiDa) {
         await t.rollback();
-        return res.status(400).json({ status: 'error', message: `Vượt hạn mức nợ!`, rule: 'QD3', data: { tienNoHienTai, tongTien, tienNoSauXuat, tienNoToiDa } });
+        return res.status(400).json({ status: 'error', message: `Vượt hạn mức nợ!`, rule: 'QD3', data: { tienNoHienTai, conLai, tienNoSauXuat, tienNoToiDa } });
       }
     }
 
@@ -344,13 +373,15 @@ const update = async (req, res) => {
       await MatHang.decrement('TonKho', { by: ct.SoLuongXuat, where: { MaMatHang: ct.MaMatHang }, transaction: t });
     }
 
-    await DaiLy.increment('TongNo', {
-      by: tongTien,
-      where: { MaDaiLy },
-      transaction: t,
-    });
+    if (conLai > 0) {
+      await DaiLy.increment('TongNo', {
+        by: conLai,
+        where: { MaDaiLy },
+        transaction: t,
+      });
+    }
 
-    await phieuXuat.update({ MaDaiLy, NgayLapPhieu: NgayLapPhieu || new Date(), TongTien: tongTien }, { transaction: t });
+    await phieuXuat.update({ MaDaiLy, NgayLapPhieu: NgayLapPhieu || new Date(), TongTien: tongTien, TienTra: tienTraFinal }, { transaction: t });
 
     await t.commit();
 
@@ -365,7 +396,7 @@ const update = async (req, res) => {
   } catch (error) {
     await t.rollback();
     console.error('PhieuXuat update error:', error);
-    res.status(500).json({ status: 'error', message: 'Lỗi server.' });
+    res.status(500).json({ status: 'error', message: 'Lỗi server.', error: error.message, stack: error.stack });
   }
 };
 

@@ -28,7 +28,9 @@ const getAll = async (req, res) => {
 const create = async (req, res) => {
   const t = await sequelize.transaction();
   try {
-    const { MaDaiLy, NgayThuTien, SoTienThu } = req.body;
+    const { MaDaiLy, NgayThuTien } = req.body;
+    let SoTienThu = req.body.SoTienThu;
+    SoTienThu = parseFloat(SoTienThu);
 
     const daiLy = await DaiLy.findByPk(MaDaiLy, { transaction: t });
     if (!daiLy) {

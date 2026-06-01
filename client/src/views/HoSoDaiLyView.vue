@@ -176,8 +176,6 @@ const getAvatarColor = (name) => {
 
 const fmtM = (n) => {
   const v = parseFloat(n) || 0;
-  if (v >= 1e9) return (v / 1e9).toFixed(1) + ' Tỷ';
-  if (v >= 1e6) return (v / 1e6).toFixed(1) + ' Tr';
   return v.toLocaleString('vi-VN') + 'đ';
 };
 

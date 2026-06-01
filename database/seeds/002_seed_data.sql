@@ -17,6 +17,7 @@ INSERT INTO CHUCNANG (TenChucNang, TenManHinhDuocLoad) VALUES
   ('Lập phiếu xuất hàng', 'PhieuXuatView'),
   ('Tra cứu đại lý', 'TraCuuView'),
   ('Lập phiếu thu tiền', 'ThuTienView'),
+  ('Quản lý mặt hàng', 'MatHangView'),
   ('Báo cáo doanh số', 'BaoCaoView'),
   ('Báo cáo công nợ', 'BaoCaoView'),
   ('Cài đặt quy định', 'CaiDatView'),
@@ -24,11 +25,11 @@ INSERT INTO CHUCNANG (TenChucNang, TenManHinhDuocLoad) VALUES
 
 -- Phân quyền: Admin có toàn quyền
 INSERT INTO PHANQUYEN (MaNhom, MaChucNang) VALUES
-  (1, 1), (1, 2), (1, 3), (1, 4), (1, 5), (1, 6), (1, 7), (1, 8);
+  (1, 1), (1, 2), (1, 3), (1, 4), (1, 5), (1, 6), (1, 7), (1, 8), (1, 9), (1, 10);
 
 
 -- Tài khoản admin mặc định (password: admin123 - đã hash bcrypt)
-INSERT INTO NGUOIDUNG (TenNguoiDung, MatKhau, MaNhom) VALUES
+INSERT INTO NGUOIDUNG (TenDangNhap, MatKhau, MaNhom) VALUES
   ('admin', '$2b$10$QHnckkacG1dHmFB2/6/I..hESZwMp5Hxxkp9VeJN6Pv71RHTComem', 1);
 
 -- ============================================================

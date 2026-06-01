@@ -20,7 +20,14 @@ const getAll = async (req, res) => {
     // Tính TongNo động từ giao dịch thực, tránh phụ thuộc cột DB có thể stale
     const result = daiLys.map(dl => {
       const tongXuat = (dl.phieuXuats || [])
-        .reduce((s, px) => s + parseFloat(px.TongTien || 0), 0);
+        .reduce((s, px) => {
+          const tongTien = parseFloat(px.TongTien || 0);
+          const tienTra = parseFloat(px.TienTra || 0);
+          const conLai = Number.isFinite(parseFloat(px.ConLai))
+            ? Math.max(0, parseFloat(px.ConLai))
+            : Math.max(0, tongTien - tienTra);
+          return s + conLai;
+        }, 0);
       const tongThu = (dl.phieuThus || [])
         .reduce((s, pt) => s + parseFloat(pt.SoTienThu || 0), 0);
       const computedTongNo = Math.max(0, tongXuat - tongThu);
@@ -75,6 +82,24 @@ const create = async (req, res) => {
   try {
     const { TenDaiLy, MaLoaiDaiLy, MaQuan, SDT, DiaChi, Email, NgayTiepNhan } = req.body;
 
+    // Kiểm tra trùng SDT hoặc Email với đại lý đã có
+    try {
+      const dupConditions = [];
+      if (SDT) dupConditions.push({ SDT });
+      if (Email) dupConditions.push({ Email });
+      if (dupConditions.length) {
+        const existing = await DaiLy.findOne({ where: { [Op.or]: dupConditions } });
+        if (existing) {
+          return res.status(400).json({
+            status: 'error',
+            message: 'Không thể tạo đại lý có trùng sdt hoặc email với đại lý đã có',
+          });
+        }
+      }
+    } catch (e) {
+      console.warn('Dup check failed', e);
+    }
+
     // QĐ1: Kiểm tra số đại lý tối đa trong quận
     const thamSo = await ThamSo.findOne();
     const soDaiLyToiDa = thamSo && thamSo.SoDaiLyToiDa ? parseInt(thamSo.SoDaiLyToiDa) : 4;
@@ -87,7 +112,8 @@ const create = async (req, res) => {
         rule: 'QD1',
       });
     }
-// them đại lý
+
+    // them đại lý
     const daiLy = await DaiLy.create({
       TenDaiLy,
       MaLoaiDaiLy,
@@ -139,6 +165,21 @@ const update = async (req, res) => {
     }
 
     await daiLy.update(req.body);
+    // Nếu cập nhật SDT/Email, đảm bảo không trùng với đại lý khác
+    try {
+      const { SDT, Email } = req.body;
+      const dupConditions = [];
+      if (SDT) dupConditions.push({ SDT });
+      if (Email) dupConditions.push({ Email });
+      if (dupConditions.length) {
+        const existing = await DaiLy.findOne({ where: { [Op.or]: dupConditions, MaDaiLy: { [Op.ne]: daiLy.MaDaiLy } } });
+        if (existing) {
+          return res.status(400).json({ status: 'error', message: 'Không thể tạo đại lý có trùng sdt hoặc email với đại lý đã có' });
+        }
+      }
+    } catch (e) {
+      console.warn('Dup check on update failed', e);
+    }
 
     const result = await DaiLy.findByPk(req.params.id, {
       include: [
@@ -163,6 +204,13 @@ const remove = async (req, res) => {
     const daiLy = await DaiLy.findByPk(req.params.id);
     if (!daiLy) {
       return res.status(404).json({ status: 'error', message: 'Không tìm thấy đại lý.' });
+    }
+
+    // Kiểm tra xem có phiếu xuất/thu liên quan hay không
+    const countPhieuXuat = await PhieuXuatHang.count({ where: { MaDaiLy: daiLy.MaDaiLy } });
+    const countPhieuThu  = await PhieuThuTien.count({ where: { MaDaiLy: daiLy.MaDaiLy } });
+    if (countPhieuXuat > 0 || countPhieuThu > 0) {
+      return res.status(400).json({ status: 'error', message: 'Không thể xóa đại lý vì đã tồn tại phiếu xuất/thu liên quan.' });
     }
 
     await daiLy.destroy();

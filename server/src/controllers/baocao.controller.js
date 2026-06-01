@@ -149,7 +149,14 @@ const getCongNo = async (req, res) => {
           const d = new Date(px.NgayLapPhieu);
           return d >= startDate && d <= endDate;
         })
-        .reduce((sum, px) => sum + parseFloat(px.TongTien || 0), 0);
+        .reduce((sum, px) => {
+          const tongTien = parseFloat(px.TongTien || 0);
+          const tienTra = parseFloat(px.TienTra || 0);
+          const conLai = Number.isFinite(parseFloat(px.ConLai))
+            ? Math.max(0, parseFloat(px.ConLai))
+            : Math.max(0, tongTien - tienTra);
+          return sum + conLai;
+        }, 0);
 
       // Đã thu trong kỳ (phiếu thu in this month)
       const tongThu = allThus
@@ -162,7 +169,14 @@ const getCongNo = async (req, res) => {
       // Nợ cuối kỳ: tổng tất cả xuất - tổng tất cả thu, tính đến hết ngày endDate
       const totalXuatToDate = allXuats
         .filter(px => new Date(px.NgayLapPhieu) <= endDate)
-        .reduce((sum, px) => sum + parseFloat(px.TongTien || 0), 0);
+        .reduce((sum, px) => {
+          const tongTien = parseFloat(px.TongTien || 0);
+          const tienTra = parseFloat(px.TienTra || 0);
+          const conLai = Number.isFinite(parseFloat(px.ConLai))
+            ? Math.max(0, parseFloat(px.ConLai))
+            : Math.max(0, tongTien - tienTra);
+          return sum + conLai;
+        }, 0);
 
       const totalThuToDate = allThus
         .filter(pt => new Date(pt.NgayThuTien) <= endDate)
