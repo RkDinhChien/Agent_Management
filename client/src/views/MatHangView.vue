@@ -517,7 +517,19 @@ const SortIcon = {
 
 /* ── Constants ── */
 const categories = ['Đèn LED', 'Đèn', 'Thiết bị điện', 'Dây cáp'];
-const dvts       = ['Cái', 'Bộ', 'Mét', 'Cuộn', 'Hộp'];
+const dvts = ref(['Cái', 'Bộ', 'Mét', 'Cuộn', 'Hộp']);
+
+const loadDvts = async () => {
+  try {
+    const res = await api.get('/don-vi-tinh');
+    const items = res.data?.data || res.data || [];
+    if (items.length) {
+      dvts.value.splice(0, dvts.value.length, ...items.map((d) => d.TenDVT || 'Cái'));
+    }
+  } catch (err) {
+    console.warn('Failed to load don vi tinh', err?.response?.status || err.message);
+  }
+};
 
 /* ── Mock data ── */
 const PROD_CATS = {
@@ -549,9 +561,10 @@ const loadProducts = async () => {
 
 onMounted(() => {
   loadProducts();
+  loadDvts();
 });
 
-/* ── Product image URLs — verified Wikimedia Commons thumbnails ── */
+/* ── Product image URLs — verified Wikimedia Commons thumbnails */
 const prodImgUrls = reactive({
   1: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e1/Led-lampa.jpg/300px-Led-lampa.jpg',
   2: 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/65/LED_tubes_in_various_length.JPG/300px-LED_tubes_in_various_length.JPG',
@@ -699,7 +712,7 @@ const submitAdd = () => {
   products.value.push({
     id: newId, code,
     name:      form.value.name.trim(),
-    dvt:       form.value.dvt      || dvts[0],
+    dvt:       form.value.dvt      || dvts.value[0],
     buyPrice:  form.value.buyPrice,
     stock:     form.value.stock || 0,
   });

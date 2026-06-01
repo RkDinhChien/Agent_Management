@@ -663,12 +663,18 @@ const closePanel = () => { selectedId.value = null; panelMode.value = 'view'; };
 
 
 const askDelete     = (r) => { deleteTarget.value = r; };
-const confirmDelete = () => {
-  const code = deleteTarget.value.code;
-  receipts.value = receipts.value.filter(r => r.id !== deleteTarget.value.id);
-  if (selectedId.value === deleteTarget.value.id) closePanel();
+const confirmDelete = async () => {
+  const target = deleteTarget.value;
   deleteTarget.value = null;
-  showToast(`Đã xóa phiếu ${code}`, 'danger');
+  try {
+    await api.delete(`/phieu-nhap/${target.id}`);
+    if (selectedId.value === target.id) closePanel();
+    showToast(`Đã xóa phiếu ${target.code}`, 'danger');
+    await loadReceipts();
+    await loadProducts();
+  } catch (err) {
+    showToast(err.response?.data?.message || 'Không thể xóa phiếu nhập', 'danger');
+  }
 };
 
 const submitCreate = async () => {

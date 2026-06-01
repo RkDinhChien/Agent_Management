@@ -23,7 +23,11 @@ const login = async (req, res) => {
         {
           model: NhomNguoiDung,
           as: 'nhomNguoiDung',
-          include: [{ model: ChucNang, as: 'chucNangs' }],
+          include: [{
+            model: ChucNang,
+            as: 'chucNangs',
+            through: { attributes: ['Xem', 'Them', 'Sua', 'Xoa'] },
+          }],
         },
       ],
     });
@@ -44,23 +48,28 @@ const login = async (req, res) => {
       });
     }
 
+    // Tạo danh sách quyền kèm hành động
+    const permissions = user.nhomNguoiDung.chucNangs.map((cn) => ({
+      MaChucNang: cn.MaChucNang,
+      TenChucNang: cn.TenChucNang,
+      TenManHinhDuocLoad: cn.TenManHinhDuocLoad,
+      Xem: cn.PhanQuyen?.Xem ?? true,
+      Them: cn.PhanQuyen?.Them ?? true,
+      Sua: cn.PhanQuyen?.Sua ?? true,
+      Xoa: cn.PhanQuyen?.Xoa ?? true,
+    }));
+
     // Tạo JWT token
     const token = jwt.sign(
       {
         TenNguoiDung: user.TenNguoiDung,
         MaNhom: user.MaNhom,
         role: user.nhomNguoiDung.TenNhom,
+        permissions,
       },
       process.env.JWT_SECRET,
       { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
     );
-
-    // Lấy danh sách quyền
-    const permissions = user.nhomNguoiDung.chucNangs.map((cn) => ({
-      MaChucNang: cn.MaChucNang,
-      TenChucNang: cn.TenChucNang,
-      TenManHinhDuocLoad: cn.TenManHinhDuocLoad,
-    }));
 
     res.json({
       status: 'success',
@@ -93,7 +102,11 @@ const getMe = async (req, res) => {
         {
           model: NhomNguoiDung,
           as: 'nhomNguoiDung',
-          include: [{ model: ChucNang, as: 'chucNangs' }],
+          include: [{
+            model: ChucNang,
+            as: 'chucNangs',
+            through: { attributes: ['Xem', 'Them', 'Sua', 'Xoa'] },
+          }],
         },
       ],
     });
@@ -105,7 +118,24 @@ const getMe = async (req, res) => {
       });
     }
 
-    res.json({ status: 'success', user });
+    const permissions = user.nhomNguoiDung.chucNangs.map((cn) => ({
+      MaChucNang: cn.MaChucNang,
+      TenChucNang: cn.TenChucNang,
+      TenManHinhDuocLoad: cn.TenManHinhDuocLoad,
+      Xem: cn.PhanQuyen?.Xem ?? true,
+      Them: cn.PhanQuyen?.Them ?? true,
+      Sua: cn.PhanQuyen?.Sua ?? true,
+      Xoa: cn.PhanQuyen?.Xoa ?? true,
+    }));
+
+    res.json({
+      status: 'success',
+      user: {
+        TenNguoiDung: user.TenNguoiDung,
+        role: user.nhomNguoiDung.TenNhom,
+        permissions,
+      },
+    });
   } catch (error) {
     console.error('GetMe error:', error);
     res.status(500).json({

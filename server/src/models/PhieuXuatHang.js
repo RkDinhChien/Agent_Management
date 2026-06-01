@@ -25,7 +25,7 @@ const PhieuXuatHang = sequelize.define('PhieuXuatHang', {
   },
   ConLai: {
     type: DataTypes.DECIMAL(15, 2),
-    defaultValue: 0,
+    allowNull: true,
   },
 }, {
   tableName: 'PHIEUXUATHANG',

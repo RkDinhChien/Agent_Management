@@ -1,9 +1,10 @@
 const express = require('express');
 const router = express.Router();
 const { getAll, create, update, remove } = require('../controllers/mathang.controller');
-const { authenticateToken } = require('../middleware/auth');
+const { authenticateToken, authorizePermission } = require('../middleware/auth');
 
 router.use(authenticateToken);
+router.use(authorizePermission('MatHangView'));
 
 router.get('/', getAll);
 router.post('/', create);

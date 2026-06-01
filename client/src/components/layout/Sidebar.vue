@@ -31,37 +31,37 @@
 
       <div class="link-category mt-12" v-if="!isCollapsed">NGHIỆP VỤ</div>
 
-      <router-link to="/dai-ly-list" class="atmos-link" :class="{ active: isActive('/dai-ly-list') }">
+      <router-link v-if="hasPermission('DaiLyView')" to="/dai-ly-list" class="atmos-link" :class="{ active: isActive('/dai-ly-list') }">
         <div class="l-aura"><Users :size="20" /></div>
         <span class="l-text" v-if="!isCollapsed">Đại lý</span>
         <div class="active-indicator" v-if="isActive('/dai-ly-list') && !isCollapsed"></div>
       </router-link>
 
-      <router-link to="/phieu-nhap" class="atmos-link" :class="{ active: isActive('/phieu-nhap') }">
+      <router-link v-if="hasPermission('PhieuNhapView')" to="/phieu-nhap" class="atmos-link" :class="{ active: isActive('/phieu-nhap') }">
         <div class="l-aura"><PackagePlus :size="20" /></div>
         <span class="l-text" v-if="!isCollapsed">Phiếu nhập hàng</span>
         <div class="active-indicator" v-if="isActive('/phieu-nhap') && !isCollapsed"></div>
       </router-link>
 
-      <router-link to="/phieu-xuat" class="atmos-link" :class="{ active: isActive('/phieu-xuat') }">
+      <router-link v-if="hasPermission('PhieuXuatView')" to="/phieu-xuat" class="atmos-link" :class="{ active: isActive('/phieu-xuat') }">
         <div class="l-aura"><PackageMinus :size="20" /></div>
         <span class="l-text" v-if="!isCollapsed">Phiếu xuất hàng</span>
         <div class="active-indicator" v-if="isActive('/phieu-xuat') && !isCollapsed"></div>
       </router-link>
 
-      <router-link to="/thu-tien" class="atmos-link" :class="{ active: isActive('/thu-tien') }">
+      <router-link v-if="hasPermission('ThuTienView')" to="/thu-tien" class="atmos-link" :class="{ active: isActive('/thu-tien') }">
         <div class="l-aura"><Wallet :size="20" /></div>
         <span class="l-text" v-if="!isCollapsed">Phiếu thu tiền</span>
         <div class="active-indicator" v-if="isActive('/thu-tien') && !isCollapsed"></div>
       </router-link>
 
-      <router-link to="/mat-hang" class="atmos-link" :class="{ active: isActive('/mat-hang') }">
+      <router-link v-if="hasPermission('MatHangView')" to="/mat-hang" class="atmos-link" :class="{ active: isActive('/mat-hang') }">
         <div class="l-aura"><Package :size="20" /></div>
         <span class="l-text" v-if="!isCollapsed">Mặt hàng</span>
         <div class="active-indicator" v-if="isActive('/mat-hang') && !isCollapsed"></div>
       </router-link>
 
-      <router-link to="/bao-cao" class="atmos-link" :class="{ active: isActive('/bao-cao') }">
+      <router-link v-if="hasPermission('BaoCaoView')" to="/bao-cao" class="atmos-link" :class="{ active: isActive('/bao-cao') }">
         <div class="l-aura"><PieChart :size="20" /></div>
         <span class="l-text" v-if="!isCollapsed">Báo cáo</span>
         <div class="active-indicator" v-if="isActive('/bao-cao') && !isCollapsed"></div>
@@ -102,6 +102,14 @@ const emit = defineEmits(['toggle']);
 const route = useRoute();
 const router = useRouter();
 const authStore = useAuthStore();
+
+const hasPermission = (screenName) => {
+  if (!authStore.user) return false;
+  if (authStore.user.role === 'Admin') return true;
+  return (authStore.user.permissions || []).some(
+    (p) => p.TenManHinhDuocLoad === screenName && p.Xem
+  );
+};
 
 const isActive = (path) => {
   if (path === '/dashboard') return route.path === '/dashboard';

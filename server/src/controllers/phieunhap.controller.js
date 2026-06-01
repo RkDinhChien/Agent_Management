@@ -1,4 +1,4 @@
-const { sequelize, PhieuNhapHang, ChiTiet_PhieuNhap, MatHang, DonViTinh } = require('../models');
+﻿const { sequelize, PhieuNhapHang, ChiTiet_PhieuNhap, MatHang, DonViTinh } = require('../models');
 
 /**
  * GET /api/phieu-nhap
@@ -53,62 +53,68 @@ const getById = async (req, res) => {
 /**
  * POST /api/phieu-nhap
  * Lập phiếu nhập hàng (BM2)
- * Body: { NgayLapPhieu, chiTiets: [{ MaMatHang, SoLuong, DonGiaNhap }] }
+ * Body: { NgayLapPhieu, chiTiets: [{ MaMatHang, SoLuongNhap, DonGiaNhap }] }
  */
 const create = async (req, res) => {
   const t = await sequelize.transaction();
   try {
     const { NgayLapPhieu, chiTiets } = req.body;
+    console.log('PhieuNhap create body:', JSON.stringify(req.body));
+    console.log('Controller file path:', __filename);
 
-    if (!chiTiets || chiTiets.length === 0) {
+    if (!chiTiets || !Array.isArray(chiTiets) || chiTiets.length === 0) {
       return res.status(400).json({
         status: 'error',
         message: 'Phiếu nhập phải có ít nhất 1 mặt hàng.',
       });
     }
 
-    // Tính tổng tiền
+    // Tính tổng tiền và chuẩn hóa dữ liệu
     let tongTien = 0;
-    const processedDetails = chiTiets.map((ct) => {
-      tongTien += ct.SoLuongNhap * ct.DonGiaNhap;
+    const processedDetails = chiTiets.map((ct, idx) => {
+      const sl = Number(ct.SoLuongNhap) || 0;
+      const dg = Number(ct.DonGiaNhap) || 0;
+      let thanhTien = sl * dg;
+      if (!Number.isFinite(thanhTien)) thanhTien = 0;
+      tongTien += thanhTien;
       return {
         MaMatHang: ct.MaMatHang,
-        SoLuongNhap: ct.SoLuongNhap,
-        DonGiaNhap: ct.DonGiaNhap
-        // ThanhTien is a GENERATED ALWAYS AS column — MySQL computes it automatically
+        SoLuongNhap: sl,
+        DonGiaNhap: dg,
+        ThanhTien: thanhTien,
+        _index: idx,
       };
     });
 
+    console.log('Processed chiTiets count:', processedDetails.length);
+
     // Tạo phiếu nhập
     const phieu = await PhieuNhapHang.create(
-      { NgayLapPhieu: NgayLapPhieu || new Date(), TongTien: tongTien },
+      { NgayLapPhieu: NgayLapPhieu ? new Date(NgayLapPhieu) : new Date(), TongTien: tongTien },
       { transaction: t }
     );
 
-    // Tạo chi tiết + cập nhật tồn kho (QĐ6)
+    // Chèn chi tiết bằng raw SQL (tránh mapping/validation khác)
     for (const ct of processedDetails) {
-      await ChiTiet_PhieuNhap.create(
-        { MaPhieuNhap: phieu.MaPhieuNhap, ...ct },
-        { transaction: t }
-      );
+      console.log('Insert detail idx=', ct._index, 'MaMatHang=', ct.MaMatHang, 'SoLuong=', ct.SoLuongNhap, 'DonGia=', ct.DonGiaNhap, 'ThanhTien=', ct.ThanhTien, 'types=', typeof ct.SoLuongNhap, typeof ct.DonGiaNhap, typeof ct.ThanhTien);
 
-      // QĐ6: Cập nhật số lượng tồn kho + Cập nhật đơn giá hiện tại
-      await MatHang.update(
-        {
-          TonKho: sequelize.literal(`TonKho + ${ct.SoLuongNhap}`),
-          DonGiaHienTai: ct.DonGiaNhap
-        },
-        {
-          where: { MaMatHang: ct.MaMatHang },
-          transaction: t
-        }
-      );
+            // ThanhTien is a GENERATED column in MySQL; omit it from INSERT so DB computes it
+      const sql = 'INSERT INTO CHITIET_PHIEUNHAP (MaPhieuNhap, MaMatHang, SoLuongNhap, DonGiaNhap) VALUES (?, ?, ?, ?)';
+      await sequelize.query(sql, {
+        replacements: [phieu.MaPhieuNhap, ct.MaMatHang, ct.SoLuongNhap, ct.DonGiaNhap],
+        transaction: t,
+      });
+
+      // Cập nhật tồn kho
+      await MatHang.increment('TonKho', {
+        by: ct.SoLuongNhap,
+        where: { MaMatHang: ct.MaMatHang },
+        transaction: t,
+      });
     }
-
 
     await t.commit();
 
-    // Trả về phiếu đầy đủ
     const result = await PhieuNhapHang.findByPk(phieu.MaPhieuNhap, {
       include: [
         {
@@ -119,11 +125,7 @@ const create = async (req, res) => {
       ],
     });
 
-    res.status(201).json({
-      status: 'success',
-      message: 'Lập phiếu nhập thành công.',
-      data: result,
-    });
+    res.status(201).json({ status: 'success', message: 'Lập phiếu nhập thành công.', data: result });
   } catch (error) {
     await t.rollback();
     console.error('PhieuNhap create error:', error);
@@ -131,22 +133,20 @@ const create = async (req, res) => {
   }
 };
 
-/**
- * DELETE /api/phieu-nhap/:id
- * Xóa phiếu nhập + hoàn tác tồn kho
- */
 const remove = async (req, res) => {
   const t = await sequelize.transaction();
   try {
-    const phieu = await PhieuNhapHang.findByPk(req.params.id, { transaction: t });
+    const phieu = await PhieuNhapHang.findByPk(req.params.id, {
+      include: [{ model: ChiTiet_PhieuNhap, as: 'chiTiets' }],
+      transaction: t,
+    });
+
     if (!phieu) {
       await t.rollback();
       return res.status(404).json({ status: 'error', message: 'Không tìm thấy phiếu nhập.' });
     }
 
-    // Hoàn tác tồn kho: giảm lại số lượng đã nhập
-    const chiTiets = await ChiTiet_PhieuNhap.findAll({ where: { MaPhieuNhap: phieu.MaPhieuNhap }, transaction: t });
-    for (const ct of chiTiets) {
+    for (const ct of phieu.chiTiets || []) {
       await MatHang.decrement('TonKho', {
         by: ct.SoLuongNhap,
         where: { MaMatHang: ct.MaMatHang },
@@ -154,7 +154,6 @@ const remove = async (req, res) => {
       });
     }
 
-    // Xóa chi tiết rồi xóa phiếu
     await ChiTiet_PhieuNhap.destroy({ where: { MaPhieuNhap: phieu.MaPhieuNhap }, transaction: t });
     await phieu.destroy({ transaction: t });
 
@@ -162,9 +161,10 @@ const remove = async (req, res) => {
     res.json({ status: 'success', message: 'Xóa phiếu nhập thành công.' });
   } catch (error) {
     await t.rollback();
-    console.error('PhieuNhap delete error:', error);
+    console.error('PhieuNhap remove error:', error);
     res.status(500).json({ status: 'error', message: 'Lỗi server.' });
   }
 };
 
 module.exports = { getAll, getById, create, remove };
+

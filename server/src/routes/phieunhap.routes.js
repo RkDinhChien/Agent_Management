@@ -1,9 +1,10 @@
 const express = require('express');
 const router = express.Router();
 const { getAll, getById, create, remove } = require('../controllers/phieunhap.controller');
-const { authenticateToken } = require('../middleware/auth');
+const { authenticateToken, authorizePermission } = require('../middleware/auth');
 
 router.use(authenticateToken);
+router.use(authorizePermission('PhieuNhapView'));
 
 router.get('/', getAll);
 router.get('/:id', getById);

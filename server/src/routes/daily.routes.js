@@ -9,9 +9,10 @@ const {
   checkQuan,
   getLichSu,
 } = require('../controllers/daily.controller');
-const { authenticateToken } = require('../middleware/auth');
+const { authenticateToken, authorizePermission } = require('../middleware/auth');
 
 router.use(authenticateToken);
+router.use(authorizePermission('DaiLyView'));
 
 router.get('/', getAll);
 router.get('/check-quan/:maQuan', checkQuan);

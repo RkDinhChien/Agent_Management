@@ -20,7 +20,7 @@ const ChiTiet_PhieuNhap = sequelize.define('ChiTiet_PhieuNhap', {
   },
   ThanhTien: {
     type: DataTypes.DECIMAL(15, 2),
-    allowNull: false,
+    allowNull: true,
   },
 }, {
   tableName: 'CHITIET_PHIEUNHAP',

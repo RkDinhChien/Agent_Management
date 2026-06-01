@@ -310,6 +310,9 @@ const loadNhomNguoiDung = async () => {
     const data = res.data?.data || res.data || [];
     nhoms.value = data.map(n => ({ id: n.MaNhom, ten: n.TenNhom }));
     nhomNextId = Math.max(...nhoms.value.map(n => n.id || 0), 0) + 1;
+    if (!nhoms.value.some(n => n.id === permGroupId.value) && nhoms.value.length > 0) {
+      permGroupId.value = nhoms.value[0].id;
+    }
   } catch (err) {
     console.warn('Failed to load nhom-nguoi-dung', err?.response?.status || err.message);
   }
@@ -319,16 +322,32 @@ const nhomForm = reactive({ id: null, ten: '' });
 
 const resetNhom  = () => { nhomForm.id = null; nhomForm.ten = ''; };
 const editNhom   = (n) => { nhomForm.id = n.id; nhomForm.ten = n.ten; };
-const deleteNhom = (id) => { nhoms.value = nhoms.value.filter(n => n.id !== id); };
-const submitNhom = () => {
-  if (!nhomForm.ten.trim()) return;
-  if (nhomForm.id) {
-    const n = nhoms.value.find(n => n.id === nhomForm.id);
-    if (n) n.ten = nhomForm.ten.trim();
-  } else {
-    nhoms.value.push({ id: nhomNextIdLocal++, ten: nhomForm.ten.trim() });
+const deleteNhom = async (id) => {
+  if (!confirm('Xóa nhóm này?')) return;
+  try {
+    await api.delete(`/nhom-nguoi-dung/${id}`);
+    await loadNhomNguoiDung();
+  } catch (err) {
+    alert(err.response?.data?.message || 'Không thể xóa nhóm');
   }
-  resetNhom();
+};
+const submitNhom = async () => {
+  if (!nhomForm.ten.trim()) return;
+  try {
+    if (nhomForm.id) {
+      await api.put(`/nhom-nguoi-dung/${nhomForm.id}`, { TenNhom: nhomForm.ten.trim() });
+    } else {
+      const res = await api.post('/nhom-nguoi-dung', { TenNhom: nhomForm.ten.trim() });
+      const createdId = res.data?.data?.MaNhom;
+      if (createdId) {
+        permGroupId.value = createdId;
+      }
+    }
+    await loadNhomNguoiDung();
+    resetNhom();
+  } catch (err) {
+    alert(err.response?.data?.message || 'Lỗi khi lưu nhóm');
+  }
 };
 const nhomLabel = (id) => nhoms.value.find(n => n.id === id)?.ten ?? '—';
 
@@ -356,17 +375,36 @@ const ndForm  = reactive({ id: null, ten: '', mk: '', nhomId: '' });
 const showPw  = ref(false);
 
 const resetNd  = () => { ndForm.id = null; ndForm.ten = ''; ndForm.mk = ''; ndForm.nhomId = ''; };
-const editNd   = (u) => { ndForm.id = u.id; ndForm.ten = u.ten; ndForm.mk = u.mk; ndForm.nhomId = u.nhomId; };
-const deleteNd = (id) => { nguoiDungs.value = nguoiDungs.value.filter(u => u.id !== id); };
-const submitNd = () => {
-  if (!ndForm.ten.trim() || !ndForm.mk || !ndForm.nhomId) return;
-  if (ndForm.id) {
-    const u = nguoiDungs.value.find(u => u.id === ndForm.id);
-    if (u) { u.ten = ndForm.ten.trim(); u.mk = ndForm.mk; u.nhomId = Number(ndForm.nhomId); }
-  } else {
-    nguoiDungs.value.push({ id: ndNextIdLocal++, ten: ndForm.ten.trim(), mk: ndForm.mk, nhomId: Number(ndForm.nhomId) });
+const editNd   = (u) => { ndForm.id = u.id; ndForm.ten = u.ten; ndForm.mk = ''; ndForm.nhomId = u.nhomId; };
+const deleteNd = async (id) => {
+  if (!confirm('Xóa người dùng này?')) return;
+  try {
+    await api.delete(`/nguoi-dung/${id}`);
+    await loadNguoiDung();
+  } catch (err) {
+    alert(err.response?.data?.message || 'Không thể xóa người dùng');
   }
-  resetNd();
+};
+const submitNd = async () => {
+  if (!ndForm.ten.trim() || !ndForm.nhomId) return;
+  if (!ndForm.id && !ndForm.mk) return; // password required for create
+  try {
+    if (ndForm.id) {
+      const payload = { MaNhom: Number(ndForm.nhomId) };
+      if (ndForm.mk) payload.MatKhau = ndForm.mk;
+      await api.put(`/nguoi-dung/${ndForm.id}`, payload);
+    } else {
+      await api.post('/nguoi-dung', {
+        TenNguoiDung: ndForm.ten.trim(),
+        MatKhau: ndForm.mk,
+        MaNhom: Number(ndForm.nhomId)
+      });
+    }
+    await loadNguoiDung();
+    resetNd();
+  } catch (err) {
+    alert(err.response?.data?.message || 'Lỗi khi lưu người dùng');
+  }
 };
 
 /* ════════════════════ PHÂN QUYỀN ════════════════════ */

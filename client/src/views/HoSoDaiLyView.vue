@@ -31,8 +31,8 @@
             </div>
             <div class="hero-info">
               <div class="hero-badges">
-                <span class="badge" :class="daiLy.MaLoai === 1 ? 'badge-primary' : 'badge-secondary'">
-                  {{ daiLy.MaLoai === 1 ? 'Loại 1' : 'Loại 2' }}
+                <span class="badge" :class="daiLy.MaLoaiDaiLy === 1 ? 'badge-primary' : 'badge-secondary'">
+                  {{ daiLy.MaLoaiDaiLy === 1 ? 'Loại 1' : 'Loại 2' }}
                 </span>
                 <span class="id-badge">#{{ String(daiLy.MaDaiLy).padStart(3, '0') }}</span>
               </div>
@@ -90,7 +90,7 @@
           </div>
           <div class="info-item">
             <span class="info-label">Loại Đại Lý</span>
-            <span class="info-value">{{ daiLy.MaLoai === 1 ? 'Loại 1' : 'Loại 2' }}</span>
+            <span class="info-value">{{ daiLy.MaLoaiDaiLy === 1 ? 'Loại 1' : 'Loại 2' }}</span>
           </div>
         </div>
       </div>

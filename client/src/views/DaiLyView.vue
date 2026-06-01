@@ -89,8 +89,8 @@
           </select>
           <select v-model="filterLoai" class="filter-select">
             <option value="">Loại đại lý</option>
-            <option v-for="l in loaiDaiLys" :key="l.MaLoai" :value="l.MaLoai">
-              {{ l.TenLoai }}
+            <option v-for="l in loaiDaiLys" :key="l.MaLoaiDaiLy" :value="l.MaLoaiDaiLy">
+              {{ l.TenLoaiDaiLy }}
             </option>
           </select>
           <select v-model="filterDebt" class="filter-select">
@@ -130,8 +130,8 @@
                 </div>
               </td>
               <td class="cell-type">
-                <span class="badge" :class="dl.loaiDaiLy?.TenLoai === 'Loại 1' ? 'badge-primary' : 'badge-secondary'">
-                  {{ dl.loaiDaiLy?.TenLoai || 'N/A' }}
+                <span class="badge" :class="dl.loaiDaiLy?.TenLoaiDaiLy === 'Loại 1' ? 'badge-primary' : 'badge-secondary'">
+                  {{ dl.loaiDaiLy?.TenLoaiDaiLy || 'N/A' }}
                 </span>
               </td>
               <td class="cell-location">{{ dl.quan?.TenQuan || 'N/A' }}</td>
@@ -204,10 +204,10 @@
 
             <div class="form-group">
               <label>Loại Đại Lý</label>
-              <select v-model="form.MaLoai" required>
+              <select v-model="form.MaLoaiDaiLy" required>
                 <option value="">Chọn loại</option>
-                <option v-for="l in loaiDaiLys" :key="l.MaLoai" :value="l.MaLoai">
-                  {{ l.TenLoai }}
+                <option v-for="l in loaiDaiLys" :key="l.MaLoaiDaiLy" :value="l.MaLoaiDaiLy">
+                  {{ l.TenLoaiDaiLy }}
                 </option>
               </select>
             </div>
@@ -307,7 +307,7 @@ const notification = ref({ show: false, message: '', type: '' });
 
 const form = reactive({
   TenDaiLy: '',
-  MaLoai: '',
+  MaLoaiDaiLy: '',
   MaQuan: '',
   DiaChi: '',
   SDT: '',
@@ -325,10 +325,10 @@ const filteredDaiLys = computed(() => {
     const s = searchText.value.toLowerCase();
     const matchesSearch = !s || 
       dl.TenDaiLy.toLowerCase().includes(s) || 
-      dl.DienThoai.includes(s) ||
+      (dl.SDT || '').includes(s) ||
       (dl.Email && dl.Email.toLowerCase().includes(s));
     const matchesQuan = !filterQuan.value || dl.MaQuan == filterQuan.value;
-    const matchesLoai = !filterLoai.value || dl.MaLoai == filterLoai.value;
+    const matchesLoai = !filterLoai.value || dl.MaLoaiDaiLy == filterLoai.value;
     const matchesDebt = !filterDebt.value || (
       filterDebt.value === 'no' ? dl.TongNo > 0 : 
       filterDebt.value === 'no-high' ? dl.TongNo > 40000000 : true
@@ -389,10 +389,10 @@ const closeModal = () => {
   formError.value = '';
   Object.assign(form, {
     TenDaiLy: '',
-    MaLoai: '',
+    MaLoaiDaiLy: '',
     MaQuan: '',
     DiaChi: '',
-    DienThoai: '',
+    SDT: '',
     Email: '',
     NgayTiepNhan: new Date().toISOString().split('T')[0]
   });
@@ -438,7 +438,7 @@ const exportToExcel = () => {
   const data = filteredDaiLys.value.map(dl => ({
     'Mã': `#${String(dl.MaDaiLy).padStart(3, '0')}`,
     'Tên Đại Lý': dl.TenDaiLy,
-    'Loại': dl.loaiDaiLy?.TenLoai || '',
+    'Loại': dl.loaiDaiLy?.TenLoaiDaiLy || '',
     'Khu Vực': dl.quan?.TenQuan || '',
     'Địa Chỉ': dl.DiaChi || '',
     'Điện Thoại': dl.SDT,

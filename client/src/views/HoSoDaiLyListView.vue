@@ -989,26 +989,47 @@ const validate = () => {
   return Object.keys(e).length === 0;
 };
 
-const submitForm = () => {
+const submitForm = async () => {
   if (!validate()) return;
-  const payload = { ...form.value, MaLoaiDaiLy: Number(form.value.MaLoaiDaiLy), MaQuan: Number(form.value.MaQuan) };
-  if (panelMode.value === 'add') {
-    const newId = agents.value.length ? Math.max(...agents.value.map(a => a.MaDaiLy)) + 1 : 1;
-    agents.value.push({ ...payload, MaDaiLy: newId, TongNo: 0 });
-    selectedId.value = newId;
-  } else {
-    const idx = agents.value.findIndex(a => a.MaDaiLy === selectedId.value);
-    if (idx !== -1) agents.value[idx] = payload;
+  const payload = {
+    TenDaiLy: form.value.TenDaiLy,
+    MaLoaiDaiLy: Number(form.value.MaLoaiDaiLy),
+    MaQuan: Number(form.value.MaQuan),
+    SDT: form.value.SDT,
+    DiaChi: form.value.DiaChi,
+    Email: form.value.Email,
+    NgayTiepNhan: form.value.NgayTiepNhan
+  };
+
+  try {
+    if (panelMode.value === 'add') {
+      const res = await api.post('/dai-ly', payload);
+      if (res.data?.status === 'success') {
+        selectedId.value = res.data.data.MaDaiLy;
+        await loadAgents();
+      }
+    } else {
+      await api.put(`/dai-ly/${selectedId.value}`, payload);
+      await loadAgents();
+    }
+    panelMode.value = 'view';
+  } catch (err) {
+    alert(err.response?.data?.message || 'Có lỗi xảy ra khi lưu đại lý');
   }
-  panelMode.value = 'view';
 };
 
 /* ─── Delete ─── */
 const askDelete     = (a) => { deleteTarget.value = a; };
-const confirmDelete = () => {
-  agents.value = agents.value.filter(a => a.MaDaiLy !== deleteTarget.value.MaDaiLy);
-  if (selectedId.value === deleteTarget.value.MaDaiLy) { selectedId.value = null; panelMode.value = 'view'; }
+const confirmDelete = async () => {
+  const target = deleteTarget.value;
   deleteTarget.value = null;
+  try {
+    await api.delete(`/dai-ly/${target.MaDaiLy}`);
+    await loadAgents();
+    if (selectedId.value === target.MaDaiLy) { selectedId.value = null; panelMode.value = 'view'; }
+  } catch (err) {
+    alert(err.response?.data?.message || 'Không thể xóa đại lý (có phiếu liên quan)');
+  }
 };
 
 /* ─── Export CSV ─── */
