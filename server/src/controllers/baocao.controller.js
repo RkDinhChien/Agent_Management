@@ -1,4 +1,4 @@
-const { Op } = require('sequelize');
+const { Op, QueryTypes } = require('sequelize');
 const {
   sequelize,
   BaoCaoDoanhSo,
@@ -12,32 +12,93 @@ const {
   Quan,
 } = require('../models');
 
+const formatDateOnly = (date) => {
+  const yyyy = date.getFullYear();
+  const mm = String(date.getMonth() + 1).padStart(2, '0');
+  const dd = String(date.getDate()).padStart(2, '0');
+  return `${yyyy}-${mm}-${dd}`;
+};
+
+const parseDateOnly = (value) => {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value || '')) return null;
+  const [year, month, day] = value.split('-').map(Number);
+  const date = new Date(year, month - 1, day);
+  if (date.getFullYear() !== year || date.getMonth() !== month - 1 || date.getDate() !== day) return null;
+  return date;
+};
+
+const parseReportPeriod = ({ thang, nam, tuNgay, denNgay }) => {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  if (tuNgay || denNgay) {
+    const startDate = parseDateOnly(tuNgay);
+    const endDate = parseDateOnly(denNgay);
+
+    if (!startDate || !endDate || startDate > endDate || endDate > today) return null;
+
+    return {
+      month: startDate.getMonth() + 1,
+      year: startDate.getFullYear(),
+      startDate,
+      endDate,
+      startISO: formatDateOnly(startDate),
+      endISO: formatDateOnly(endDate),
+    };
+  }
+
+  const month = parseInt(thang, 10);
+  const year = parseInt(nam, 10);
+
+  if (!Number.isInteger(month) || month < 1 || month > 12 || !Number.isInteger(year) || year < 2000 || year > 2100) {
+    return null;
+  }
+
+  const startDate = new Date(year, month - 1, 1);
+  const endDate = new Date(year, month, 0);
+  const cappedEndDate = endDate > today ? today : endDate;
+
+  return {
+    month,
+    year,
+    startDate,
+    endDate: cappedEndDate,
+    startISO: formatDateOnly(startDate),
+    endISO: formatDateOnly(cappedEndDate),
+  };
+};
+
+const toNumber = (value) => Number.parseFloat(value) || 0;
+
+const mapByAgentId = (rows, mapper) => {
+  const map = new Map();
+  rows.forEach((row) => map.set(Number(row.MaDaiLy), mapper(row)));
+  return map;
+};
+
 /**
- * GET /api/bao-cao/doanh-so?thang=X&nam=Y
+ * GET /api/bao-cao/doanh-so?tuNgay=YYYY-MM-DD&denNgay=YYYY-MM-DD
+ * Backward compatible: ?thang=X&nam=Y
  * Báo cáo doanh số tháng (BM6.1)
  */
 const getDoanhSo = async (req, res) => {
   try {
-    const { thang, nam } = req.query;
+    const { thang, nam, tuNgay, denNgay } = req.query;
 
-    if (!thang || !nam) {
+    if ((!thang || !nam) && (!tuNgay || !denNgay)) {
       return res.status(400).json({
         status: 'error',
-        message: 'Vui lòng chọn tháng và năm.',
+        message: 'Vui lòng chọn khoảng ngày hoặc tháng/năm.',
       });
     }
 
-    const month = parseInt(thang, 10);
-    const year = parseInt(nam, 10);
-    if (Number.isNaN(month) || Number.isNaN(year)) {
+    const period = parseReportPeriod({ thang, nam, tuNgay, denNgay });
+    if (!period) {
       return res.status(400).json({
         status: 'error',
-        message: 'Tháng hoặc năm không hợp lệ.',
+        message: 'Khoảng thời gian không hợp lệ.',
       });
     }
-
-    const startDate = new Date(year, month - 1, 1, 0, 0, 0);
-    const endDate = new Date(year, month, 0, 23, 59, 59);
 
     const daiLys = await DaiLy.findAll({
       include: [
@@ -47,7 +108,7 @@ const getDoanhSo = async (req, res) => {
           model: PhieuXuatHang,
           as: 'phieuXuats',
           where: {
-            NgayLapPhieu: { [Op.between]: [startDate, endDate] },
+            NgayLapPhieu: { [Op.between]: [period.startISO, period.endISO] },
           },
           required: false,
         },
@@ -68,7 +129,7 @@ const getDoanhSo = async (req, res) => {
         LoaiDaiLy: dl.loaiDaiLy?.TenLoai,
         Quan: dl.quan?.TenQuan,
         SoLuongPhieuXuat: soPhieuXuat,
-        TongTriGia: tongTriGia,
+        TongTriGia: Math.round(tongTriGia),
         TiLe: 0,
       };
     });
@@ -83,9 +144,11 @@ const getDoanhSo = async (req, res) => {
     return res.json({
       status: 'success',
       data: {
-        Thang: month,
-        Nam: year,
-        TongDoanhSo: tongDoanhSo,
+        Thang: period.month,
+        Nam: period.year,
+        TuNgay: period.startISO,
+        DenNgay: period.endISO,
+        TongDoanhSo: Math.round(tongDoanhSo),
         chiTiet: resultData,
       },
     });
@@ -97,81 +160,83 @@ const getDoanhSo = async (req, res) => {
 
 const getCongNo = async (req, res) => {
   try {
-    const { thang, nam } = req.query;
+    const { thang, nam, tuNgay, denNgay } = req.query;
 
-    if (!thang || !nam) {
+    if ((!thang || !nam) && (!tuNgay || !denNgay)) {
       return res.status(400).json({
         status: 'error',
-        message: 'Vui lòng chọn tháng và năm.',
+        message: 'Vui lòng chọn khoảng ngày hoặc tháng/năm.',
       });
     }
 
-    const month = parseInt(thang, 10);
-    const year = parseInt(nam, 10);
-    if (Number.isNaN(month) || Number.isNaN(year)) {
-      return res.status(400).json({ status: 'error', message: 'Tháng hoặc năm không hợp lệ.' });
+    const period = parseReportPeriod({ thang, nam, tuNgay, denNgay });
+    if (!period) {
+      return res.status(400).json({ status: 'error', message: 'Khoảng thời gian không hợp lệ.' });
     }
 
-    const startDate = new Date(year, month - 1, 1, 0, 0, 0);
-    const endDate = new Date(year, month, 0, 23, 59, 59);
-
-    // Load all agents with:
-    //  - phieuXuatsTrongKy: exports WITHIN this month (for PhatSinh)
-    //  - phieuThusTrongKy:  collections WITHIN this month (for DaThu)
-    //  - phieuXuatsTatCa:   ALL exports up to end of period (for NoCuoi)
-    //  - phieuThusTatCa:    ALL collections up to end of period (for NoCuoi)
     const daiLys = await DaiLy.findAll({
       include: [
         { model: LoaiDaiLy, as: 'loaiDaiLy' },
         { model: Quan, as: 'quan' },
-        {
-          model: PhieuXuatHang,
-          as: 'phieuXuats',
-          required: false,
-          // Load ALL, we'll filter in JS
-        },
-        {
-          model: PhieuThuTien,
-          as: 'phieuThus',
-          required: false,
-          // Load ALL, we'll filter in JS
-        },
       ],
+      order: [['MaDaiLy', 'ASC']],
     });
 
+    const debtExpr = 'GREATEST(COALESCE(TongTien, 0) - COALESCE(TienTra, 0), 0)';
+    const [phatSinhRows, daThuRows, xuatToEndRows, thuToEndRows] = await Promise.all([
+      sequelize.query(
+        `SELECT MaDaiLy, COALESCE(SUM(${debtExpr}), 0) AS PhatSinh
+         FROM PHIEUXUATHANG
+         WHERE NgayLapPhieu BETWEEN ? AND ?
+         GROUP BY MaDaiLy`,
+        { replacements: [period.startISO, period.endISO], type: QueryTypes.SELECT }
+      ),
+      sequelize.query(
+        `SELECT MaDaiLy, COALESCE(SUM(SoTienThu), 0) AS DaThu
+         FROM PHIEUTHUTIEN
+         WHERE NgayThuTien BETWEEN ? AND ?
+         GROUP BY MaDaiLy`,
+        { replacements: [period.startISO, period.endISO], type: QueryTypes.SELECT }
+      ),
+      sequelize.query(
+        `SELECT MaDaiLy, COALESCE(SUM(${debtExpr}), 0) AS XuatToEnd
+         FROM PHIEUXUATHANG
+         WHERE NgayLapPhieu <= ?
+         GROUP BY MaDaiLy`,
+        { replacements: [period.endISO], type: QueryTypes.SELECT }
+      ),
+      sequelize.query(
+        `SELECT MaDaiLy, COALESCE(SUM(SoTienThu), 0) AS ThuToEnd
+         FROM PHIEUTHUTIEN
+         WHERE NgayThuTien <= ?
+         GROUP BY MaDaiLy`,
+        { replacements: [period.endISO], type: QueryTypes.SELECT }
+      ),
+    ]);
+
+    const phatSinhByAgent = mapByAgentId(phatSinhRows, (row) => toNumber(row.PhatSinh));
+    const daThuByAgent = mapByAgentId(daThuRows, (row) => toNumber(row.DaThu));
+    const xuatToEndByAgent = mapByAgentId(xuatToEndRows, (row) => toNumber(row.XuatToEnd));
+    const thuToEndByAgent = mapByAgentId(thuToEndRows, (row) => toNumber(row.ThuToEnd));
+
+    let tongNoDau = 0;
+    let tongPhatSinh = 0;
+    let tongDaThu = 0;
+    let tongNoCuoi = 0;
+
     const baoCaoData = daiLys.map((dl) => {
-      const allXuats = dl.phieuXuats || [];
-      const allThus  = dl.phieuThus  || [];
+      const id = Number(dl.MaDaiLy);
+      const phatSinh = phatSinhByAgent.get(id) || 0;
+      const daThu = daThuByAgent.get(id) || 0;
+      const xuatToEnd = xuatToEndByAgent.get(id) || 0;
+      const thuToEnd = thuToEndByAgent.get(id) || 0;
+      const noCuoi = Math.max(0, xuatToEnd - thuToEnd);
+      const noDau = Math.max(0, noCuoi - phatSinh + daThu);
 
-      // Phát sinh trong kỳ (phiếu xuất in this month)
-      const tongXuat = allXuats
-        .filter(px => {
-          const d = new Date(px.NgayLapPhieu);
-          return d >= startDate && d <= endDate;
-        })
-        .reduce((sum, px) => sum + parseFloat(px.TongTien || 0), 0);
-
-      // Đã thu trong kỳ (phiếu thu in this month)
-      const tongThu = allThus
-        .filter(pt => {
-          const d = new Date(pt.NgayThuTien);
-          return d >= startDate && d <= endDate;
-        })
-        .reduce((sum, pt) => sum + parseFloat(pt.SoTienThu || 0), 0);
-
-      // Nợ cuối kỳ: tổng tất cả xuất - tổng tất cả thu, tính đến hết ngày endDate
-      const totalXuatToDate = allXuats
-        .filter(px => new Date(px.NgayLapPhieu) <= endDate)
-        .reduce((sum, px) => sum + parseFloat(px.TongTien || 0), 0);
-
-      const totalThuToDate = allThus
-        .filter(pt => new Date(pt.NgayThuTien) <= endDate)
-        .reduce((sum, pt) => sum + parseFloat(pt.SoTienThu || 0), 0);
-
-      const noCuoi = Math.max(0, totalXuatToDate - totalThuToDate);
-
-      // Nợ cuối tháng trước = Nợ đầu kỳ
-      const noDau = Math.max(0, noCuoi - tongXuat + tongThu);
+      tongNoDau += noDau;
+      tongPhatSinh += phatSinh;
+      tongDaThu += daThu;
+      tongNoCuoi += noCuoi;
 
       return {
         MaDaiLy: dl.MaDaiLy,
@@ -179,8 +244,8 @@ const getCongNo = async (req, res) => {
         LoaiDaiLy: dl.loaiDaiLy?.TenLoai,
         Quan: dl.quan?.TenQuan,
         NoDau: Math.round(noDau),
-        PhatSinh: Math.round(tongXuat),
-        DaThu: Math.round(tongThu),
+        PhatSinh: Math.round(phatSinh),
+        DaThu: Math.round(daThu),
         NoCuoi: Math.round(noCuoi),
         HanMuc: parseFloat(dl.loaiDaiLy?.TienNoToiDa) || 0,
       };
@@ -189,8 +254,14 @@ const getCongNo = async (req, res) => {
     res.json({
       status: 'success',
       data: {
-        Thang: month,
-        Nam: year,
+        Thang: period.month,
+        Nam: period.year,
+        TuNgay: period.startISO,
+        DenNgay: period.endISO,
+        TongNoDau: Math.round(tongNoDau),
+        TongPhatSinh: Math.round(tongPhatSinh),
+        TongDaThu: Math.round(tongDaThu),
+        TongNoCuoi: Math.round(tongNoCuoi),
         chiTiet: baoCaoData,
       },
     });

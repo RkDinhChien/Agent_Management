@@ -62,12 +62,6 @@
           <h1 class="ctx-title">Hiệu Suất Kinh Doanh</h1>
         </div>
         <div class="ctx-actions">
-          <select class="sel-month" v-model="filterMonth">
-            <option v-for="m in 12" :key="m" :value="m">Tháng {{ m }}</option>
-          </select>
-          <select class="sel-month" v-model="filterYear">
-            <option v-for="y in [2024,2025,2026]" :key="y" :value="y">{{ y }}</option>
-          </select>
           <button class="btn-csv" @click="exportCSV"><Download :size="13"/> Xuất CSV</button>
           <button class="btn-p" @click="exportPrint"><Printer :size="14"/> In báo cáo</button>
         </div>
@@ -135,7 +129,7 @@
           </div>
           <div class="donut-legend">
             <span class="dl-dot" style="background:#059669"></span> Đã thu {{ collectRatePct }}%
-            <span class="dl-dot" style="background:#f59e0b;margin-left:6px"></span> Còn {{ 100-collectRatePct }}%
+            <span class="dl-dot" style="background:#f59e0b;margin-left:6px"></span> Còn {{ remainingCollectPct }}%
           </div>
           <span class="cs-lbl" style="margin-top:4px">Tỉ lệ thu nợ</span>
         </div>
@@ -155,9 +149,9 @@
           <span class="cs-delta" :class="overDebtAgents > 0 ? 'cs-down' : 'cs-up'">
             {{ overDebtAgents > 0 ? '↑ Cần ưu tiên thu hồi' : '✓ Tất cả trong hạn mức' }}
           </span>
-          <div class="ctl-track" style="margin-top:8px">
+            <div class="ctl-track" style="margin-top:8px">
             <div class="ctl-fill" :style="{
-              width: (overDebtAgents / debtRows.length * 100) + '%',
+              width: overDebtPct + '%',
               background: overDebtAgents > 0 ? '#f87171' : '#059669'
             }"></div>
           </div>
@@ -169,11 +163,11 @@
       <!-- Month progress -->
       <div class="ctx-timeline">
         <div class="ctl-row">
-          <span class="ctl-label">T{{ filterMonth }}/{{ filterYear }} · Nhìn vào số liệu, hiểu xu hướng, ra quyết định chuẩn xác</span>
+          <span class="ctl-label">{{ dateRangeLabel }} · Nhìn vào số liệu, hiểu xu hướng, ra quyết định chuẩn xác</span>
           <span class="ctl-pct">{{ fmtM(totalRevenue) }} doanh thu</span>
         </div>
         <div class="ctl-track">
-          <div class="ctl-fill" :style="{ width: Math.min(totalRevenue/300*100,100) + '%' }"></div>
+          <div class="ctl-fill" :style="{ width: revenueProgressPct + '%' }"></div>
         </div>
       </div>
     </div>
@@ -181,16 +175,16 @@
 
     <!-- ══ TAB BAR ══ -->
     <div class="stab-wrap">
-      <div class="stab-group">
-        <button class="stab" :class="{ 'stab-active': reportTab==='doanh-so' }" @click="reportTab='doanh-so'; selected=null">
+        <div class="stab-group">
+        <button class="stab" :class="{ 'stab-active': reportTab==='doanh-so' }" @click="setReportTab('doanh-so')">
           <BarChart2 :size="14"/> Doanh số <span class="stab-code">BM6.1</span>
         </button>
-        <button class="stab" :class="{ 'stab-active': reportTab==='cong-no' }" @click="reportTab='cong-no'; selected=null">
+        <button class="stab" :class="{ 'stab-active': reportTab==='cong-no' }" @click="setReportTab('cong-no')">
           <Landmark :size="14"/> Công nợ <span class="stab-code">BM6.2</span>
         </button>
       </div>
       <span class="stab-meta" v-if="reportTab==='doanh-so'">
-        {{ filteredDs.length }} đại lý &nbsp;·&nbsp; T{{ filterMonth }}/{{ filterYear }} &nbsp;·&nbsp; Tổng <strong>{{ fmtM(totalRevenue) }}</strong>
+        {{ filteredDs.length }} đại lý &nbsp;·&nbsp; {{ dateRangeLabel }} &nbsp;·&nbsp; Tổng <strong>{{ fmtM(totalRevenue) }}</strong>
       </span>
       <span class="stab-meta" v-else>
         {{ filteredCn.length }} đại lý &nbsp;·&nbsp;
@@ -202,28 +196,23 @@
 
     <!-- ══ BỘ LỌC BÁO CÁO ══ -->
     <div class="filter-bar">
-      <div class="fb-label">
-        <SlidersHorizontal :size="14"/>
-        <span>Bộ lọc báo cáo</span>
-      </div>
-      <div class="fb-divider"></div>
       <div class="fb-section">
         <span class="fb-section-lbl">Mối quan tâm</span>
         <div class="fb-radios">
           <label class="fb-radio" :class="{ active: mqtFilter==='doanh-thu' }">
-            <input type="radio" v-model="mqtFilter" value="doanh-thu"/>
+            <input type="radio" :checked="mqtFilter==='doanh-thu'" value="doanh-thu" @change="setInterest('doanh-thu')"/>
             <span class="fb-radio-dot"></span>Doanh thu
           </label>
           <label class="fb-radio" :class="{ active: mqtFilter==='cong-no' }">
-            <input type="radio" v-model="mqtFilter" value="cong-no"/>
+            <input type="radio" :checked="mqtFilter==='cong-no'" value="cong-no" @change="setInterest('cong-no')"/>
             <span class="fb-radio-dot"></span>Công nợ
           </label>
           <label class="fb-radio" :class="{ active: mqtFilter==='vuot-han' }">
-            <input type="radio" v-model="mqtFilter" value="vuot-han"/>
+            <input type="radio" :checked="mqtFilter==='vuot-han'" value="vuot-han" @change="setInterest('vuot-han')"/>
             <span class="fb-radio-dot"></span>Vượt hạn mức
           </label>
           <label class="fb-radio" :class="{ active: mqtFilter==='tan-suat' }">
-            <input type="radio" v-model="mqtFilter" value="tan-suat"/>
+            <input type="radio" :checked="mqtFilter==='tan-suat'" value="tan-suat" @change="setInterest('tan-suat')"/>
             <span class="fb-radio-dot"></span>Tần suất xuất
           </label>
         </div>
@@ -232,16 +221,17 @@
       <div class="fb-section">
         <span class="fb-section-lbl">Thời gian</span>
         <div class="fb-time-row">
-          <select class="fb-sel fb-sel-period" v-model="filterPeriod">
-            <option value="this">Tháng này</option>
-            <option value="prev">Tháng trước</option>
-          </select>
-          <select class="fb-sel" v-model="filterMonth">
-            <option v-for="m in 12" :key="m" :value="m">T{{ m }}</option>
-          </select>
-          <select class="fb-sel" v-model="filterYear">
-            <option v-for="y in [2024,2025,2026]" :key="y" :value="y">{{ y }}</option>
-          </select>
+          <label class="date-field">
+            <span>Từ</span>
+            <input class="fb-date" type="date" v-model="filterStartDate" :max="maxReportDate"/>
+          </label>
+          <label class="date-field">
+            <span>Đến</span>
+            <input class="fb-date" type="date" v-model="filterEndDate" :min="filterStartDate" :max="maxReportDate"/>
+          </label>
+          <button class="apply-filter-btn" :disabled="!hasPendingDateChange || loading" @click="applyDateFilter">
+            Áp dụng
+          </button>
         </div>
       </div>
     </div>
@@ -266,7 +256,7 @@
       <div class="dov-sep"></div>
       <div class="dov-cell dov-cell-bar">
         <div class="dov-bar-track">
-          <div class="dov-bar-fill" :style="{ width: collectRatePct+'%' }"></div>
+          <div class="dov-bar-fill" :style="{ width: collectRatePct + '%' }"></div>
         </div>
         <span class="dov-lbl"><strong>{{ collectRatePct }}%</strong> đã thu trong kỳ</span>
       </div>
@@ -301,6 +291,12 @@
         <!-- ─ Doanh số table ─ -->
         <template v-if="reportTab==='doanh-so'">
           <table class="bc-table">
+            <colgroup>
+              <col class="col-agent"/>
+              <col class="col-count"/>
+              <col class="col-money"/>
+              <col class="col-rate"/>
+            </colgroup>
             <thead>
               <tr>
                 <th>Đại lý</th>
@@ -328,8 +324,10 @@
                 <td class="num">{{ r.slPhieuXuat }}</td>
                 <td class="num fw-700">{{ fmtM(r.tongTriGia) }}</td>
                 <td class="num">
-                  <div class="pct-bar-wrap">
-                    <div class="pct-bar" :style="{ width: r.tyLe+'%', background: 'var(--c-primary)' }"></div>
+                  <div class="pct-meter">
+                    <div class="pct-track">
+                      <div class="pct-bar" :style="{ width: r.tyLe+'%' }"></div>
+                    </div>
                     <span class="pct-txt">{{ r.tyLe }}%</span>
                   </div>
                 </td>
@@ -344,6 +342,14 @@
         <!-- ─ Công nợ table ─ -->
         <template v-if="reportTab==='cong-no'">
           <table class="bc-table">
+            <colgroup>
+              <col class="col-agent"/>
+              <col class="col-debt"/>
+              <col class="col-debt"/>
+              <col class="col-debt"/>
+              <col class="col-debt-end"/>
+              <col class="col-status"/>
+            </colgroup>
             <thead>
               <tr>
                 <th>Đại lý</th>
@@ -351,7 +357,7 @@
                 <th class="num">Phát sinh</th>
                 <th class="num">Đã thu</th>
                 <th class="num">Nợ cuối kỳ</th>
-                <th class="num">Trạng thái</th>
+                <th class="center">Trạng thái</th>
               </tr>
             </thead>
             <tbody>
@@ -374,7 +380,7 @@
                 <td class="num text-amber">+{{ fmtM(r.phatSinh) }}</td>
                 <td class="num text-green">-{{ fmtM(r.daThu) }}</td>
                 <td class="num fw-700" :class="r.noCuoi > r.hanMuc ? 'text-red' : ''">{{ fmtM(r.noCuoi) }}</td>
-                <td class="num">
+                <td class="center">
                   <span class="no-badge" :class="debtStatusClass(r)">{{ debtStatusLabel(r) }}</span>
                 </td>
               </tr>
@@ -454,7 +460,7 @@
 
           <!-- Doanh số detail -->
           <template v-if="selected.tab === 'doanh-so'">
-            <div class="sp-section-label">Doanh số tháng {{ filterMonth }}/{{ filterYear }}</div>
+            <div class="sp-section-label">Doanh số {{ dateRangeLabel }}</div>
             <dl class="dl-flex">
               <dt>Số phiếu xuất</dt><dd>{{ selected.slPhieuXuat }} phiếu</dd>
               <dt>Tổng trị giá</dt><dd class="fw-700">{{ fmtM(selected.tongTriGia) }}</dd>
@@ -470,7 +476,7 @@
 
           <!-- Công nợ detail -->
           <template v-if="selected.tab === 'cong-no'">
-            <div class="sp-section-label">Báo cáo công nợ tháng {{ filterMonth }}/{{ filterYear }}</div>
+            <div class="sp-section-label">Báo cáo công nợ {{ dateRangeLabel }}</div>
             <dl class="dl-flex">
               <dt>Nợ đầu kỳ</dt><dd>{{ fmtM(selected.noDau) }}</dd>
               <dt>Phát sinh thêm</dt><dd class="text-amber">+{{ fmtM(selected.phatSinh) }}</dd>
@@ -499,7 +505,7 @@
           <div class="sp-info-grid">
             <div class="sig-item"><div class="sig-label">Quận</div><div class="sig-val">{{ selected.district }}</div></div>
             <div class="sig-item"><div class="sig-label">Mã ĐL</div><div class="sig-val">ĐL-{{ String(selected.id).padStart(3,'0') }}</div></div>
-            <div class="sig-item"><div class="sig-label">Tháng BC</div><div class="sig-val">T{{ filterMonth }}/{{ filterYear }}</div></div>
+            <div class="sig-item"><div class="sig-label">Kỳ BC</div><div class="sig-val">{{ dateRangeLabel }}</div></div>
             <div class="sig-item"><div class="sig-label">Trạng thái</div>
               <div class="sig-val">
                 <span v-if="selected.tab==='cong-no'" class="no-badge" :class="debtStatusClass(selected)">{{ debtStatusLabel(selected) }}</span>
@@ -529,14 +535,22 @@ import { ref, computed, onMounted, watch } from 'vue';
 import api from '../services/api';
 import {
   Download, Printer, BarChart2, CircleDollarSign, PieChart, AlertTriangle,
-  TrendingUp, TrendingDown, CheckCircle, Search, X, Landmark, SlidersHorizontal
+  TrendingUp, TrendingDown, CheckCircle, Search, X, Landmark
 } from 'lucide-vue-next';
 
 // ── page scope ──────────────────────────────────────────────────
 const _now = new Date();
-const filterMonth  = ref(_now.getMonth() + 1);
-const filterYear   = ref(_now.getFullYear());
-const filterPeriod = ref('this');
+const toDateInput = (date) => {
+  const yyyy = date.getFullYear();
+  const mm = String(date.getMonth() + 1).padStart(2, '0');
+  const dd = String(date.getDate()).padStart(2, '0');
+  return `${yyyy}-${mm}-${dd}`;
+};
+const maxReportDate = toDateInput(_now);
+const filterStartDate = ref(toDateInput(new Date(_now.getFullYear(), _now.getMonth(), 1)));
+const filterEndDate   = ref(maxReportDate);
+const appliedStartDate = ref(filterStartDate.value);
+const appliedEndDate   = ref(filterEndDate.value);
 const mqtFilter    = ref('doanh-thu');
 const reportTab    = ref('doanh-so');
 const search      = ref('');
@@ -579,13 +593,40 @@ const dsRows   = ref([]);
 const debtRows = ref([]);
 const loading  = ref(false);
 
+const fmtShortDate = (value) => {
+  if (!value) return '';
+  const [year, month, day] = value.split('-');
+  return `${day}/${month}/${year}`;
+};
+
+const dateRangeLabel = computed(() => {
+  if (!appliedStartDate.value || !appliedEndDate.value) return 'Chưa chọn kỳ báo cáo';
+  return `${fmtShortDate(appliedStartDate.value)} - ${fmtShortDate(appliedEndDate.value)}`;
+});
+const hasPendingDateChange = computed(() => (
+  filterStartDate.value !== appliedStartDate.value || filterEndDate.value !== appliedEndDate.value
+));
+
 const loadReports = async () => {
+  if (!appliedStartDate.value || !appliedEndDate.value || appliedStartDate.value > appliedEndDate.value) {
+    showToast('Khoảng ngày báo cáo không hợp lệ', 'err');
+    return;
+  }
+
   loading.value = true;
   selected.value = null;
   try {
+    const [startYear, startMonth] = appliedStartDate.value.split('-').map(Number);
+    const params = new URLSearchParams({
+      tuNgay: appliedStartDate.value,
+      denNgay: appliedEndDate.value,
+      thang: String(startMonth),
+      nam: String(startYear),
+    }).toString();
+
     const [dsRes, cnRes] = await Promise.all([
-      api.get(`/bao-cao/doanh-so?thang=${filterMonth.value}&nam=${filterYear.value}`),
-      api.get(`/bao-cao/cong-no?thang=${filterMonth.value}&nam=${filterYear.value}`),
+      api.get(`/bao-cao/doanh-so?${params}`),
+      api.get(`/bao-cao/cong-no?${params}`),
     ]);
 
     const M = 1_000_000;
@@ -611,23 +652,35 @@ const loadReports = async () => {
     }));
   } catch (err) {
     console.error('Load reports error:', err?.response?.data || err.message);
+    showToast(err.response?.data?.message || 'Không tải được dữ liệu báo cáo', 'err');
   } finally {
     loading.value = false;
   }
 };
 
 onMounted(loadReports);
-watch([filterMonth, filterYear], loadReports);
+watch(reportTab, (tab) => {
+  if (tab === 'doanh-so' && !['doanh-thu', 'tan-suat'].includes(mqtFilter.value)) {
+    mqtFilter.value = 'doanh-thu';
+  }
+  if (tab === 'cong-no' && !['cong-no', 'vuot-han'].includes(mqtFilter.value)) {
+    mqtFilter.value = 'cong-no';
+  }
+});
 
 // ── KPI computeds ─────────────────────────────────────────────────
 const totalRevenue   = computed(() => dsRows.value.reduce((s,r) => s + r.tongTriGia, 0));
 const totalCollected = computed(() => debtRows.value.reduce((s,r) => s + r.daThu, 0));
 const totalDebt      = computed(() => debtRows.value.reduce((s,r) => s + r.noCuoi, 0));
 const overDebtAgents = computed(() => debtRows.value.filter(r => r.noCuoi > r.hanMuc).length);
+const totalPhatSinh  = computed(() => debtRows.value.reduce((s,r) => s + r.phatSinh, 0));
 const collectRatePct = computed(() => {
-  const totalPhatSinh = debtRows.value.reduce((s,r) => s + r.phatSinh, 0);
-  return Math.round(totalCollected.value / totalPhatSinh * 100);
+  if (totalPhatSinh.value <= 0) return 0;
+  return Math.min(Math.round(totalCollected.value / totalPhatSinh.value * 100), 100);
 });
+const remainingCollectPct = computed(() => Math.max(100 - collectRatePct.value, 0));
+const overDebtPct = computed(() => debtRows.value.length ? Math.min(overDebtAgents.value / debtRows.value.length * 100, 100) : 0);
+const revenueProgressPct = computed(() => Math.min((totalRevenue.value / 300) * 100, 100));
 
 const revDelta  = 8.3;
 const collectDelta = 5.1;
@@ -648,6 +701,33 @@ function setSort(key) {
   if (sortKey.value === key) sortDir.value *= -1;
   else { sortKey.value = key; sortDir.value = -1; }
 }
+
+const setReportTab = (tab) => {
+  reportTab.value = tab;
+  selected.value = null;
+};
+
+const setInterest = (interest) => {
+  mqtFilter.value = interest;
+  selected.value = null;
+  reportTab.value = ['cong-no', 'vuot-han'].includes(interest) ? 'cong-no' : 'doanh-so';
+};
+
+const applyDateFilter = () => {
+  if (!filterStartDate.value || !filterEndDate.value || filterStartDate.value > filterEndDate.value) {
+    showToast('Ngày bắt đầu phải nhỏ hơn hoặc bằng ngày kết thúc', 'err');
+    return;
+  }
+  if (filterEndDate.value > maxReportDate) {
+    showToast('Ngày kết thúc không được vượt quá ngày hiện tại', 'err');
+    filterEndDate.value = maxReportDate;
+    return;
+  }
+
+  appliedStartDate.value = filterStartDate.value;
+  appliedEndDate.value = filterEndDate.value;
+  loadReports();
+};
 
 const filteredDs = computed(() => {
   let rows = dsRows.value.filter(r => r.name.toLowerCase().includes(search.value.toLowerCase()));
@@ -727,7 +807,7 @@ const exportCSV = () => {
   const csv = rows.map(r => r.join(',')).join('\n');
   const a = document.createElement('a');
   a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent('﻿' + csv);
-  a.download = `bao-cao-${reportTab.value}-t${filterMonth.value}-${filterYear.value}.csv`;
+  a.download = `bao-cao-${reportTab.value}-${appliedStartDate.value}-${appliedEndDate.value}.csv`;
   a.click();
   showToast('Đã xuất file CSV thành công');
 };
@@ -818,13 +898,6 @@ const exportPrint = () => {
   color: white; cursor: pointer;
 }
 .btn-p:hover { opacity: .9; }
-
-.sel-month {
-  background: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 10px;
-  padding: 8px 12px; font-size: .78rem; font-weight: 600; color: #374151;
-  cursor: pointer; outline: none;
-}
-.sel-month:focus { border-color: var(--c-primary); }
 
 .ctx-divider { height: 1px; background: rgba(16,185,129,.1); margin-bottom: 20px; position: relative; z-index: 2; }
 
@@ -976,25 +1049,50 @@ const exportPrint = () => {
 .sort-btn:hover, .sort-active { border-color: var(--c-primary); color: var(--c-primary); background: var(--c-primary-bg); }
 
 /* Table */
-.bc-table { width: 100%; border-collapse: collapse; }
+.bc-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  table-layout: fixed;
+}
+.bc-table .col-agent { width: 38%; }
+.bc-table .col-count { width: 16%; }
+.bc-table .col-money { width: 24%; }
+.bc-table .col-rate { width: 22%; }
+.bc-table .col-debt { width: 14%; }
+.bc-table .col-debt-end { width: 16%; }
+.bc-table .col-status { width: 14%; }
 .bc-table th {
   font-size: .65rem; font-weight: 800; text-transform: uppercase;
   letter-spacing: .6px; color: #94a3b8;
-  padding: 10px 24px; text-align: left;
+  padding: 12px 18px; text-align: left;
   background: #fafcff; border-bottom: 2px solid #f1f5f9;
+  white-space: nowrap;
 }
 .bc-table th.num { text-align: right; }
-.bc-table td { padding: 14px 24px; border-bottom: 1px solid #f8fafc; font-size: .84rem; color: #1e293b; }
-.bc-table td.num { text-align: right; }
+.bc-table th.center { text-align: center; }
+.bc-table td {
+  padding: 14px 18px;
+  border-bottom: 1px solid #eef2f7;
+  font-size: .84rem;
+  color: #1e293b;
+  vertical-align: middle;
+}
+.bc-table td.num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.bc-table td.center { text-align: center; }
 .bc-table tbody tr { cursor: pointer; transition: background .12s; }
-.bc-table tbody tr:hover { background: #fafafa; }
+.bc-table tbody tr:hover { background: #f8fafc; }
 .bc-table tbody tr.row-sel { background: var(--c-primary-bg); }
 .fw-700 { font-weight: 700; }
 .text-amber { color: #d97706; }
 .text-green { color: #059669; }
 .text-red   { color: #dc2626; }
 
-.row-av-wrap { display: flex; align-items: center; gap: 10px; }
+.row-av-wrap { display: flex; align-items: center; gap: 10px; min-width: 0; }
 .row-av {
   position: relative; width: 36px; height: 36px; border-radius: 8px; flex-shrink: 0;
   border: 1px solid rgba(0,0,0,.12); box-shadow: 0 1px 4px rgba(0,0,0,.15);
@@ -1002,13 +1100,45 @@ const exportPrint = () => {
 }
 .av-logo { position:absolute; inset:0; width:100%; height:100%; object-fit:contain; object-position:center; padding:5px; box-sizing:border-box; z-index:2; background:white; display:block; }
 .av-init { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:800; color:white; letter-spacing:-.3px; }
-.row-name { font-weight: 700; font-size: .85rem; color: #1e293b; }
-.row-sub  { font-size: .72rem; color: #94a3b8; }
+.row-av-wrap > div:last-child { min-width: 0; }
+.row-name {
+  font-weight: 700;
+  font-size: .85rem;
+  color: #1e293b;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.row-sub  { font-size: .72rem; color: #94a3b8; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 /* Percent bar */
-.pct-bar-wrap { display: flex; align-items: center; gap: 8px; }
-.pct-bar { height: 7px; border-radius: 4px; min-width: 4px; background: linear-gradient(90deg,#34d399,#059669) !important; }
-.pct-txt { font-size: .75rem; font-weight: 700; color: #475569; white-space: nowrap; }
+.pct-meter {
+  display: grid;
+  grid-template-columns: minmax(70px, 1fr) 42px;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+.pct-track {
+  height: 8px;
+  background: #eaf1f5;
+  border-radius: 999px;
+  overflow: hidden;
+}
+.pct-bar {
+  height: 100%;
+  min-width: 4px;
+  border-radius: 999px;
+  background: linear-gradient(90deg,#34d399,#059669);
+}
+.pct-txt {
+  font-size: .75rem;
+  font-weight: 800;
+  color: #475569;
+  white-space: nowrap;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
 
 /* Rank badges */
 .rank-badge { font-size: .8rem; font-weight: 700; }
@@ -1019,7 +1149,15 @@ const exportPrint = () => {
 
 /* Status badges */
 .no-badge {
-  padding: 3px 10px; border-radius: 6px; font-size: .7rem; font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 76px;
+  padding: 4px 9px;
+  border-radius: 999px;
+  font-size: .7rem;
+  font-weight: 800;
+  white-space: nowrap;
 }
 .badge-ok      { background: #dcfce7; color: #166534; }
 .badge-warn    { background: #fef3c7; color: #92400e; }
@@ -1203,43 +1341,103 @@ const exportPrint = () => {
 .toast-ok  { background: #059669; }
 .toast-err { background: #dc2626; }
 
-/* ══ BỘ LỌC BÁO CÁO ══ */
+/* ══ REPORT FILTERS ══ */
 .filter-bar {
-  display: flex; align-items: center;
-  background: white; border-radius: 12px; margin-bottom: 18px;
-  border: 1px solid rgba(15,23,42,.07); border-left: 3px solid #059669;
-  box-shadow: 0 1px 3px rgba(15,23,42,.05); padding: 0 4px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  background: rgba(255,255,255,.92);
+  border-radius: 16px;
+  margin-bottom: 18px;
+  border: 1px solid rgba(148,163,184,.22);
+  box-shadow: 0 8px 24px rgba(15,23,42,.06), 0 1px 2px rgba(15,23,42,.04);
+  padding: 12px 16px;
 }
-.fb-label {
-  display: flex; align-items: center; gap: 8px; padding: 14px 16px;
-  font-size: 12px; font-weight: 800; color: #0f172a; white-space: nowrap; flex-shrink: 0;
-}
-.fb-divider { width: 1px; background: #f1f5f9; align-self: stretch; margin: 8px 4px; }
-.fb-section { display: flex; flex-direction: column; gap: 4px; padding: 8px 14px; }
+.fb-divider { width: 1px; background: #eef2f7; align-self: stretch; margin: 0; }
+.fb-section { display: flex; flex-direction: column; gap: 7px; min-width: 0; }
+.fb-section:first-child { flex: 1; }
 .fb-section-lbl {
   font-size: 9px; font-weight: 800; color: #94a3b8;
   text-transform: uppercase; letter-spacing: .8px;
 }
-.fb-radios { display: flex; align-items: center; gap: 4px; }
+.fb-radios { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .fb-radio {
-  display: flex; align-items: center; gap: 6px; padding: 5px 12px;
-  border-radius: 20px; cursor: pointer; font-size: 12.5px; font-weight: 600;
-  color: #475569; border: 1.5px solid transparent; transition: all .14s; user-select: none;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 34px;
+  padding: 6px 13px;
+  border-radius: 999px;
+  cursor: pointer;
+  font-size: 12.5px;
+  font-weight: 750;
+  color: #475569;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  transition: all .14s;
+  user-select: none;
 }
 .fb-radio input { display: none; }
 .fb-radio-dot {
   width: 13px; height: 13px; border-radius: 50%; border: 1.5px solid #cbd5e1;
   flex-shrink: 0; transition: all .14s;
 }
-.fb-radio.active { background: #f0fdf4; border-color: #059669; color: #059669; }
+.fb-radio.active { background: #ecfdf5; border-color: #059669; color: #059669; box-shadow: 0 1px 3px rgba(5,150,105,.12); }
 .fb-radio.active .fb-radio-dot { border-color: #059669; background: #059669; box-shadow: inset 0 0 0 3px white; }
-.fb-time-row { display: flex; align-items: center; gap: 6px; }
-.fb-sel {
-  background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px;
-  padding: 4px 8px; font-size: 12px; font-weight: 600; color: #374151; cursor: pointer; outline: none;
+.fb-time-row { display: flex; align-items: center; gap: 8px; }
+.date-field {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 36px;
+  padding: 4px 8px 4px 10px;
+  background: #f8fafc;
+  border: 1px solid #dce4ee;
+  border-radius: 10px;
 }
-.fb-sel:focus { border-color: #059669; }
-.fb-sel-period { min-width: 100px; }
+.date-field span {
+  font-size: 10px;
+  font-weight: 850;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: .45px;
+}
+.fb-date {
+  width: 136px;
+  border: none;
+  background: transparent;
+  outline: none;
+  color: #1f2937;
+  font-size: 12.5px;
+  font-weight: 750;
+  font-family: inherit;
+}
+.date-field:focus-within {
+  border-color: #059669;
+  box-shadow: 0 0 0 3px rgba(5,150,105,.08);
+  background: #fff;
+}
+.apply-filter-btn {
+  min-height: 36px;
+  padding: 0 14px;
+  border: none;
+  border-radius: 10px;
+  background: #059669;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 850;
+  font-family: inherit;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(5,150,105,.22);
+}
+.apply-filter-btn:hover:not(:disabled) { background: #047857; }
+.apply-filter-btn:disabled {
+  cursor: not-allowed;
+  color: #94a3b8;
+  background: #eef2f7;
+  box-shadow: none;
+}
 
 /* ══ CHART PANEL ══ */
 .list-wrap { grid-template-columns: 1fr 260px !important; }
