@@ -438,6 +438,7 @@
 
 <script setup>
 import { ref, computed, reactive, onMounted, watch } from 'vue';
+import { usePermission } from '../composables/usePermission';
 import api from '../services/api';
 import { parseError } from '../utils/errorMessages';
 import MoneyInput from '../components/MoneyInput.vue';
@@ -458,6 +459,8 @@ const SortIcon = {
 
 /* ── Constants ── */
 const products = ref([]);
+
+const { canAdd, canEdit, canDelete } = usePermission('PhieuNhapView');
 
 const loadProducts = async () => {
   try {
@@ -642,6 +645,10 @@ const showToast = (msg, type = 'success') => {
 const openView = (r) => { selectedId.value = r.id; panelMode.value = 'view'; };
 
 const openCreate = () => {
+  if (!canAdd.value) {
+    showToast('Bạn không có quyền thực hiện chức năng này', 'danger');
+    return;
+  }
   selectedId.value = null;
   panelMode.value  = 'create';
   form.value       = emptyForm();
@@ -649,6 +656,10 @@ const openCreate = () => {
 };
 
 const openEdit = (r) => {
+  if (!canEdit.value) {
+    showToast('Bạn không có quyền thực hiện chức năng này', 'danger');
+    return;
+  }
   selectedId.value = r.id;
   panelMode.value  = 'edit';
   form.value = { date: r.rawDate, items: r.items.map(i => ({ ...i })) };
@@ -659,7 +670,13 @@ const closePanel = () => { selectedId.value = null; panelMode.value = 'view'; };
 
 
 
-const askDelete     = (r) => { deleteTarget.value = r; };
+const askDelete     = (r) => {
+  if (!canDelete.value) {
+    showToast('Bạn không có quyền thực hiện chức năng này', 'danger');
+    return;
+  }
+  deleteTarget.value = r;
+};
 const confirmDelete = async () => {
   const target = deleteTarget.value;
   deleteTarget.value = null;

@@ -436,6 +436,7 @@
 
 <script setup>
 import { ref, computed, reactive, onMounted, watch } from 'vue';
+import { usePermission } from '../composables/usePermission';
 import api from '../services/api';
 import MoneyInput from '../components/MoneyInput.vue';
 import { parseError } from '../utils/errorMessages';
@@ -466,6 +467,19 @@ const AGENT_CLR = [
 const agentColor = (id) => AGENT_CLR[id % AGENT_CLR.length];
 
 const agents = ref([]);
+const thamSo = ref({ apDungQDKiemTraSoTienThu: true });
+
+const loadThamSo = async () => {
+  try {
+    const res = await api.get('/tham-so');
+    const data = res.data?.data;
+    if (data) {
+      thamSo.value.apDungQDKiemTraSoTienThu = Boolean(data.ApDungQDKiemTraSoTienThu);
+    }
+  } catch (err) {
+    console.warn('Failed to load tham so', err);
+  }
+};
 
 const loadAgents = async () => {
   try {
@@ -484,6 +498,8 @@ const loadAgents = async () => {
 
 /* ── Data ── */
 const receipts = ref([]);
+
+const { canAdd, canEdit, canDelete } = usePermission('ThuTienView');
 
 const loadReceipts = async () => {
   try {
@@ -506,6 +522,7 @@ const loadReceipts = async () => {
 };
 
 onMounted(() => {
+  loadThamSo();
   loadAgents();
   loadReceipts();
 });
@@ -708,6 +725,10 @@ const openView = (r) => { selectedId.value = r.id; panelMode.value = 'view'; };
 
 const editForm = ref({ date: '', amount: 0 });
 const openEdit = (r) => {
+  if (!canEdit.value) {
+    showToast('Bạn không có quyền thực hiện chức năng này', 'danger');
+    return;
+  }
   selectedId.value = r.id;
   editForm.value = {
     date: r.rawDate ? r.rawDate.split('T')[0] : today,
@@ -740,6 +761,10 @@ const submitEdit = async () => {
 };
 
 const openCreate = () => {
+  if (!canAdd.value) {
+    showToast('Bạn không có quyền thực hiện chức năng này', 'danger');
+    return;
+  }
   selectedId.value = null;
   panelMode.value  = 'create';
   form.value       = emptyForm();
@@ -748,7 +773,13 @@ const openCreate = () => {
 
 const closePanel = () => { selectedId.value = null; panelMode.value = 'view'; };
 
-const askDelete     = (r) => { deleteTarget.value = r; };
+const askDelete     = (r) => {
+  if (!canDelete.value) {
+    showToast('Bạn không có quyền thực hiện chức năng này', 'danger');
+    return;
+  }
+  deleteTarget.value = r;
+};
 const confirmDelete = async () => {
   const target = deleteTarget.value;
   deleteTarget.value = null;
@@ -769,8 +800,8 @@ const submitCreate = async () => {
   const agnt = getAgent(Number(form.value.agentId));
   const amt  = Number(form.value.amount);
   if (!amt || amt <= 0) { errors.amount = 'Vui lòng nhập số tiền hợp lệ'; return; }
-  
-  if (agnt && amt > agnt.debt) {
+
+  if (agnt && thamSo.value.apDungQDKiemTraSoTienThu && amt > agnt.debt) {
     errors.amount = `Số tiền vượt quá nợ hiện tại (${fmtVND(agnt.debt)})`;
     return;
   }

@@ -477,7 +477,8 @@
 </template>
 
 <script setup>
-import { ref, computed, reactive, watch, onMounted } from 'vue';
+import { ref, computed, reactive, watch, onMounted, onUnmounted } from 'vue';
+import { usePermission } from '../composables/usePermission';
 import api from '../services/api';
 import { parseError } from '../utils/errorMessages';
 import {
@@ -523,6 +524,8 @@ const prodCatColor = (cat) => PROD_CATS[cat] ?? '#64748b'
 
 const products = ref([]);
 
+const { canAdd, canEdit, canDelete } = usePermission('MatHangView');
+
 const loadProducts = async () => {
   try {
     const res = await api.get('/mat-hang');
@@ -548,6 +551,12 @@ const loadProducts = async () => {
 onMounted(() => {
   loadProducts();
   loadDvts();
+  // Listen for external inventory updates (e.g., after creating/updating receipts)
+  window.addEventListener('inventory-updated', loadProducts);
+});
+
+onUnmounted(() => {
+  window.removeEventListener('inventory-updated', loadProducts);
 });
 
 /* ── Product image URLs — verified Wikimedia Commons thumbnails */
@@ -675,6 +684,10 @@ const showToast = (msg, type = 'success') => {
 const openView = (p) => { selectedId.value = p.id; panelMode.value = 'view'; };
 
 const openAdd = () => {
+  if (!canAdd.value) {
+    showToast('Bạn không có quyền thực hiện chức năng này', 'danger');
+    return;
+  }
   selectedId.value = null;
   panelMode.value  = 'add';
   form.value       = emptyForm();
@@ -682,6 +695,10 @@ const openAdd = () => {
 };
 
 const openEdit = (p) => {
+  if (!canEdit.value) {
+    showToast('Bạn không có quyền thực hiện chức năng này', 'danger');
+    return;
+  }
   selectedId.value = p.id;
   panelMode.value  = 'edit';
   form.value = { name: p.name, dvt: p.dvt, buyPrice: p.buyPrice, stock: p.stock };
@@ -734,7 +751,13 @@ const submitEdit = async () => {
   }
 };
 
-const askDelete     = (p) => { deleteTarget.value = p; };
+const askDelete     = (p) => {
+  if (!canDelete.value) {
+    showToast('Bạn không có quyền thực hiện chức năng này', 'danger');
+    return;
+  }
+  deleteTarget.value = p;
+};
 const confirmDelete = async () => {
   const target = deleteTarget.value;
   deleteTarget.value = null;
