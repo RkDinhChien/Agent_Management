@@ -53,6 +53,10 @@ const login = async (req, res) => {
       MaChucNang: cn.MaChucNang,
       TenChucNang: cn.TenChucNang,
       TenManHinhDuocLoad: cn.TenManHinhDuocLoad,
+      Xem:  !!cn.PhanQuyen?.Xem,
+      Them: !!cn.PhanQuyen?.Them,
+      Sua:  !!cn.PhanQuyen?.Sua,
+      Xoa:  !!cn.PhanQuyen?.Xoa,
     }));
 
     // Tạo JWT token
@@ -118,6 +122,10 @@ const getMe = async (req, res) => {
       MaChucNang: cn.MaChucNang,
       TenChucNang: cn.TenChucNang,
       TenManHinhDuocLoad: cn.TenManHinhDuocLoad,
+      Xem:  !!cn.PhanQuyen?.Xem,
+      Them: !!cn.PhanQuyen?.Them,
+      Sua:  !!cn.PhanQuyen?.Sua,
+      Xoa:  !!cn.PhanQuyen?.Xoa,
     }));
 
     res.json({
