@@ -1,4 +1,4 @@
-const { Op } = require('sequelize');
+const { Op, fn, col } = require('sequelize');
 const { DaiLy, LoaiDaiLy, Quan, PhieuXuatHang, MatHang } = require('../models');
 
 /**
@@ -19,20 +19,78 @@ const getDashboard = async (req, res) => {
     // Tổng mặt hàng
     const tongMatHang = await MatHang.count();
 
-    // Top 5 đại lý nợ nhiều nhất
-    const topDebtors = await DaiLy.findAll({
-      where: { TongNo: { [Op.gt]: 0 } },
-      include: [
-        { model: LoaiDaiLy, as: 'loaiDaiLy' },
-        { model: Quan, as: 'quan' },
+    // Phân bố loại đại lý
+    const typeCounts = await LoaiDaiLy.findAll({
+      attributes: [
+        ['MaLoaiDaiLy', 'maLoai'],
+        ['TenLoaiDaiLy', 'tenLoai'],
+        [fn('COUNT', col('daiLys.MaDaiLy')), 'count'],
       ],
-      order: [['TongNo', 'DESC']],
-      limit: 5,
+      include: [
+        {
+          model: DaiLy,
+          as: 'daiLys',
+          attributes: [],
+        },
+      ],
+      group: ['LoaiDaiLy.MaLoaiDaiLy', 'LoaiDaiLy.TenLoaiDaiLy'],
+      raw: true,
     });
+
+    const typeDistribution = typeCounts.map((item) => ({
+      maLoai: item.maLoai,
+      tenLoai: item.tenLoai || 'Chưa rõ',
+      count: Number(item.count || 0),
+    }));
+
+    // Cảnh báo nợ đại lý
+    const allAgents = await DaiLy.findAll({
+      include: [
+        {
+          model: LoaiDaiLy,
+          as: 'loaiDaiLy',
+          attributes: ['TienNoToiDa', 'TenLoaiDaiLy'],
+        },
+        {
+          model: Quan,
+          as: 'quan',
+          attributes: ['TenQuan'],
+        },
+      ],
+    });
+
+    const debtOffenders = allAgents
+      .map((agent) => {
+        const hanMuc = Number(agent.loaiDaiLy?.TienNoToiDa || 0);
+        const tongNoAgent = Number(agent.TongNo || 0);
+        return {
+          MaDaiLy: agent.MaDaiLy,
+          TenDaiLy: agent.TenDaiLy,
+          TongNo: tongNoAgent,
+          hanMuc,
+          overLimit: Math.max(0, tongNoAgent - hanMuc),
+          loaiDaiLy: agent.loaiDaiLy,
+          quan: agent.quan,
+        };
+      })
+      .filter((item) => item.overLimit > 0)
+      .sort((a, b) => b.overLimit - a.overLimit)
+      .slice(0, 5);
+
+    const topAgents = [...allAgents]
+      .map((agent) => ({
+        MaDaiLy: agent.MaDaiLy,
+        TenDaiLy: agent.TenDaiLy,
+        TongNo: Number(agent.TongNo || 0),
+        hanMuc: Number(agent.loaiDaiLy?.TienNoToiDa || 0),
+        loaiDaiLy: agent.loaiDaiLy,
+        quan: agent.quan,
+      }))
+      .sort((a, b) => b.TongNo - a.TongNo)
+      .slice(0, 3);
 
     // Doanh số 6 tháng gần nhất
     const now = new Date();
-    const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 5, 1);
     const doanhSoTheoThang = [];
 
     for (let i = 5; i >= 0; i--) {
@@ -60,7 +118,9 @@ const getDashboard = async (req, res) => {
         tongDoanhSo,
         tongNo,
         tongMatHang,
-        topDebtors,
+        typeDistribution,
+        debtOffenders,
+        topAgents,
         doanhSoTheoThang,
       },
     });
