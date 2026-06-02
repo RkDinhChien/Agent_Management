@@ -103,8 +103,8 @@ const create = async (req, res) => {
     // QĐ1: Kiểm tra số đại lý tối đa trong quận
     const thamSo = await ThamSo.findOne();
     const soDaiLyToiDa = thamSo && thamSo.SoDaiLyToiDa ? parseInt(thamSo.SoDaiLyToiDa) : 4;
-
     const soDaiLyHienTai = await DaiLy.count({ where: { MaQuan } });
+
     if (soDaiLyHienTai >= soDaiLyToiDa) {
       return res.status(400).json({
         status: 'error',
@@ -229,6 +229,7 @@ const checkQuan = async (req, res) => {
   try {
     const thamSo = await ThamSo.findOne();
     const soDaiLyToiDa = thamSo && thamSo.SoDaiLyToiDa ? parseInt(thamSo.SoDaiLyToiDa) : 4;
+    const tongDaiLyHienTai = await DaiLy.count();
     const soDaiLyHienTai = await DaiLy.count({ where: { MaQuan: req.params.maQuan } });
 
     res.json({
@@ -236,8 +237,11 @@ const checkQuan = async (req, res) => {
       data: {
         MaQuan: parseInt(req.params.maQuan),
         soDaiLyHienTai,
+        tongDaiLyHienTai,
         soDaiLyToiDa,
-        conThem: soDaiLyHienTai < soDaiLyToiDa,
+        conThemQuan: soDaiLyHienTai < soDaiLyToiDa,
+        conThemTotal: tongDaiLyHienTai < soDaiLyToiDa,
+        conThem: soDaiLyHienTai < soDaiLyToiDa && tongDaiLyHienTai < soDaiLyToiDa,
       },
     });
   } catch (error) {

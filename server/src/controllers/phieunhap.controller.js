@@ -1,5 +1,29 @@
 const { sequelize, PhieuNhapHang, ChiTiet_PhieuNhap, MatHang, DonViTinh } = require('../models');
 
+// Gộp chi tiết phiếu nhập có cùng MaMatHang (tránh duplicate key)
+const aggregateChiTietNhap = (chiTiets) => {
+  const itemMap = new Map();
+  for (const ct of chiTiets || []) {
+    if (!ct || !ct.MaMatHang) continue;
+    const maMatHang = ct.MaMatHang;
+    const existing = itemMap.get(maMatHang) || {
+      MaMatHang: maMatHang,
+      SoLuongNhap: 0,
+      DonGiaNhap: undefined,
+    };
+
+    const lineQty = Number(ct.SoLuongNhap ?? 0);
+    existing.SoLuongNhap += Number.isFinite(lineQty) ? lineQty : 0;
+
+    if (typeof ct.DonGiaNhap !== 'undefined' && ct.DonGiaNhap !== null) {
+      existing.DonGiaNhap = parseFloat(ct.DonGiaNhap);
+    }
+
+    itemMap.set(maMatHang, existing);
+  }
+  return Array.from(itemMap.values());
+};
+
 /**
  * GET /api/phieu-nhap
  * Lấy danh sách phiếu nhập
@@ -69,9 +93,12 @@ const create = async (req, res) => {
       });
     }
 
+    // Gộp chi tiết có cùng MaMatHang (tránh duplicate key)
+    const normalizedChiTiets = aggregateChiTietNhap(chiTiets);
+
     // Tính tổng tiền và chuẩn hóa dữ liệu
     let tongTien = 0;
-    const processedDetails = chiTiets.map((ct, idx) => {
+    const processedDetails = normalizedChiTiets.map((ct, idx) => {
       const sl = Number(ct.SoLuongNhap) || 0;
       const dg = Number(ct.DonGiaNhap) || 0;
       let thanhTien = sl * dg;
@@ -102,13 +129,6 @@ const create = async (req, res) => {
       const sql = 'INSERT INTO CHITIET_PHIEUNHAP (MaPhieuNhap, MaMatHang, SoLuongNhap, DonGiaNhap) VALUES (?, ?, ?, ?)';
       await sequelize.query(sql, {
         replacements: [phieu.MaPhieuNhap, ct.MaMatHang, ct.SoLuongNhap, ct.DonGiaNhap],
-        transaction: t,
-      });
-
-      // Cập nhật tồn kho
-      await MatHang.increment('TonKho', {
-        by: ct.SoLuongNhap,
-        where: { MaMatHang: ct.MaMatHang },
         transaction: t,
       });
     }
@@ -150,15 +170,13 @@ const update = async (req, res) => {
       return res.status(404).json({ status: 'error', message: 'Không tìm thấy phiếu nhập.' });
     }
 
-    // Hoàn tồn kho từ chi tiết cũ
-    for (const ct of phieu.chiTiets) {
-      await MatHang.decrement('TonKho', { by: ct.SoLuongNhap, where: { MaMatHang: ct.MaMatHang }, transaction: t });
-    }
+    // Xóa chi tiết cũ (DB trigger sẽ điều chỉnh `TonKho` tương ứng)
     await ChiTiet_PhieuNhap.destroy({ where: { MaPhieuNhap: phieu.MaPhieuNhap }, transaction: t });
 
-    // Thêm chi tiết mới
+    // Gộp chi tiết mới và thêm vào
+    const normalizedNew = aggregateChiTietNhap(chiTiets);
     let tongTien = 0;
-    for (const ct of chiTiets) {
+    for (const ct of normalizedNew) {
       const sl = Number(ct.SoLuongNhap) || 0;
       const dg = Number(ct.DonGiaNhap) || 0;
       tongTien += sl * dg;
@@ -166,7 +184,6 @@ const update = async (req, res) => {
         'INSERT INTO CHITIET_PHIEUNHAP (MaPhieuNhap, MaMatHang, SoLuongNhap, DonGiaNhap) VALUES (?,?,?,?)',
         { replacements: [phieu.MaPhieuNhap, ct.MaMatHang, sl, dg], transaction: t }
       );
-      await MatHang.increment('TonKho', { by: sl, where: { MaMatHang: ct.MaMatHang }, transaction: t });
     }
 
     await phieu.update({ NgayLapPhieu: NgayLapPhieu || phieu.NgayLapPhieu, TongTien: tongTien }, { transaction: t });
@@ -194,14 +211,6 @@ const remove = async (req, res) => {
     if (!phieu) {
       await t.rollback();
       return res.status(404).json({ status: 'error', message: 'Không tìm thấy phiếu nhập.' });
-    }
-
-    for (const ct of phieu.chiTiets || []) {
-      await MatHang.decrement('TonKho', {
-        by: ct.SoLuongNhap,
-        where: { MaMatHang: ct.MaMatHang },
-        transaction: t,
-      });
     }
 
     await ChiTiet_PhieuNhap.destroy({ where: { MaPhieuNhap: phieu.MaPhieuNhap }, transaction: t });

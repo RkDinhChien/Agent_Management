@@ -40,7 +40,9 @@ const create = async (req, res) => {
 
     // QĐ4: Kiểm tra số tiền thu <= tiền nợ
     const thamSo = await ThamSo.findOne();
-    const kiemTra = (thamSo && typeof thamSo.ApDungQDKiemTraSoTienThu !== 'undefined') ? thamSo.ApDungQDKiemTraSoTienThu : true;
+    const kiemTra = typeof thamSo?.ApDungQDKiemTraSoTienThu !== 'undefined'
+      ? Boolean(thamSo.ApDungQDKiemTraSoTienThu)
+      : true;
 
     const tongNo = parseFloat(daiLy.TongNo) || 0;
 
@@ -68,11 +70,14 @@ const create = async (req, res) => {
     );
 
     // QĐ7: Cập nhật tiền nợ
-    await DaiLy.decrement('TongNo', {
-      by: SoTienThu,
-      where: { MaDaiLy },
-      transaction: t,
-    });
+    const decreaseBy = Math.min(SoTienThu, tongNo);
+    if (decreaseBy > 0) {
+      await DaiLy.decrement('TongNo', {
+        by: decreaseBy,
+        where: { MaDaiLy },
+        transaction: t,
+      });
+    }
 
     await t.commit();
 
@@ -136,12 +141,34 @@ const update = async (req, res) => {
       return res.status(404).json({ status: 'error', message: 'Không tìm thấy phiếu thu.' });
     }
 
+    const daiLy = await DaiLy.findByPk(phieu.MaDaiLy, { transaction: t });
+    if (!daiLy) {
+      await t.rollback();
+      return res.status(404).json({ status: 'error', message: 'Không tìm thấy đại lý.' });
+    }
+
     const oldAmount = parseFloat(phieu.SoTienThu) || 0;
     const newAmount = parseFloat(SoTienThu) || 0;
     const diff = newAmount - oldAmount;
+    const currentDebt = parseFloat(daiLy.TongNo) || 0;
 
-    // Cập nhật TongNo: hoàn lại cũ rồi trừ mới
-    if (diff !== 0) {
+    if (newAmount <= 0) {
+      await t.rollback();
+      return res.status(400).json({ status: 'error', message: 'Số tiền thu phải lớn hơn 0.' });
+    }
+
+    // Cập nhật TongNo: hoàn lại cũ rồi trừ mới, nhưng không để số nợ âm
+    if (diff > 0) {
+      if (diff > currentDebt) {
+        await t.rollback();
+        return res.status(400).json({ status: 'error', message: 'Số tiền thu mới không được vượt quá số nợ hiện tại.', rule: 'QD4' });
+      }
+      await DaiLy.decrement('TongNo', {
+        by: diff,
+        where: { MaDaiLy: phieu.MaDaiLy },
+        transaction: t,
+      });
+    } else if (diff < 0) {
       await DaiLy.increment('TongNo', {
         by: -diff,
         where: { MaDaiLy: phieu.MaDaiLy },
