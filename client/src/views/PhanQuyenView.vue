@@ -151,9 +151,6 @@
             <label>Mật khẩu <span class="req">*</span></label>
             <div class="pw-wrap">
               <input v-model="ndForm.mk" :type="showPw ? 'text' : 'password'" class="finp" placeholder="Nhập mật khẩu"/>
-              <button class="pw-eye" @click="showPw = !showPw" type="button">
-                <component :is="showPw ? EyeOff : Eye" :size="14"/>
-              </button>
             </div>
           </div>
           <div class="if-field">
@@ -285,6 +282,7 @@
 
 <script setup>
 import { ref, reactive, computed, watch, onMounted } from 'vue';
+import { usePermission } from '../composables/usePermission';
 import api from '../services/api';
 import { parseError } from '../utils/errorMessages';
 import {
@@ -300,6 +298,8 @@ const TABS = [
   { key: 'phanquyen',  label: 'Phân quyền',       icon: ShieldCheck },
 ];
 const tab = ref('nhom');
+
+const { canAdd, canEdit, canDelete } = usePermission('PhanQuyenView');
 
 /* ════════════════════ NHÓM NGƯỜI DÙNG ════════════════════ */
 const nhoms = ref([]);
@@ -324,6 +324,10 @@ const nhomForm = reactive({ id: null, ten: '' });
 const resetNhom  = () => { nhomForm.id = null; nhomForm.ten = ''; };
 const editNhom   = (n) => { nhomForm.id = n.id; nhomForm.ten = n.ten; };
 const deleteNhom = async (id) => {
+  if (!canDelete.value) {
+    alert('Bạn không có quyền thực hiện chức năng này');
+    return;
+  }
   const nhom = nhoms.value.find(n => n.id === id);
   if (!confirm(`Xóa nhóm "${nhom?.name || ''}"?\n\nHành động này không thể hoàn tác.`)) return;
   try {
@@ -340,6 +344,15 @@ const deleteNhom = async (id) => {
 };
 const submitNhom = async () => {
   if (!nhomForm.ten.trim()) return;
+  const isEdit = !!nhomForm.id;
+  if (isEdit && !canEdit.value) {
+    alert('Bạn không có quyền thực hiện chức năng này');
+    return;
+  }
+  if (!isEdit && !canAdd.value) {
+    alert('Bạn không có quyền thực hiện chức năng này');
+    return;
+  }
   try {
     if (nhomForm.id) {
       await api.put(`/nhom-nguoi-dung/${nhomForm.id}`, { TenNhom: nhomForm.ten.trim() });
@@ -384,6 +397,10 @@ const showPw  = ref(false);
 const resetNd  = () => { ndForm.id = null; ndForm.ten = ''; ndForm.mk = ''; ndForm.nhomId = ''; };
 const editNd   = (u) => { ndForm.id = u.id; ndForm.ten = u.ten; ndForm.mk = ''; ndForm.nhomId = u.nhomId; };
 const deleteNd = async (id) => {
+  if (!canDelete.value) {
+    alert('Bạn không có quyền thực hiện chức năng này');
+    return;
+  }
   if (!confirm('Xóa người dùng này?')) return;
   try {
     await api.delete(`/nguoi-dung/${id}`);
@@ -395,6 +412,15 @@ const deleteNd = async (id) => {
 const submitNd = async () => {
   if (!ndForm.ten.trim() || !ndForm.nhomId) return;
   if (!ndForm.id && !ndForm.mk) return; // password required for create
+  const isEdit = !!ndForm.id;
+  if (isEdit && !canEdit.value) {
+    alert('Bạn không có quyền thực hiện chức năng này');
+    return;
+  }
+  if (!isEdit && !canAdd.value) {
+    alert('Bạn không có quyền thực hiện chức năng này');
+    return;
+  }
   try {
     if (ndForm.id) {
       const payload = { MaNhom: Number(ndForm.nhomId) };
@@ -508,6 +534,10 @@ const grantCol  = (perm) => {
 };
 
 const savePerms = async () => {
+  if (!canEdit.value) {
+    alert('Bạn không có quyền thực hiện chức năng này');
+    return;
+  }
   const gPerms = perms[permGroupId.value];
   if (!gPerms) return;
   const payload = {
@@ -628,12 +658,13 @@ watch(chucNangs, () => { if (permGroupId.value) loadPerms(permGroupId.value); })
   border: 1.5px solid #e2e8f0; border-radius: 8px;
   font-size: 13px; color: #0f172a; background: #fff;
   outline: none; transition: border-color .15s;
-  width: 100%;
+  width:100%;
+  max-width: 320px;
 }
 .finp:focus { border-color: #059669; }
 
-.pw-wrap { position: relative; }
-.pw-wrap .finp { padding-right: 36px; }
+.pw-wrap { position: relative; width: 100%; max-width: 300px; }
+.pw-wrap .finp { padding-right: 1px; }
 .pw-eye {
   position: absolute; right: 10px; top: 50%; transform: translateY(-50%);
   background: none; border: none; cursor: pointer; color: #94a3b8; padding: 0;

@@ -382,7 +382,9 @@
                 <div v-for="(item, idx) in form.items" :key="idx" class="item-form-row">
                   <select v-model="item.name" class="finp finp-sm" style="flex:2" @change="onProductChange(item)">
                     <option value="">Chọn mặt hàng</option>
-                    <option v-for="p in products" :key="p.name" :value="p.name">{{ p.name }}</option>
+                    <option v-for="p in availableProducts(idx)" :key="p.name" :value="p.name">{{ p.name }}</option>
+                    <!-- Hiện option đang chọn dù bị filter -->
+                    <option v-if="item.name && !availableProducts(idx).find(p => p.name === item.name)" :value="item.name">{{ item.name }}</option>
                   </select>
                   <input v-model.number="item.qty" type="number" min="1" class="finp finp-sm finp-num" style="flex:.75" placeholder="SL"/>
                   <input :value="item.price ? item.price.toLocaleString('vi-VN') : ''" type="text" class="finp finp-sm finp-num" style="flex:1;background:#f8fafc" placeholder="0" readonly/>
@@ -416,7 +418,7 @@
           </div>
           <div class="fc-footer">
             <button class="btn-ghost" @click="panelMode = 'view'"><X :size="12"/> Hủy</button>
-            <button class="btn-p" @click="submitEdit"><Edit2 :size="13"/> Cập nhật</button>
+            <button class="btn-p" :disabled="isSubmitting" @click="submitEdit"><Edit2 :size="13"/> Cập nhật</button>
           </div>
         </template>
 
@@ -465,7 +467,9 @@
                 <div v-for="(item, idx) in form.items" :key="idx" class="item-form-row">
                   <select v-model="item.name" class="finp finp-sm" style="flex:2" @change="onProductChange(item)">
                     <option value="">Chọn mặt hàng</option>
-                    <option v-for="p in products" :key="p.name" :value="p.name">{{ p.name }}</option>
+                    <option v-for="p in availableProducts(idx)" :key="p.name" :value="p.name">{{ p.name }}</option>
+                    <!-- Hiện option đang chọn dù bị filter -->
+                    <option v-if="item.name && !availableProducts(idx).find(p => p.name === item.name)" :value="item.name">{{ item.name }}</option>
                   </select>
                   <input v-model.number="item.qty" type="number" min="1" class="finp finp-sm finp-num" style="flex:.75" placeholder="SL"/>
                   <input v-model.number="item.price" type="number" step="0.001" class="finp finp-sm finp-num" style="flex:1" placeholder="0.00" readonly/>
@@ -500,7 +504,7 @@
           </div>
           <div class="fc-footer">
             <button class="btn-ghost" @click="closePanel"><X :size="12"/> Hủy</button>
-            <button class="btn-p" @click="submitCreate">Lập phiếu xuất</button>
+            <button class="btn-p" :disabled="isSubmitting" @click="submitCreate">Lập phiếu xuất</button>
           </div>
         </template>
 
@@ -554,6 +558,7 @@
 
 <script setup>
 import { ref, computed, reactive, onMounted, watch } from 'vue';
+import { usePermission } from '../composables/usePermission';
 import api from '../services/api';
 import { parseError } from '../utils/errorMessages';
 import MoneyInput from '../components/MoneyInput.vue';
@@ -620,21 +625,47 @@ const loadAgents = async () => {
   }
 };
 
+const tyLe = ref(1.02);
+
+const loadTyLe = async () => {
+  try {
+    const res = await api.get('/tham-so');
+    const ts = res.data?.data || res.data;
+    if (ts && ts.TiLeTinhDonGiaXuat) {
+      tyLe.value = parseFloat(ts.TiLeTinhDonGiaXuat) || 1.02;
+    }
+  } catch (err) {
+    console.warn('Failed to load tham so', err);
+  }
+};
+
 const loadProducts = async () => {
   try {
     const res = await api.get('/mat-hang');
     products.value = (res.data?.data || []).map(p => ({
       id: p.MaMatHang,
       name: p.TenMatHang,
-      sellPrice: parseFloat(p.DonGiaHienTai) || 0
+      importPrice: parseFloat(p.DonGiaHienTai) || 0,
+      get sellPrice() { return Math.round(this.importPrice * tyLe.value * 100) / 100; }
     }));
   } catch (err) {
     console.warn('Failed to load products', err);
   }
 };
 
+/* Trả về danh sách mặt hàng chưa được chọn ở các dòng khác */
+const availableProducts = (currentIdx) => {
+  const selectedNames = form.value.items
+    .filter((_, i) => i !== currentIdx)
+    .map(i => i.name)
+    .filter(Boolean);
+  return products.value.filter(p => !selectedNames.includes(p.name));
+};
+
 /* ── Mock data ── */
 const receipts = ref([]);
+
+const { canAdd, canEdit, canDelete } = usePermission('PhieuXuatView');
 
 const loadReceipts = async () => {
   try {
@@ -675,6 +706,7 @@ const loadReceipts = async () => {
 };
 
 onMounted(async () => {
+  await loadTyLe();
   await loadAgents();
   await loadProducts();
   await loadReceipts();
@@ -830,7 +862,7 @@ const onProductChange = (item) => {
   if (p) {
     item.id = p.id;
     item.name = p.name;
-    item.price = p.sellPrice;
+    item.price = Math.round(p.importPrice * tyLe.value * 100) / 100;
   } else {
     item.id = '';
     item.name = '';
@@ -862,6 +894,10 @@ const showToast = (msg, type = 'success', undoFn = null) => {
 const openView = (r) => { selectedId.value = r.id; panelMode.value = 'view'; };
 
 const openCreate = () => {
+  if (!canAdd.value) {
+    showToast('Bạn không có quyền thực hiện chức năng này', 'danger');
+    return;
+  }
   selectedId.value = null;
   panelMode.value  = 'create';
   form.value       = emptyForm();
@@ -869,6 +905,10 @@ const openCreate = () => {
 };
 
 const openEdit = (r) => {
+  if (!canEdit.value) {
+    showToast('Bạn không có quyền thực hiện chức năng này', 'danger');
+    return;
+  }
   selectedId.value = r.id;
   panelMode.value  = 'edit';
   form.value = { agentId: r.agentId, date: r.rawDate, tienTra: r.tienTra || 0, items: r.items.map(i => ({ ...i })) };
@@ -879,7 +919,13 @@ const closePanel = () => { selectedId.value = null; panelMode.value = 'view'; };
 
 
 
-const askDelete     = (r) => { deleteTarget.value = r; };
+const askDelete     = (r) => {
+  if (!canDelete.value) {
+    showToast('Bạn không có quyền thực hiện chức năng này', 'danger');
+    return;
+  }
+  deleteTarget.value = r;
+};
 const confirmDelete = async () => {
   const target = deleteTarget.value;
   const code = target.code;
@@ -897,6 +943,8 @@ const confirmDelete = async () => {
   deleteTarget.value = null;
 };
 
+const isSubmitting = ref(false);
+
 const submitCreate = async () => {
   errors.agent = ''; errors.items = '';
   if (!form.value.agentId) { errors.agent = 'Vui lòng chọn đại lý'; return; }
@@ -904,6 +952,8 @@ const submitCreate = async () => {
   if (!validItems.length) { errors.items = 'Thêm ít nhất 1 mặt hàng hợp lệ'; return; }
 
   try {
+    if (isSubmitting.value) return;
+    isSubmitting.value = true;
     // Prevent overpay and coerce tienTra to number
     const tienTraVal = Number(form.value.tienTra) || 0;
     if (tienTraVal > formTotal.value) { errors.items = 'Tiền trả không được vượt tổng tiền'; return; }
@@ -936,16 +986,20 @@ const submitCreate = async () => {
       showToast(`Đã lập phiếu xuất hàng thành công`);
       loadReceipts();
       loadAgents(); // Refresh debt
+      try { window.dispatchEvent(new Event('inventory-updated')); } catch (e) {}
       closePanel();
     }
   } catch (err) {
     showToast(err.response?.data?.message || 'Lỗi khi lập phiếu xuất', 'danger');
   }
+  finally { isSubmitting.value = false; }
 };
 
 const submitEdit = async () => {
   errors.agent = ''; errors.items = '';
-  if (!form.value.agentId) { errors.agent = 'Vui lòng chọn đại lý'; return; }
+  if (isSubmitting.value) return;
+  isSubmitting.value = true;
+  if (!form.value.agentId) { errors.agent = 'Vui lòng chọn đại lý'; isSubmitting.value = false; return; }
   const validItems = form.value.items.filter(i => i.name && i.qty > 0);
   if (!validItems.length) { errors.items = 'Thêm ít nhất 1 mặt hàng hợp lệ'; return; }
   
@@ -982,12 +1036,13 @@ const submitEdit = async () => {
       // reload receipts from server to ensure authoritative values
       await loadReceipts();
       await loadAgents();
+      try { window.dispatchEvent(new Event('inventory-updated')); } catch (e) {}
       panelMode.value = 'view';
     }
   } catch (err) {
     console.error('submitEdit error', err.response?.data || err.message);
     showToast(err.response?.data?.message || err.response?.data?.error || err.message || 'Lỗi khi cập nhật phiếu xuất', 'danger');
-  }
+  } finally { isSubmitting.value = false; }
 };
 
 const exportCSV = () => {

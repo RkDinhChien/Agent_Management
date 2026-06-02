@@ -344,6 +344,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
+import { usePermission } from '../composables/usePermission';
 import api from '../services/api';
 import {
   Search, Plus, Wallet, MapPin, Phone, AlertCircle,
@@ -358,6 +359,8 @@ const loaiDaiLys  = ref([]);
 
 const searchText  = ref('');
 const filterQuan  = ref('');
+
+const { canAdd } = usePermission('TraCuuView');
 const filterLoai  = ref('');
 const filterDebt  = ref('');
 
@@ -432,6 +435,10 @@ const closePanel = () => { panelVisible.value = false; selectedDaiLy.value = nul
 const goProfile = (dl) => router.push(`/dai-ly/${dl.MaDaiLy}`);
 
 const openCollect = () => {
+  if (!canAdd.value) {
+    alert('Bạn không có quyền thực hiện chức năng này');
+    return;
+  }
   if (!selectedDaiLy.value) { alert('Chọn đại lý trước'); return; }
   panelVisible.value = true;
 };
@@ -451,6 +458,10 @@ const exportCSV = () => {
 };
 
 const submitPayment = async () => {
+  if (!canAdd.value) {
+    alert('Bạn không có quyền thực hiện chức năng này');
+    return;
+  }
   if (payForm.value.SoTienThu <= 0) return;
   paySubmitting.value = true;
   try {

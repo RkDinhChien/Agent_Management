@@ -71,7 +71,7 @@
     <!-- Footer Tray (Light) -->
     <div class="sidebar-tray-footer">
       <div class="user-pill-glass">
-        <img src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=30&q=80" :alt="authStore.user?.TenNguoiDung || 'User'" />
+        <img src="https://www.gravatar.com/avatar/?d=mp&s=150" :alt="authStore.user?.TenNguoiDung || 'User'" />
         <div class="u-meta-light" v-if="!isCollapsed">
           <strong>{{ authStore.user?.TenNguoiDung || 'User' }}</strong>
           <span>SE104 Hub</span>
@@ -105,9 +105,11 @@ const authStore = useAuthStore();
 
 const hasPermission = (screenName) => {
   if (!authStore.user) return false;
-  if (authStore.user.role === 'Admin') return true;
+  // Admin check: so sánh không phân biệt chữ hoa/thường
+  const role = (authStore.user.role || '').toLowerCase();
+  if (role === 'admin' || role.includes('quản trị') || role.includes('admin')) return true;
   return (authStore.user.permissions || []).some(
-    (p) => p.TenManHinhDuocLoad === screenName && p.Xem
+    (p) => p.TenManHinhDuocLoad === screenName && p.Xem === true
   );
 };
 

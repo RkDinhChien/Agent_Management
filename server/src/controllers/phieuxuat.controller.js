@@ -11,6 +11,34 @@ const {
   ChiTiet_PhieuNhap,
 } = require('../models');
 
+const aggregateChiTietXuat = (chiTiets) => {
+  const itemMap = new Map();
+  for (const ct of chiTiets || []) {
+    if (!ct || !ct.MaMatHang) continue;
+    const maMatHang = ct.MaMatHang;
+    const existing = itemMap.get(maMatHang) || {
+      MaMatHang: maMatHang,
+      SoLuongXuat: 0,
+      DonGiaNhap: undefined,
+      DonGiaHienTai: undefined,
+    };
+
+    // Chỉ lấy SoLuongXuat từ request, không dùng TonKho (tồn kho DB)
+    const lineQty = Number(ct.SoLuongXuat ?? 0);
+    existing.SoLuongXuat += Number.isFinite(lineQty) ? lineQty : 0;
+
+    if (typeof ct.DonGiaNhap !== 'undefined' && ct.DonGiaNhap !== null) {
+      existing.DonGiaNhap = parseFloat(ct.DonGiaNhap);
+    }
+    if (typeof ct.DonGiaHienTai !== 'undefined' && ct.DonGiaHienTai !== null) {
+      existing.DonGiaHienTai = parseFloat(ct.DonGiaHienTai);
+    }
+
+    itemMap.set(maMatHang, existing);
+  }
+  return Array.from(itemMap.values());
+};
+
 /**
  * GET /api/phieu-xuat
  */
@@ -79,6 +107,9 @@ const create = async (req, res) => {
     const { MaDaiLy, NgayLapPhieu, chiTiets, TienTra: tienTraRaw } = req.body;
     const tienTra = Math.max(0, parseFloat(tienTraRaw) || 0);
 
+    console.log('=== PHIEU XUAT CREATE ===');
+    console.log('Raw chiTiets input:', JSON.stringify(chiTiets));
+
     if (!chiTiets || chiTiets.length === 0) {
       return res.status(400).json({
         status: 'error',
@@ -99,22 +130,28 @@ const create = async (req, res) => {
 
     // Lấy tham số
     const thamSo = await ThamSo.findOne();
-    const tyLe = (thamSo && thamSo.TiLeTinhDonGiaXuat) ? parseFloat(thamSo.TiLeTinhDonGiaXuat) : 1.02;
-    const kiemTraNo = (thamSo && typeof thamSo.ApDungQDKiemTraSoTienThu !== 'undefined') ? thamSo.ApDungQDKiemTraSoTienThu : true;
-    const kiemTraTon = true; 
+    const tyLe = parseFloat(thamSo?.TiLeTinhDonGiaXuat) || 1.02;
+    const kiemTraNo = typeof thamSo?.ApDungQDKiemTraSoTienThu !== 'undefined'
+      ? Boolean(thamSo.ApDungQDKiemTraSoTienThu)
+      : true;
+    const kiemTraTon = true;
+
+    const normalizedChiTiets = aggregateChiTietXuat(chiTiets);
+    console.log('After aggregation:', JSON.stringify(normalizedChiTiets));
 
     // tính giá
     let tongTien = 0;
     const processedDetails = [];
 
-    for (const ct of chiTiets) {
+    for (const ct of normalizedChiTiets) {
       const matHang = await MatHang.findByPk(ct.MaMatHang, { transaction: t });
       if (!matHang) {
         await t.rollback();
         return res.status(400).json({ status: 'error', message: `Không tìm thấy mặt hàng có mã ${ct.MaMatHang}.` });
       }
 
-      const soLuongXuat = ct.SoLuongXuat ?? ct.TonKho ?? 0;
+      // Chỉ dùng SoLuongXuat từ aggregation, không dùng TonKho
+      const soLuongXuat = ct.SoLuongXuat;
 
       // QĐ5: Kiểm tra tồn kho
       if (kiemTraTon && matHang.TonKho < soLuongXuat) {
@@ -158,9 +195,10 @@ const create = async (req, res) => {
       }
     }
 
-    // 
+    // Tính tiền trả cuối cùng và phần nợ
     const tienTraFinal = Math.min(tienTra, tongTien);
     const conLai = Math.max(0, tongTien - tienTraFinal);
+    
     const insertSql = 'INSERT INTO PHIEUXUATHANG (MaDaiLy, NgayLapPhieu, TongTien, TienTra) VALUES (?, ?, ?, ?)';
     await sequelize.query(insertSql, {
       replacements: [MaDaiLy, NgayLapPhieu || new Date(), tongTien, tienTraFinal],
@@ -179,6 +217,8 @@ const create = async (req, res) => {
 
     // Tạo chi tiết + cập nhật tồn kho
     for (const ct of processedDetails) {
+      console.log(`Creating detail: MaMatHang=${ct.MaMatHang}, SoLuongXuat=${ct.SoLuongXuat}`);
+      
       await ChiTiet_PhieuXuat.create(
         {
           MaPhieuXuat: phieu.MaPhieuXuat,
@@ -188,20 +228,12 @@ const create = async (req, res) => {
         },
         { transaction: t, fields: ['MaPhieuXuat', 'MaMatHang', 'SoLuongXuat', 'DonGiaXuat'] }
       );
-
-      // QĐ6: Giảm tồn kho
-      await MatHang.decrement('TonKho', {
-        by: ct.SoLuongXuat,
-        where: { MaMatHang: ct.MaMatHang },
-        transaction: t,
-      });
     }
 
-    // QĐ7: Cập nhật tiền nợ (chỉ phần chưa trả)
-    const noThem = tongTien - tienTraFinal;
-    if (noThem > 0) {
+    // QĐ7: Cập nhật tiền nợ (chỉ phần chưa trả = ConLai)
+    if (conLai > 0) {
       await DaiLy.increment('TongNo', {
-        by: noThem,
+        by: conLai,
         where: { MaDaiLy },
         transaction: t,
       });
@@ -281,15 +313,6 @@ const update = async (req, res) => {
     const oldOwed = Math.max(0, oldTotal - oldTienTra);
     const oldAgentId = phieuXuat.MaDaiLy;
 
-    // Khôi phục tồn kho và nợ cũ trước khi áp dụng thay đổi
-    for (const oldCt of oldDetails) {
-      await MatHang.increment('TonKho', {
-        by: oldCt.SoLuongXuat,
-        where: { MaMatHang: oldCt.MaMatHang },
-        transaction: t,
-      });
-    }
-
     if (oldAgentId && oldOwed > 0) {
       await DaiLy.decrement('TongNo', {
         by: oldOwed,
@@ -308,21 +331,26 @@ const update = async (req, res) => {
     }
 
     const thamSo = await ThamSo.findOne({ transaction: t });
-    const tyLe = (thamSo && thamSo.TiLeTinhDonGiaXuat) ? parseFloat(thamSo.TiLeTinhDonGiaXuat) : 1.02;
-    const kiemTraNo = (thamSo && typeof thamSo.ApDungQDKiemTraSoTienThu !== 'undefined') ? thamSo.ApDungQDKiemTraSoTienThu : true;
+    const tyLe = parseFloat(thamSo?.TiLeTinhDonGiaXuat) || 1.02;
+    const kiemTraNo = typeof thamSo?.ApDungQDKiemTraSoTienThu !== 'undefined'
+      ? Boolean(thamSo.ApDungQDKiemTraSoTienThu)
+      : true;
     const kiemTraTon = true;
+
+    const normalizedChiTiets = aggregateChiTietXuat(chiTiets);
 
     let tongTien = 0;
     const processedDetails = [];
 
-    for (const ct of chiTiets) {
+    for (const ct of normalizedChiTiets) {
       const matHang = await MatHang.findByPk(ct.MaMatHang, { transaction: t });
       if (!matHang) {
         await t.rollback();
         return res.status(400).json({ status: 'error', message: `Không tìm thấy mặt hàng có mã ${ct.MaMatHang}.` });
       }
 
-      const soLuongXuat = ct.SoLuongXuat ?? ct.TonKho ?? 0;
+      // Chỉ dùng SoLuongXuat từ aggregation, không dùng TonKho
+      const soLuongXuat = ct.SoLuongXuat;
       if (kiemTraTon && matHang.TonKho < soLuongXuat) {
         await t.rollback();
         return res.status(400).json({ status: 'error', message: `Mặt hàng "${matHang.TenMatHang}" không đủ tồn kho. Hiện có: ${matHang.TonKho}, cần: ${soLuongXuat}.`, rule: 'QD5' });
@@ -370,7 +398,6 @@ const update = async (req, res) => {
         },
         { transaction: t, fields: ['MaPhieuXuat', 'MaMatHang', 'SoLuongXuat', 'DonGiaXuat'] }
       );
-      await MatHang.decrement('TonKho', { by: ct.SoLuongXuat, where: { MaMatHang: ct.MaMatHang }, transaction: t });
     }
 
     if (conLai > 0) {
@@ -413,20 +440,21 @@ const remove = async (req, res) => {
       return res.status(404).json({ status: 'error', message: 'Không tìm thấy phiếu xuất.' });
     }
 
+    // Hoàn tồn kho và giảm nợ (chỉ phần chưa trả = ConLai)
     const total = parseFloat(phieuXuat.TongTien) || 0;
-    for (const ct of phieuXuat.chiTiets || []) {
-      await MatHang.increment('TonKho', {
-        by: ct.SoLuongXuat,
-        where: { MaMatHang: ct.MaMatHang },
+    const tienTra = parseFloat(phieuXuat.TienTra) || 0;
+    const conLai = Math.max(0, total - tienTra);
+    
+    // Xóa chi tiết cũ (DB trigger sẽ điều chỉnh `TonKho` tương ứng)
+
+    // Chỉ giảm nợ cho phần chưa trả (ConLai)
+    if (conLai > 0) {
+      await DaiLy.decrement('TongNo', {
+        by: conLai,
+        where: { MaDaiLy: phieuXuat.MaDaiLy },
         transaction: t,
       });
     }
-
-    await DaiLy.decrement('TongNo', {
-      by: total,
-      where: { MaDaiLy: phieuXuat.MaDaiLy },
-      transaction: t,
-    });
 
     await ChiTiet_PhieuXuat.destroy({ where: { MaPhieuXuat: phieuXuat.MaPhieuXuat }, transaction: t });
     await phieuXuat.destroy({ transaction: t });

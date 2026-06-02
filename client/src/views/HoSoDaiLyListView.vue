@@ -530,6 +530,7 @@
           </div>
 
           <div class="fc-body">
+            <p class="err-msg" v-if="submitError">{{ submitError }}</p>
             <div class="field full">
               <label class="flabel">Hình ảnh đại lý</label>
               <div class="img-upload-wrap">
@@ -661,6 +662,7 @@
 
 <script setup>
 import { ref, computed, useTemplateRef, onMounted, watch } from 'vue';
+import { usePermission } from '../composables/usePermission';
 const imgInputRef = useTemplateRef('imgInputRef');
 import api from '../services/api';
 import { parseError } from '../utils/errorMessages';
@@ -687,6 +689,8 @@ const SortIcon = {
 /* ─── Reference data (loaded from API) ─── */
 const loaiOptions = ref([]);
 const quanOptions = ref([]);
+
+const { canAdd, canEdit, canDelete } = usePermission('DaiLyView');
 
 /* ─── Agents (loaded from API) ─── */
 const agents = ref([]);
@@ -764,6 +768,7 @@ const removeImage = () => {
 };
 const form   = ref(emptyForm());
 const errors = ref({});
+const submitError = ref('');
 const notification = ref(null);
 
 const showNotification = (type, message, timeout = 6000) => {
@@ -952,22 +957,33 @@ const viewAgent = (a) => {
 const closePanel = () => { selectedId.value = null; panelMode.value = 'view'; };
 
 const startAdd = () => {
+  if (!canAdd.value) {
+    showNotification('error', 'Bạn không có quyền thực hiện chức năng này');
+    return;
+  }
   selectedId.value = null;
   panelMode.value  = 'add';
   form.value       = emptyForm();
   errors.value     = {};
+  submitError.value = '';
 };
 
 const editAgent = (a) => {
+  if (!canEdit.value) {
+    showNotification('error', 'Bạn không có quyền thực hiện chức năng này');
+    return;
+  }
   selectedId.value = a.MaDaiLy;
   panelMode.value  = 'edit';
   form.value       = { ...a };
   errors.value     = {};
+  submitError.value = '';
 };
 
 const cancelForm = () => {
   panelMode.value = selectedId.value ? 'view' : 'view';
   errors.value = {};
+  submitError.value = '';
 };
 
 /* ─── Validation & submit ─── */
@@ -997,6 +1013,7 @@ const submitForm = async () => {
   };
 
   try {
+    submitError.value = '';
     if (panelMode.value === 'add') {
       const res = await api.post('/dai-ly', payload);
       if (res.data?.status === 'success') {
@@ -1012,12 +1029,22 @@ const submitForm = async () => {
     panelMode.value = 'view';
   } catch (err) {
     const msg = err.response?.data?.message || 'Có lỗi xảy ra khi lưu đại lý';
+    submitError.value = msg;
+    if (err.response?.status === 400 && err.response.data?.rule === 'QD1') {
+      errors.value = { ...errors.value, MaQuan: msg };
+    }
     showNotification('error', msg);
   }
 };
 
 /* ─── Delete ─── */
-const askDelete     = (a) => { deleteTarget.value = a; };
+const askDelete     = (a) => {
+  if (!canDelete.value) {
+    showNotification('error', 'Bạn không có quyền thực hiện chức năng này');
+    return;
+  }
+  deleteTarget.value = a;
+};
 const confirmDelete = async () => {
   const target = deleteTarget.value;
   deleteTarget.value = null;

@@ -97,33 +97,47 @@
                 </select>
                 <Edit2 :size="13" class="icon-muted"/>
               </div>
+              <p class="card-error" v-if="districtError">{{ districtError }}</p>
             </div>
-            <p class="dc-sub">25 đại lý đang vượt hạn mức nợ theo QĐ-1 • Cập nhật: Hôm nay</p>
+            <p class="dc-sub">
+              <template v-if="debtOffenders.length">
+                {{ debtOffenders.length }} đại lý đang vượt hạn mức nợ theo QĐ-1 • Cập nhật: Hôm nay
+              </template>
+              <template v-else>
+                Không có đại lý vi phạm hạn mức nợ theo QĐ-1 • Cập nhật: Hôm nay
+              </template>
+            </p>
+            <p class="card-error" v-if="dashboardError">{{ dashboardError }}</p>
 
-            <div class="dc-progress">
-              <div class="prog-track">
-                <div class="prog-fill" :style="{ width: stats.tongDaiLy ? (debtOffenders.length / stats.tongDaiLy * 100) + '%' : '0%' }"></div>
+            <div v-if="!dashboardError">
+              <div class="dc-progress">
+                <div class="prog-track">
+                  <div class="prog-fill" :style="{ width: stats.tongDaiLy ? (debtOffenders.length / stats.tongDaiLy * 100) + '%' : '0%' }"></div>
+                </div>
+                <div class="prog-labels">
+                  <span class="danger-txt">Vi phạm: <strong>{{ debtOffenders.length }}</strong> đại lý</span>
+                  <span class="muted-txt">Tổng: {{ stats.tongDaiLy }} đại lý</span>
+                </div>
               </div>
-              <div class="prog-labels">
-                <span class="danger-txt">Vi phạm: <strong>{{ debtOffenders.length }}</strong> đại lý</span>
-                <span class="muted-txt">Tổng: {{ stats.tongDaiLy }} đại lý</span>
+
+              <div v-if="debtOffenders.length" class="offender-list">
+                <div
+                  v-for="o in visibleOffenders"
+                  :key="`${o.name}-${o.district}`"
+                  class="offender-row"
+                  @click="openModal(o)"
+                >
+                  <span class="of-name">{{ o.name }}</span>
+                  <span class="of-dist">{{ o.district }}</span>
+                  <span class="of-amt">+{{ fmtSummary(Number(o.overLimit) * 1_000_000) }}</span>
+                </div>
+              </div>
+              <div v-else class="offender-empty">
+                Chưa có đại lý vi phạm hạn mức nợ.
               </div>
             </div>
 
-            <div class="offender-list">
-              <div
-                v-for="o in visibleOffenders"
-                :key="`${o.name}-${o.district}`"
-                class="offender-row"
-                @click="openModal(o)"
-              >
-                <span class="of-name">{{ o.name }}</span>
-                <span class="of-dist">{{ o.district }}</span>
-                <span class="of-amt">+{{ fmtSummary(Number(o.overLimit) * 1_000_000) }}</span>
-              </div>
-            </div>
-
-            <div class="dc-footer">
+            <div class="dc-footer" v-if="!dashboardError && debtOffenders.length">
               <button class="btn-p" @click="openModal(visibleOffenders[0])">Xem chi tiết</button>
               <button class="btn-o" @click="sendReminder(visibleOffenders[0])">Gửi nhắc</button>
             </div>
@@ -137,8 +151,14 @@
                   {{ isDistrictFull ? 'Đã đầy' : `Còn ${thamSo.soDaiLyToiDa - stats.tongDaiLy} chỗ` }}
                 </span>
               </div>
-              <p class="rc-desc">Quận 1 đã đạt giới hạn mở đại lý theo QĐ-1. Xem hồ sơ chờ hoặc đề xuất quận thay thế.</p>
-              <div class="rc-btns">
+              <p class="rc-desc">
+                {{ isDistrictFull
+                  ? 'Hệ thống đã đạt giới hạn mở đại lý theo QĐ-1. Xem hồ sơ chờ hoặc đề xuất quận thay thế.'
+                  : 'Hệ thống còn chỗ mở đại lý theo QĐ-1. Xem hồ sơ chờ hoặc đề xuất quận thay thế.'
+                }}
+              </p>
+              <p class="card-error" v-if="thamSoError">{{ thamSoError }}</p>
+              <div class="rc-btns" v-if="!thamSoError">
                 <button class="btn-p" @click="router.push('/dai-ly-list')">Kiểm tra hồ sơ chờ</button>
                 <button class="btn-o" @click="router.push('/dai-ly-list')">Đề xuất quận khác</button>
               </div>
@@ -164,12 +184,17 @@
             </div>
             <div class="bc-macro">{{ stats.tongDaiLy }} ĐL</div>
             <div class="pie-wrap">
-              <div class="pie-legend">
-                <div class="ple"><i class="ldot" style="background:#10B981"></i>Đại lý loại 1 <strong>33%</strong></div>
-                <div class="ple"><i class="ldot" style="background:#3B82F6"></i>Đại lý loại 2 <strong>45%</strong></div>
-                <div class="ple"><i class="ldot" style="background:#F59E0B"></i>Đại lý loại 3 <strong>22%</strong></div>
+              <p class="card-error" v-if="dashboardError">{{ dashboardError }}</p>
+              <div v-else-if="distributionSummary.length">
+                <div class="pie-legend">
+                  <div v-for="(item, i) in distributionSummary" :key="item.maLoai" class="ple">
+                    <i class="ldot" :style="{ background: item.color }"></i>
+                    {{ item.tenLoai }} <strong>{{ item.pct }}%</strong>
+                  </div>
+                </div>
+                <div class="pie-circle"></div>
               </div>
-              <div class="pie-circle"></div>
+              <div v-else class="card-error">Chưa có dữ liệu phân bố loại đại lý từ DB.</div>
             </div>
           </CardShell>
 
@@ -239,7 +264,8 @@
             <select class="psel sm"><option>7 Ngày</option></select>
           </div>
           <div class="tx-list">
-            <div v-if="!transactions.length" class="tx-row">
+            <p class="card-error" v-if="transactionsError">{{ transactionsError }}</p>
+            <div v-if="!transactions.length && !transactionsError" class="tx-row">
               <div class="tx-info"><span style="color:#94a3b8">Chưa có giao dịch nào</span></div>
             </div>
             <div
@@ -389,8 +415,13 @@ import CardShell from '../components/CardShell.vue';
 const districtOptions = ref([]);
 const debtOffenders   = ref([]);
 const transactions    = ref([]);
+const typeDistribution = ref([]);
 const thamSo          = ref({ soDaiLyToiDa: 100, tiLeGiaXuat: 1.02 });
 const topAgents       = ref([]);
+const dashboardError  = ref('');
+const districtError   = ref('');
+const thamSoError     = ref('');
+const transactionsError = ref('');
 
 const stats = ref({
   tongDaiLy: 0,
@@ -415,6 +446,16 @@ const isDistrictFull = computed(() =>
   stats.value.tongDaiLy >= thamSo.value.soDaiLyToiDa
 );
 
+const distributionSummary = computed(() => {
+  const total = typeDistribution.value.reduce((sum, item) => sum + (item.count || 0), 0);
+  const colors = ['#10B981', '#3B82F6', '#F59E0B', '#8B5CF6', '#0EA5E9'];
+  return typeDistribution.value.map((item, index) => ({
+    ...item,
+    pct: total ? Math.round((item.count / total) * 100) : 0,
+    color: colors[index % colors.length],
+  }));
+});
+
 const debtLimitUsedPct = computed(() => {
   const limit = thamSo.value.soDaiLyToiDa * 10_000_000;
   return limit > 0 ? Math.min(Math.round(stats.value.tongNo / limit * 100), 100) : 0;
@@ -422,21 +463,30 @@ const debtLimitUsedPct = computed(() => {
 
 /* ─── Load functions ─── */
 const loadDistricts = async () => {
+  districtError.value = '';
   try {
     const res = await api.get('/quan');
     districtOptions.value = (res.data?.data || res.data || []).map(q => q.TenQuan);
-  } catch (err) { console.warn('Failed to load districts', err); }
+  } catch (err) {
+    districtError.value = 'Không thể tải danh sách quận từ DB.';
+    console.warn('Failed to load districts', err);
+  }
 };
 
 const loadThamSo = async () => {
+  thamSoError.value = '';
   try {
     const res = await api.get('/tham-so');
     const d = res.data?.data || res.data;
     if (d) thamSo.value = { soDaiLyToiDa: d.SoDaiLyToiDa || 100, tiLeGiaXuat: d.TiLeTinhDonGiaXuat || 1.02 };
-  } catch (err) { console.warn('Failed to load thamso', err); }
+  } catch (err) {
+    thamSoError.value = 'Không thể tải quy định mở đại lý từ DB.';
+    console.warn('Failed to load thamso', err);
+  }
 };
 
 const loadTransactions = async () => {
+  transactionsError.value = '';
   try {
     const [xuatRes, nhapRes, thuRes] = await Promise.all([
       api.get('/phieu-xuat'),
@@ -467,29 +517,44 @@ const loadTransactions = async () => {
     transactions.value = [...xuat, ...nhap, ...thu]
       .sort((a, b) => new Date(b.date) - new Date(a.date))
       .slice(0, 5);
-  } catch (err) { console.warn('Failed to load transactions', err); }
+  } catch (err) {
+    transactionsError.value = 'Không thể tải lịch sử giao dịch từ DB.';
+    console.warn('Failed to load transactions', err);
+  }
 };
 
 const loadDashboard = async () => {
+  dashboardError.value = '';
   try {
     const res = await api.get('/dashboard');
     const data = res.data?.data || res.data;
     if (data) {
-      if (data.topDebtors) {
-        debtOffenders.value = data.topDebtors.map(d => ({
-          id: d.MaDaiLy,
-          name: d.TenDaiLy,
-          district: d.quan?.TenQuan || '',
-          overLimit: (Number(d.TongNo) / 1_000_000).toFixed(1),
-          tongNo: Number(d.TongNo),
-          hanMuc: Number(d.loaiDaiLy?.TienNoToiDa) || 0,
-          note: `Công nợ hiện tại: ${fmtVND(Number(d.TongNo))}`,
-        }));
-        // Top agents by sales = sorted by debt (biggest creditor = most active)
-        topAgents.value = [...debtOffenders.value]
-          .sort((a, b) => b.tongNo - a.tongNo)
-          .slice(0, 3);
-      }
+      const rawDebtors = data.debtOffenders || [];
+      debtOffenders.value = rawDebtors.map(d => ({
+        id: d.MaDaiLy,
+        name: d.TenDaiLy,
+        district: d.quan?.TenQuan || '',
+        overLimit: ((Number(d.TongNo) - Number(d.hanMuc || d.loaiDaiLy?.TienNoToiDa || 0)) / 1_000_000).toFixed(1),
+        tongNo: Number(d.TongNo),
+        hanMuc: Number(d.hanMuc || d.loaiDaiLy?.TienNoToiDa) || 0,
+        note: `Công nợ hiện tại: ${fmtVND(Number(d.TongNo))}`,
+      }));
+
+      typeDistribution.value = data.typeDistribution || [];
+
+      const rawTopAgents = data.topAgents || [];
+      topAgents.value = rawTopAgents.length
+        ? rawTopAgents.map(d => ({
+            id: d.MaDaiLy,
+            name: d.TenDaiLy,
+            district: d.quan?.TenQuan || '',
+            tongNo: Number(d.TongNo),
+            hanMuc: Number(d.hanMuc || d.loaiDaiLy?.TienNoToiDa) || 0,
+          }))
+        : [...debtOffenders.value]
+            .sort((a, b) => b.tongNo - a.tongNo)
+            .slice(0, 3);
+
       stats.value = {
         tongDaiLy: data.tongDaiLy || 0,
         tongDoanhSo: data.tongDoanhSo || 0,
@@ -497,8 +562,13 @@ const loadDashboard = async () => {
         tongMatHang: data.tongMatHang || 0,
         doanhSoTheoThang: data.doanhSoTheoThang || []
       };
+    } else {
+      dashboardError.value = 'Không có dữ liệu dashboard từ DB.';
     }
-  } catch (err) { console.warn('Dashboard load failed', err); }
+  } catch (err) {
+    dashboardError.value = 'Không thể tải dữ liệu dashboard từ DB.';
+    console.warn('Dashboard load failed', err);
+  }
 };
 
 onMounted(() => {
@@ -714,6 +784,18 @@ const lockAccount = (o) => {
 .ghost-btn:hover { background: #fff; box-shadow: var(--sh-card); }
 
 .icon-muted { color: var(--c-txt-3); cursor: pointer; flex-shrink: 0; }
+
+.card-error {
+  margin: 10px 0;
+  color: var(--c-danger);
+  font-size: 13px;
+}
+
+.offender-empty {
+  padding: 18px 0;
+  color: var(--c-txt-3);
+  font-size: 13px;
+}
 
 /* ╔══════════════════════════════════════════╗
    ║          CHART CARD                      ║
