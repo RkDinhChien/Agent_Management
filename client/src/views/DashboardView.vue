@@ -1,0 +1,1374 @@
+<template>
+  <div class="dv">
+    <div class="dv-grid">
+
+      <!-- ════════════════════════════════════
+           LEFT AREA
+      ════════════════════════════════════ -->
+      <section class="dv-left">
+
+        <!-- Row 1 : Chart + 3 KPI stats -->
+        <div class="dv-r1">
+
+          <CardShell card-id="chart" class="chart-card">
+            <div class="chart-hd">
+              <div class="ch-kpi">
+                <h2 class="ch-num">{{ fmtSummary(Number(stats.tongDoanhSo)) }}</h2>
+                <p class="ch-sub">Tổng doanh số hệ thống</p>
+              </div>
+              <div class="ch-ctrl">
+                <select class="psel"><option>7 Ngày</option></select>
+                <div class="ch-type">
+                  <button class="ctype-btn active"><BarChart2 :size="14"/></button>
+                  <button class="ctype-btn"><LineChart :size="14"/></button>
+                </div>
+              </div>
+            </div>
+
+            <div class="ch-legend">
+              <span class="leg"><i class="ldot" style="background:#3B82F6"></i>Tiền thu nợ</span>
+              <span class="leg"><i class="ldot" style="background:#10B981"></i>Doanh số giao đi</span>
+              <span class="leg"><i class="ldot" style="background:#7C3AED"></i>Chiết khấu trao trả</span>
+            </div>
+
+            <div class="ch-stage">
+              <div class="ch-yaxis">
+                <span>300</span><span>200</span><span>100</span><span>0</span><span class="neg-lbl">−100</span>
+              </div>
+              <div class="ch-bars">
+                <div class="barcol"><div class="bpos" style="height:40%"></div><div class="bneg" style="height:10%"></div><span class="blbl">T2</span></div>
+                <div class="barcol"><div class="bpos" style="height:45%"></div><div class="bneg" style="height:12%"></div><span class="blbl">T3</span></div>
+                <div class="barcol"><div class="bpos" style="height:60%"></div><span class="blbl">T4</span></div>
+                <div class="barcol today-col">
+                  <span class="today-tag">Hôm nay</span>
+                  <div class="bstack" style="height:75%">
+                    <div class="bslice" style="height:20%;background:#3B82F6;border-radius:4px 4px 0 0"></div>
+                    <div class="bslice" style="height:80%;background:#10B981;border-radius:0 0 4px 4px"></div>
+                  </div>
+                  <div class="bneg" style="height:25%;background:rgba(124,58,237,.35)"></div>
+                  <span class="blbl blbl-active">T5</span>
+                  <div class="bar-tooltip">
+                    <p class="btt-title">Đại lý Quận 1 &amp; Quận 3</p>
+                    <div class="btt-row"><i class="ldot" style="background:#3B82F6"></i>Tổng thu nợ <strong>24,0 Tr</strong></div>
+                    <div class="btt-row"><i class="ldot" style="background:#10B981"></i>Tổng tiền xuất <strong>70,0 Tr</strong></div>
+                    <div class="btt-row"><i class="ldot" style="background:#7C3AED"></i>Chiết khấu <strong>12,0 Tr</strong></div>
+                  </div>
+                </div>
+                <div class="barcol"><div class="bpos" style="height:65%"></div><div class="bneg" style="height:10%"></div><span class="blbl">T6</span></div>
+                <div class="barcol"><div class="bpos" style="height:35%"></div><span class="blbl">T7</span></div>
+                <div class="barcol"><div class="bpos" style="height:50%"></div><div class="bneg" style="height:20%"></div><span class="blbl">CN</span></div>
+              </div>
+            </div>
+          </CardShell>
+
+          <!-- 3 KPI stat cards -->
+          <div class="kpi-col">
+            <CardShell card-id="stat-revenue" class="kpi-card">
+              <p class="kpi-lbl">Doanh số (tiền bán hàng)</p>
+              <h3 class="kpi-val">{{ fmtSummary(Number(stats.tongDoanhSo)) }}</h3>
+              <span class="trend up"><ArrowUpRight :size="12"/>Tổng doanh số</span>
+            </CardShell>
+            <CardShell card-id="stat-avg" class="kpi-card">
+              <p class="kpi-lbl">Tổng số đại lý</p>
+              <h3 class="kpi-val">{{ stats.tongDaiLy }} ĐL</h3>
+              <span class="trend up"><ArrowUpRight :size="12"/>Quy mô hệ thống</span>
+            </CardShell>
+            <CardShell card-id="stat-collected" class="kpi-card">
+              <p class="kpi-lbl">Tổng nợ hiện tại</p>
+              <h3 class="kpi-val">{{ fmtSummary(Number(stats.tongNo)) }}</h3>
+              <span class="trend down"><ArrowDownRight :size="12"/>Cần thu hồi</span>
+            </CardShell>
+          </div>
+        </div>
+
+        <!-- Row 2 : Debt alert + District rules -->
+        <div class="dv-r2">
+
+          <CardShell card-id="debt-alert" class="debt-card">
+            <div class="dc-head">
+              <div class="dc-title-wrap">
+                <span class="dc-accent"></span>
+                <h3 class="dc-title">Cảnh báo nợ của đại lý</h3>
+              </div>
+              <div class="dc-controls">
+                <select v-model="selectedDistrict" class="psel sm">
+                  <option>Tất cả quận</option>
+                  <option v-for="d in districtOptions" :key="d">{{ d }}</option>
+                </select>
+                <Edit2 :size="13" class="icon-muted"/>
+              </div>
+              <p class="card-error" v-if="districtError">{{ districtError }}</p>
+            </div>
+            <p class="dc-sub">
+              <template v-if="debtOffenders.length">
+                {{ debtOffenders.length }} đại lý đang vượt hạn mức nợ theo QĐ-1 • Cập nhật: Hôm nay
+              </template>
+              <template v-else>
+                Không có đại lý vi phạm hạn mức nợ theo QĐ-1 • Cập nhật: Hôm nay
+              </template>
+            </p>
+            <p class="card-error" v-if="dashboardError">{{ dashboardError }}</p>
+
+            <div v-if="!dashboardError">
+              <div class="dc-progress">
+                <div class="prog-track">
+                  <div class="prog-fill" :style="{ width: stats.tongDaiLy ? (debtOffenders.length / stats.tongDaiLy * 100) + '%' : '0%' }"></div>
+                </div>
+                <div class="prog-labels">
+                  <span class="danger-txt">Vi phạm: <strong>{{ debtOffenders.length }}</strong> đại lý</span>
+                  <span class="muted-txt">Tổng: {{ stats.tongDaiLy }} đại lý</span>
+                </div>
+              </div>
+
+              <div v-if="debtOffenders.length" class="offender-list">
+                <div
+                  v-for="o in visibleOffenders"
+                  :key="`${o.name}-${o.district}`"
+                  class="offender-row"
+                  @click="openModal(o)"
+                >
+                  <span class="of-name">{{ o.name }}</span>
+                  <span class="of-dist">{{ o.district }}</span>
+                  <span class="of-amt">+{{ fmtSummary(Number(o.overLimit) * 1_000_000) }}</span>
+                </div>
+              </div>
+              <div v-else class="offender-empty">
+                Chưa có đại lý vi phạm hạn mức nợ.
+              </div>
+            </div>
+
+            <div class="dc-footer" v-if="!dashboardError && debtOffenders.length">
+              <button class="btn-p" @click="openModal(visibleOffenders[0])">Xem chi tiết</button>
+              <button class="btn-o" @click="sendReminder(visibleOffenders[0])">Gửi nhắc</button>
+            </div>
+          </CardShell>
+
+          <CardShell card-id="district-rules" class="rules-card">
+            <div class="rc-body">
+              <div class="rc-title-row">
+                <h4 class="rc-title">Quy định mở đại lý — trạng thái khu vực</h4>
+                <span class="badge-full" :style="{ background: isDistrictFull ? '' : '#dcfce7', color: isDistrictFull ? '' : '#059669' }">
+                  {{ isDistrictFull ? 'Đã đầy' : `Còn ${thamSo.soDaiLyToiDa - stats.tongDaiLy} chỗ` }}
+                </span>
+              </div>
+              <p class="rc-desc">
+                {{ isDistrictFull
+                  ? 'Hệ thống đã đạt giới hạn mở đại lý theo QĐ-1. Xem hồ sơ chờ hoặc đề xuất quận thay thế.'
+                  : 'Hệ thống còn chỗ mở đại lý theo QĐ-1. Xem hồ sơ chờ hoặc đề xuất quận thay thế.'
+                }}
+              </p>
+              <p class="card-error" v-if="thamSoError">{{ thamSoError }}</p>
+              <div class="rc-btns" v-if="!thamSoError">
+                <button class="btn-p" @click="router.push('/dai-ly-list')">Kiểm tra hồ sơ chờ</button>
+                <button class="btn-o" @click="router.push('/dai-ly-list')">Đề xuất quận khác</button>
+              </div>
+            </div>
+            <div class="rc-art">
+              <div class="rc-grid">
+                <div class="rg" style="background:#34d399"></div>
+                <div class="rg" style="background:#93c5fd"></div>
+                <div class="rg" style="background:#64748b"></div>
+                <div class="rg" style="background:#34d399"></div>
+              </div>
+            </div>
+          </CardShell>
+        </div>
+
+        <!-- Row 3 : Pie + Gauge + Goal -->
+        <div class="dv-r3">
+
+          <CardShell card-id="agent-dist" class="bot-card">
+            <div class="bc-head">
+              <h4 class="bc-title">Phân bố loại đại lý</h4>
+              <select class="psel sm"><option>Thành phố</option></select>
+            </div>
+            <div class="bc-macro">{{ stats.tongDaiLy }} ĐL</div>
+            <div class="pie-wrap">
+              <p class="card-error" v-if="dashboardError">{{ dashboardError }}</p>
+              <div v-else-if="distributionSummary.length">
+                <div class="pie-legend">
+                  <div v-for="(item, i) in distributionSummary" :key="item.maLoai" class="ple">
+                    <i class="ldot" :style="{ background: item.color }"></i>
+                    {{ item.tenLoai }} <strong>{{ item.pct }}%</strong>
+                  </div>
+                </div>
+                <div class="pie-circle"></div>
+              </div>
+              <div v-else class="card-error">Chưa có dữ liệu phân bố loại đại lý từ DB.</div>
+            </div>
+          </CardShell>
+
+          <CardShell card-id="collection-rate" class="bot-card">
+            <div class="bc-head">
+              <div>
+                <h4 class="bc-title">Tỷ lệ thu tiền</h4>
+                <span class="bc-sub">Hiện tại</span>
+              </div>
+              <select class="psel sm"><option>Trong tháng</option></select>
+            </div>
+            <div class="bc-macro">{{ collectRatePct }}%</div>
+            <span class="trend" :class="collectRatePct >= 50 ? 'up' : 'down'">
+              <ArrowUpRight v-if="collectRatePct >= 50" :size="12"/>
+              <ArrowDownRight v-else :size="12"/>
+              Tỷ lệ doanh thu còn lại
+            </span>
+            <div class="gauge-block">
+              <div class="gauge-meta">
+                <span>Tỷ lệ hoàn nợ</span>
+                <strong>{{ collectRatePct }}%</strong>
+              </div>
+              <div class="gauge-track">
+                <div class="gauge-fill" :style="{ width: collectRatePct + '%' }"></div>
+              </div>
+            </div>
+            <p class="gauge-note">Tính bằng Tổng Thu chia cho Tổng Nợ phát sinh đầu kỳ.</p>
+          </CardShell>
+
+          <CardShell card-id="expansion" class="bot-card">
+            <div class="bc-head">
+              <h4 class="bc-title">Mở rộng đại lý</h4>
+              <button class="ghost-btn" @click="router.push('/dai-ly-list')">+ Thêm</button>
+            </div>
+            <div class="goal-list">
+              <span class="goal-yr">Năm nay</span>
+              <div class="goal-row">
+                <div class="goal-icon g-green"><Store :size="14"/></div>
+                <div class="goal-info">
+                  <div class="gi-top"><strong>Quận Bình Thạnh</strong><span>12 / 15 CH</span></div>
+                  <div class="gi-bar"><div class="gi-fill" style="width:80%;background:#84cc16"></div></div>
+                  <span class="gi-note">Còn 3 đại lý nữa để đạt KPI</span>
+                </div>
+              </div>
+              <span class="goal-yr mt12">Dự kiến tương lai</span>
+              <div class="goal-row">
+                <div class="goal-icon g-blue"><Truck :size="14"/></div>
+                <div class="goal-info">
+                  <div class="gi-top"><strong>Tuyến giao hàng mới</strong><span>4 / 10 Xe</span></div>
+                  <div class="gi-bar"><div class="gi-fill" style="width:40%;background:#fb923c"></div></div>
+                  <span class="gi-note">Chuẩn bị hồ sơ sau 3 tháng</span>
+                </div>
+              </div>
+            </div>
+          </CardShell>
+        </div>
+      </section>
+
+      <!-- ════════════════════════════════════
+           RIGHT PANEL
+      ════════════════════════════════════ -->
+      <aside class="dv-right">
+
+        <CardShell card-id="transactions" class="panel-card tx-panel">
+          <div class="panel-hd">
+            <h4 class="panel-title">Lịch sử giao dịch</h4>
+            <select class="psel sm"><option>7 Ngày</option></select>
+          </div>
+          <div class="tx-list">
+            <p class="card-error" v-if="transactionsError">{{ transactionsError }}</p>
+            <div v-if="!transactions.length && !transactionsError" class="tx-row">
+              <div class="tx-info"><span style="color:#94a3b8">Chưa có giao dịch nào</span></div>
+            </div>
+            <div
+              v-for="(t, i) in transactions" :key="i"
+              class="tx-row" :class="{ 'last-row': i === transactions.length - 1 }"
+            >
+              <div class="tx-icon" :class="t.type === 'thu' ? 'i-green' : t.type === 'xuat' ? 'i-blue' : 'i-slate'">
+                <ArrowUpRight v-if="t.type === 'thu'" :size="13"/>
+                <Package     v-else-if="t.type === 'xuat'" :size="13"/>
+                <FileText    v-else :size="13"/>
+              </div>
+              <div class="tx-info"><strong>{{ t.label }}</strong><span>{{ t.sub }}</span></div>
+              <span class="tx-val" :class="t.color">{{ t.val }}</span>
+            </div>
+          </div>
+        </CardShell>
+
+        <CardShell card-id="leaderboard" class="panel-card lb-panel">
+          <div class="panel-hd lb-hd">
+            <div class="lb-title-group">
+              <Award :size="17" class="award-ic"/>
+              <div>
+                <h4 class="panel-title">Vinh danh</h4>
+                <span class="panel-sub">Top đại lý nổi bật trong tháng</span>
+              </div>
+            </div>
+            <span class="month-chip">Thực tế</span>
+          </div>
+          <div class="lb-list">
+            <div v-if="!topAgents.length" class="lb-row">
+              <span style="color:#94a3b8;font-size:13px">Chưa có dữ liệu</span>
+            </div>
+            <div
+              v-for="(a, i) in topAgents" :key="a.id"
+              class="lb-row" :class="{ 'last-row': i === topAgents.length - 1 }"
+            >
+              <div class="lb-rank" :class="['gold','green','red'][i] || 'red'">{{ i + 1 }}</div>
+              <div class="lb-av">
+                <span class="av-init" :style="{ background: ['#059669','#0284c7','#dc2626'][i] || '#64748b' }">
+                  {{ a.name.replace(/^Đại lý\s*/i,'').charAt(0) }}
+                </span>
+              </div>
+              <div class="lb-info">
+                <strong>{{ a.name }}</strong>
+                <div class="lb-meta">
+                  <span class="lb-tag">{{ a.district }}</span>
+                  <div class="lb-bar">
+                    <div class="lb-fill" :class="['gold-fill','green-fill','red-fill'][i]"
+                      :style="{ width: (a.hanMuc ? Math.min(a.tongNo/a.hanMuc*100,100) : 50) + '%' }">
+                    </div>
+                  </div>
+                  <span class="lb-pct">{{ a.hanMuc ? Math.round(a.tongNo/a.hanMuc*100) : '—' }}%</span>
+                </div>
+              </div>
+              <div class="lb-right">
+                <span class="lb-score">{{ fmtVND(a.tongNo) }}</span>
+                <Award :size="13" :class="['award-gold','award-green','award-red'][i]"/>
+              </div>
+            </div>
+          </div>
+        </CardShell>
+
+        <CardShell card-id="admin" class="panel-card admin-panel">
+          <div class="panel-hd">
+            <div>
+              <h4 class="panel-title">Quản trị hệ thống</h4>
+              <span class="panel-sub">Hạn mức nợ &amp; hành động</span>
+            </div>
+            <button class="ghost-btn" @click="router.push('/cai-dat')">Tùy chỉnh</button>
+          </div>
+          <div class="cm-mock">
+            <div class="cm-top-row">
+              <span class="cm-lbl">Hạn mức nợ tối đa</span>
+              <span class="cm-badge">Q.Định Số 1</span>
+            </div>
+            <div class="cm-value">{{ fmtVND(stats.tongNo) }} / {{ fmtVND(thamSo.soDaiLyToiDa * 10_000_000) }}</div>
+            <div class="cm-track"><div class="cm-fill" :style="{ width: debtLimitUsedPct + '%' }"></div></div>
+            <p class="cm-note">Đã sử dụng {{ debtLimitUsedPct }}% • Còn {{ fmtVND(Math.max(0, thamSo.soDaiLyToiDa * 10_000_000 - stats.tongNo)) }}</p>
+            <div class="cm-bot-row">
+              <span class="cm-muted">Áp dụng toàn hệ thống</span>
+              <span class="cm-active-badge">Hoạt động</span>
+            </div>
+          </div>
+          <div class="quick-actions">
+            <div class="qa-btn qa-green" @click="$router.push('/dai-ly-list')">
+              <div class="qa-icon"><Plus :size="15"/></div>
+              <span>Thêm đại lý</span>
+            </div>
+            <div class="qa-btn qa-teal" @click="$router.push('/tra-cuu')">
+              <div class="qa-icon"><FileText :size="15"/></div>
+              <span>Phiếu thu</span>
+            </div>
+          </div>
+        </CardShell>
+
+      </aside>
+    </div>
+
+    <!-- ════ Debt Detail Modal ════ -->
+    <Teleport to="body">
+      <div v-if="modalOpen" class="modal-bg" @click="closeModal">
+        <div class="modal-box" @click.stop>
+          <div class="modal-hd">
+            <div class="modal-agent-info">
+              <strong>{{ activeOffender.name }}</strong>
+              <span>{{ activeOffender.district }} · Vượt hạn mức +{{ fmtVND(Number(activeOffender.overLimit) * 1_000_000) }}</span>
+            </div>
+            <button class="modal-btn modal-btn-close" @click="closeModal">Đóng</button>
+          </div>
+          <div class="modal-body">
+            <div class="modal-stats">
+              <div class="mstat"><span>Quận</span><strong>{{ activeOffender.district }}</strong></div>
+              <div class="mstat"><span>Nợ vượt</span><strong class="danger-txt">+{{ fmtVND(Number(activeOffender.overLimit) * 1_000_000) }}</strong></div>
+              <div class="mstat"><span>Trạng thái</span><strong>Cần theo dõi</strong></div>
+            </div>
+            <p class="modal-note">{{ activeOffender.note }}</p>
+            <div v-if="actionFeedback" class="modal-feedback">{{ actionFeedback }}</div>
+            <div class="modal-actions">
+              <button class="modal-btn modal-btn-primary" @click="sendReminder(activeOffender)">Gửi nhắc nhở</button>
+              <button class="modal-btn modal-btn-danger" @click="lockAccount(activeOffender)">Khoá tạm thời</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </Teleport>
+  </div>
+</template>
+
+<script setup>
+import { computed, ref, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
+import api from '../services/api';
+
+const router = useRouter();
+
+/* ── Helpers ── */
+const fmtVND = (v) => (v || 0).toLocaleString('vi-VN') + ' ₫';
+const fmtSummary = (v) => fmtVND(v);
+const fmtDate = (d) => d ? new Date(d).toLocaleDateString('vi-VN') : '';
+import {
+  BarChart2, LineChart, ArrowUpRight, ArrowDownRight, Edit2,
+  Users, Truck, Store, Plus, FileText, Package, Award
+} from 'lucide-vue-next';
+import CardShell from '../components/CardShell.vue';
+
+/* ─── Data ─── */
+const districtOptions = ref([]);
+const debtOffenders   = ref([]);
+const transactions    = ref([]);
+const typeDistribution = ref([]);
+const thamSo          = ref({ soDaiLyToiDa: 100, tiLeGiaXuat: 1.02 });
+const topAgents       = ref([]);
+const dashboardError  = ref('');
+const districtError   = ref('');
+const thamSoError     = ref('');
+const transactionsError = ref('');
+
+const stats = ref({
+  tongDaiLy: 0,
+  tongDoanhSo: 0,
+  tongNo: 0,
+  tongMatHang: 0,
+  doanhSoTheoThang: []
+});
+
+/* ─── Computed ─── */
+const collectRatePct = computed(() => {
+  if (!stats.value.tongDoanhSo) return 0;
+  const collected = debtOffenders.value.reduce((s, d) => s, 0);
+  // Tỷ lệ thu = (tongDoanhSo - tongNo) / tongDoanhSo
+  const rate = stats.value.tongDoanhSo > 0
+    ? Math.round(((stats.value.tongDoanhSo - stats.value.tongNo) / stats.value.tongDoanhSo) * 100)
+    : 0;
+  return Math.max(0, Math.min(100, rate));
+});
+
+const isDistrictFull = computed(() =>
+  stats.value.tongDaiLy >= thamSo.value.soDaiLyToiDa
+);
+
+const distributionSummary = computed(() => {
+  const total = typeDistribution.value.reduce((sum, item) => sum + (item.count || 0), 0);
+  const colors = ['#10B981', '#3B82F6', '#F59E0B', '#8B5CF6', '#0EA5E9'];
+  return typeDistribution.value.map((item, index) => ({
+    ...item,
+    pct: total ? Math.round((item.count / total) * 100) : 0,
+    color: colors[index % colors.length],
+  }));
+});
+
+const debtLimitUsedPct = computed(() => {
+  const limit = thamSo.value.soDaiLyToiDa * 10_000_000;
+  return limit > 0 ? Math.min(Math.round(stats.value.tongNo / limit * 100), 100) : 0;
+});
+
+/* ─── Load functions ─── */
+const loadDistricts = async () => {
+  districtError.value = '';
+  try {
+    const res = await api.get('/quan');
+    districtOptions.value = (res.data?.data || res.data || []).map(q => q.TenQuan);
+  } catch (err) {
+    districtError.value = 'Không thể tải danh sách quận từ DB.';
+    console.warn('Failed to load districts', err);
+  }
+};
+
+const loadThamSo = async () => {
+  thamSoError.value = '';
+  try {
+    const res = await api.get('/tham-so');
+    const d = res.data?.data || res.data;
+    if (d) thamSo.value = { soDaiLyToiDa: d.SoDaiLyToiDa || 100, tiLeGiaXuat: d.TiLeTinhDonGiaXuat || 1.02 };
+  } catch (err) {
+    thamSoError.value = 'Không thể tải quy định mở đại lý từ DB.';
+    console.warn('Failed to load thamso', err);
+  }
+};
+
+const loadTransactions = async () => {
+  transactionsError.value = '';
+  try {
+    const [xuatRes, nhapRes, thuRes] = await Promise.all([
+      api.get('/phieu-xuat'),
+      api.get('/phieu-nhap'),
+      api.get('/phieu-thu'),
+    ]);
+    const xuat = (xuatRes.data?.data || []).map(r => ({
+      type: 'xuat', icon: 'package', color: 'c-red',
+      label: 'Phiếu xuất hàng',
+      sub: `${r.daiLy?.TenDaiLy || 'Đại lý'} · ${fmtDate(r.NgayLapPhieu)}`,
+      val: `−${fmtVND(r.TongTien)}`,
+      date: r.NgayLapPhieu,
+    }));
+    const nhap = (nhapRes.data?.data || []).map(r => ({
+      type: 'nhap', icon: 'file', color: 'c-muted',
+      label: 'Phiếu nhập hàng',
+      sub: `NCC · ${fmtDate(r.NgayLapPhieu)}`,
+      val: `−${fmtVND(r.TongTien)}`,
+      date: r.NgayLapPhieu,
+    }));
+    const thu = (thuRes.data?.data || []).map(r => ({
+      type: 'thu', icon: 'arrow-up', color: 'c-green',
+      label: 'Phiếu thu tiền nợ',
+      sub: `${r.daiLy?.TenDaiLy || 'Đại lý'} · ${fmtDate(r.NgayThuTien)}`,
+      val: `+${fmtVND(r.SoTienThu)}`,
+      date: r.NgayThuTien,
+    }));
+    transactions.value = [...xuat, ...nhap, ...thu]
+      .sort((a, b) => new Date(b.date) - new Date(a.date))
+      .slice(0, 5);
+  } catch (err) {
+    transactionsError.value = 'Không thể tải lịch sử giao dịch từ DB.';
+    console.warn('Failed to load transactions', err);
+  }
+};
+
+const loadDashboard = async () => {
+  dashboardError.value = '';
+  try {
+    const res = await api.get('/dashboard');
+    const data = res.data?.data || res.data;
+    if (data) {
+      const rawDebtors = data.debtOffenders || [];
+      debtOffenders.value = rawDebtors.map(d => ({
+        id: d.MaDaiLy,
+        name: d.TenDaiLy,
+        district: d.quan?.TenQuan || '',
+        overLimit: ((Number(d.TongNo) - Number(d.hanMuc || d.loaiDaiLy?.TienNoToiDa || 0)) / 1_000_000).toFixed(1),
+        tongNo: Number(d.TongNo),
+        hanMuc: Number(d.hanMuc || d.loaiDaiLy?.TienNoToiDa) || 0,
+        note: `Công nợ hiện tại: ${fmtVND(Number(d.TongNo))}`,
+      }));
+
+      typeDistribution.value = data.typeDistribution || [];
+
+      const rawTopAgents = data.topAgents || [];
+      topAgents.value = rawTopAgents.length
+        ? rawTopAgents.map(d => ({
+            id: d.MaDaiLy,
+            name: d.TenDaiLy,
+            district: d.quan?.TenQuan || '',
+            tongNo: Number(d.TongNo),
+            hanMuc: Number(d.hanMuc || d.loaiDaiLy?.TienNoToiDa) || 0,
+          }))
+        : [...debtOffenders.value]
+            .sort((a, b) => b.tongNo - a.tongNo)
+            .slice(0, 3);
+
+      stats.value = {
+        tongDaiLy: data.tongDaiLy || 0,
+        tongDoanhSo: data.tongDoanhSo || 0,
+        tongNo: data.tongNo || 0,
+        tongMatHang: data.tongMatHang || 0,
+        doanhSoTheoThang: data.doanhSoTheoThang || []
+      };
+    } else {
+      dashboardError.value = 'Không có dữ liệu dashboard từ DB.';
+    }
+  } catch (err) {
+    dashboardError.value = 'Không thể tải dữ liệu dashboard từ DB.';
+    console.warn('Dashboard load failed', err);
+  }
+};
+
+onMounted(() => {
+  loadDashboard();
+  loadDistricts();
+  loadThamSo();
+  loadTransactions();
+});
+
+/* ─── State ─── */
+const selectedDistrict = ref('Tất cả quận');
+const activeOffender   = ref(null);
+const modalOpen        = ref(false);
+const actionFeedback   = ref('');
+
+/* ─── Computed ─── */
+const visibleOffenders = computed(() => {
+  const baseList = debtOffenders.value || [];
+  const list = selectedDistrict.value === 'Tất cả quận'
+    ? baseList
+    : baseList.filter(o => o.district === selectedDistrict.value);
+  return list.slice(0, 3);
+});
+
+/* ─── Actions ─── */
+const openModal = (o) => {
+  if (!o) return;
+  activeOffender.value = o;
+  modalOpen.value      = true;
+  actionFeedback.value = '';
+};
+const closeModal = () => { modalOpen.value = false; };
+
+const sendReminder = (o) => {
+  if (!o) return;
+  closeModal();
+  router.push('/thu-tien');
+};
+
+const lockAccount = (o) => {
+  if (!o) return;
+  closeModal();
+  router.push('/dai-ly-list');
+};
+</script>
+
+<style scoped>
+/* ╔══════════════════════════════════════════╗
+   ║          DESIGN TOKENS                   ║
+   ╚══════════════════════════════════════════╝ */
+.dv {
+  --c-primary:    #059669;
+  --c-primary-d:  #047857;
+  --c-info:       #3B82F6;
+  --c-info-bg:    #EFF6FF;
+  --c-success:    #10B981;
+  --c-success-bg: #ECFDF5;
+  --c-warning:    #F59E0B;
+  --c-danger:     #EF4444;
+  --c-danger-bg:  #FEF2F2;
+  --c-discount:   #7C3AED;
+  --c-surface:    #ffffff;
+  --c-bg:         #f8fafc;
+  --c-border:     rgba(15,23,42,.07);
+  --c-border-s:   rgba(15,23,42,.04);
+  --c-txt:        #0f172a;
+  --c-txt-2:      #475569;
+  --c-txt-3:      #94a3b8;
+  --r-card:       12px;
+  --r-md:         8px;
+  --r-sm:         6px;
+  --r-pill:       999px;
+  --sh-card:      0 1px 3px rgba(15,23,42,.05), 0 1px 2px rgba(15,23,42,.04);
+  --sh-hover:     0 4px 16px rgba(15,23,42,.08);
+  --sh-modal:     0 20px 60px rgba(15,23,42,.18);
+  --t-base:       .16s ease;
+
+  min-height: 100vh;
+  background: var(--c-bg);
+  font-family: 'Inter', 'Be Vietnam Pro', ui-sans-serif, system-ui, -apple-system, sans-serif;
+  color: var(--c-txt);
+  font-size: 14px;
+  line-height: 1.5;
+  padding: 4px 0 32px;
+}
+
+/* ╔══════════════════════════════════════════╗
+   ║          MASTER GRID                     ║
+   ╚══════════════════════════════════════════╝ */
+.dv-grid {
+  display: grid;
+  grid-template-columns: 1fr 312px;
+  gap: 20px;
+  align-items: start;
+  max-width: 1560px;
+  margin: 0 auto;
+}
+
+.dv-left  { display: flex; flex-direction: column; gap: 18px; min-width: 0; }
+.dv-right { display: flex; flex-direction: column; gap: 16px; }
+
+/* Row grids */
+.dv-r1 { display: grid; grid-template-columns: 2fr .8fr; gap: 18px; align-items: stretch; }
+.dv-r2 { display: grid; grid-template-columns: 1.4fr 1fr; gap: 18px; align-items: stretch; }
+.dv-r3 { display: grid; grid-template-columns: repeat(3,1fr); gap: 18px; align-items: stretch; }
+
+/* ── KPI stat column ── */
+.kpi-col { display: flex; flex-direction: column; gap: 12px; }
+
+/* ╔══════════════════════════════════════════╗
+   ║          CARD BASE                       ║
+   ╚══════════════════════════════════════════╝ */
+/* CardShell inherits these classes on its root div */
+.chart-card,
+.kpi-card,
+.debt-card,
+.rules-card,
+.bot-card,
+.panel-card {
+  background: var(--c-surface);
+  border-radius: var(--r-card);
+  border: 1px solid var(--c-border);
+  box-shadow: var(--sh-card);
+  transition: box-shadow var(--t-base), transform var(--t-base);
+  position: relative; /* needed for CardShell overlay */
+}
+.chart-card:hover,
+.kpi-card:hover,
+.debt-card:hover,
+.rules-card:hover,
+.bot-card:hover,
+.panel-card:hover {
+  box-shadow: var(--sh-hover);
+  transform: translateY(-1px);
+}
+
+/* ╔══════════════════════════════════════════╗
+   ║          SHARED UTILITIES                ║
+   ╚══════════════════════════════════════════╝ */
+.psel {
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-sm);
+  padding: 5px 10px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--c-txt-2);
+  background: var(--c-bg);
+  outline: none;
+  cursor: pointer;
+}
+.psel.sm { padding: 4px 8px; font-size: 11px; }
+
+.ldot { display: inline-block; width: 8px; height: 8px; border-radius: 2px; flex-shrink: 0; }
+
+.trend { font-size: 11px; font-weight: 600; display: inline-flex; align-items: center; gap: 3px; }
+.trend.up   { color: var(--c-success); }
+.trend.down { color: var(--c-danger); }
+
+.danger-txt { color: var(--c-danger); }
+.muted-txt  { color: var(--c-txt-3); }
+
+.btn-p {
+  background: var(--c-primary);
+  color: #fff;
+  border: none;
+  border-radius: var(--r-md);
+  padding: 9px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background var(--t-base), transform var(--t-base);
+}
+.btn-p:hover { background: var(--c-primary-d); transform: translateY(-1px); }
+
+.btn-o {
+  background: transparent;
+  color: var(--c-primary);
+  border: 1.5px solid rgba(5,150,105,.35);
+  border-radius: var(--r-md);
+  padding: 9px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--t-base);
+}
+.btn-o:hover { background: var(--c-success-bg); border-color: var(--c-primary); }
+.btn-o.sm { padding: 6px 12px; font-size: 12px; }
+
+.btn-danger {
+  background: var(--c-danger);
+  color: #fff;
+  border: none;
+  border-radius: var(--r-md);
+  padding: 9px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background var(--t-base);
+}
+.btn-danger:hover { background: #dc2626; }
+
+.ghost-btn {
+  background: var(--c-bg);
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-sm);
+  padding: 5px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--c-txt-2);
+  cursor: pointer;
+  transition: all var(--t-base);
+}
+.ghost-btn:hover { background: #fff; box-shadow: var(--sh-card); }
+
+.icon-muted { color: var(--c-txt-3); cursor: pointer; flex-shrink: 0; }
+
+.card-error {
+  margin: 10px 0;
+  color: var(--c-danger);
+  font-size: 13px;
+}
+
+.offender-empty {
+  padding: 18px 0;
+  color: var(--c-txt-3);
+  font-size: 13px;
+}
+
+/* ╔══════════════════════════════════════════╗
+   ║          CHART CARD                      ║
+   ╚══════════════════════════════════════════╝ */
+.chart-card {
+  display: flex;
+  flex-direction: column;
+  padding: 20px 22px;
+  min-height: 290px;
+}
+
+.chart-hd {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+.ch-num {
+  font-size: 32px;
+  font-weight: 900;
+  color: var(--c-primary);
+  margin: 0;
+  letter-spacing: -1px;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+.ch-unit { font-size: 14px; font-weight: 500; color: var(--c-txt-3); margin-left: 4px; }
+.ch-sub  { font-size: 12px; color: var(--c-txt-3); margin: 4px 0 0; }
+
+.ch-ctrl { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.ch-type { display: flex; gap: 2px; background: var(--c-bg); border-radius: var(--r-sm); padding: 2px; }
+.ctype-btn {
+  width: 28px; height: 28px; border: none; background: transparent; border-radius: 4px;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--c-txt-3); cursor: pointer; transition: all var(--t-base);
+}
+.ctype-btn.active { background: #fff; color: var(--c-primary); box-shadow: var(--sh-card); }
+
+.ch-legend {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  margin-top: 14px;
+  flex-wrap: wrap;
+}
+.leg { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--c-txt-3); font-weight: 500; }
+
+/* Bar chart stage */
+.ch-stage {
+  position: relative;
+  flex: 1;
+  margin-top: 18px;
+  display: flex;
+  min-height: 130px;
+}
+.ch-yaxis {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding-bottom: 20px;
+  width: 36px;
+  flex-shrink: 0;
+}
+.ch-yaxis span {
+  font-size: 10px;
+  color: var(--c-txt-3);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  padding-right: 6px;
+}
+.neg-lbl { color: rgba(124,58,237,.6) !important; }
+
+.ch-bars {
+  flex: 1;
+  height: 150px;
+  display: flex;
+  align-items: stretch;
+  justify-content: space-between;
+  gap: 8px;
+  padding-bottom: 20px;
+  border-left: 1px dashed var(--c-border);
+  position: relative;
+}
+/* horizontal grid lines */
+.ch-bars::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    repeating-linear-gradient(
+      to bottom,
+      transparent,
+      transparent calc(25% - .5px),
+      var(--c-border-s) calc(25% - .5px),
+      var(--c-border-s) 25%
+    );
+  pointer-events: none;
+}
+
+.barcol {
+  flex: 1;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  position: relative;
+  cursor: pointer;
+  gap: 3px;
+}
+.bpos {
+  width: 12px;
+  background: rgba(16,185,129,.32);
+  border-radius: 3px 3px 0 0;
+  transition: background var(--t-base);
+}
+.barcol:hover .bpos { background: rgba(16,185,129,.55); }
+.bneg {
+  width: 12px;
+  background: rgba(124,58,237,.2);
+  border-radius: 0 0 3px 3px;
+  margin-top: 2px;
+}
+.bstack { width: 12px; display: flex; flex-direction: column; }
+.bslice { width: 100%; }
+.blbl {
+  position: absolute;
+  bottom: -18px;
+  font-size: 10px;
+  color: var(--c-txt-3);
+  font-weight: 500;
+  white-space: nowrap;
+}
+.blbl-active { color: var(--c-txt); font-weight: 700; }
+
+/* Today highlight */
+.today-col { background: rgba(15,23,42,.02); border-radius: 8px; padding: 4px 2px 0; }
+.today-tag {
+  position: absolute;
+  top: -8px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--c-primary);
+  color: #fff;
+  font-size: 9px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: var(--r-pill);
+  white-space: nowrap;
+  letter-spacing: .3px;
+}
+
+/* Bar tooltip on hover */
+.bar-tooltip {
+  display: none;
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: #fff;
+  border: 1px solid var(--c-border);
+  box-shadow: var(--sh-hover);
+  border-radius: var(--r-md);
+  padding: 10px 12px;
+  min-width: 176px;
+  z-index: 30;
+  gap: 5px;
+  flex-direction: column;
+}
+.barcol:hover .bar-tooltip { display: flex; }
+.btt-title { font-size: 11px; color: var(--c-txt-3); border-bottom: 1px solid var(--c-border); padding-bottom: 5px; margin-bottom: 2px; text-align: center; }
+.btt-row   { font-size: 11px; color: var(--c-txt-2); display: flex; align-items: center; gap: 5px; }
+.btt-row strong { margin-left: auto; color: var(--c-txt); font-weight: 700; }
+
+/* ╔══════════════════════════════════════════╗
+   ║          KPI STAT CARD                   ║
+   ╚══════════════════════════════════════════╝ */
+.kpi-card {
+  padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
+  flex: 1;
+  cursor: default;
+}
+.kpi-lbl {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .7px;
+  color: var(--c-txt-3);
+  margin: 0;
+}
+.kpi-val {
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--c-txt);
+  margin: 2px 0 0;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -.5px;
+}
+
+/* ╔══════════════════════════════════════════╗
+   ║          DEBT ALERT CARD                 ║
+   ╚══════════════════════════════════════════╝ */
+.debt-card {
+  padding: 18px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  border-left: 3px solid var(--c-danger);
+}
+
+.dc-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+.dc-title-wrap { display: flex; align-items: center; gap: 6px; }
+.dc-accent      { width: 4px; height: 18px; background: var(--c-danger); border-radius: 2px; flex-shrink: 0; display: none; }
+.dc-title       { font-size: 15px; font-weight: 700; margin: 0; }
+.dc-controls    { display: flex; align-items: center; gap: 6px; }
+.dc-sub         { font-size: 11px; color: var(--c-txt-3); margin: 0; }
+
+.dc-progress { display: flex; flex-direction: column; gap: 5px; }
+.prog-track  { height: 8px; background: var(--c-danger-bg); border-radius: var(--r-pill); overflow: hidden; }
+.prog-fill   { height: 100%; background: var(--c-danger); border-radius: var(--r-pill); }
+.prog-labels { display: flex; justify-content: space-between; font-size: 11px; font-weight: 600; }
+
+.offender-list { display: flex; flex-direction: column; border-top: 1px solid var(--c-border-s); }
+.offender-row {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--c-border-s);
+  cursor: pointer;
+  border-radius: var(--r-sm);
+  transition: background var(--t-base);
+  padding-left: 4px;
+}
+.offender-row:hover { background: var(--c-bg); }
+.offender-row:last-child { border-bottom: none; }
+.of-name { font-size: 13px; font-weight: 600; }
+.of-dist { font-size: 11px; color: var(--c-txt-3); }
+.of-amt  { font-size: 13px; font-weight: 800; color: var(--c-danger); font-variant-numeric: tabular-nums; }
+
+.dc-footer { display: flex; gap: 8px; margin-top: 4px; }
+
+/* ╔══════════════════════════════════════════╗
+   ║          DISTRICT RULES CARD             ║
+   ╚══════════════════════════════════════════╝ */
+.rules-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: stretch;
+  padding: 20px;
+  gap: 14px;
+}
+.rc-body     { flex: 1; display: flex; flex-direction: column; gap: 8px; }
+.rc-title-row{ display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
+.rc-title    { font-size: 14px; font-weight: 700; margin: 0; line-height: 1.3; }
+.rc-desc     { font-size: 12px; color: var(--c-txt-2); line-height: 1.55; margin: 0; flex: 1; }
+.rc-btns     { display: flex; gap: 8px; flex-wrap: wrap; }
+.rc-btns .btn-p,
+.rc-btns .btn-o { flex: 1; font-size: 12px; padding: 8px 10px; }
+
+.badge-full {
+  background: var(--c-danger-bg);
+  color: var(--c-danger);
+  font-size: 10px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: var(--r-pill);
+  border: 1px solid rgba(239,68,68,.12);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.rc-art  { width: 68px; display: flex; align-items: center; flex-shrink: 0; }
+.rc-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; transform: rotate(45deg); }
+.rg      { width: 16px; height: 16px; border-radius: 4px; }
+
+/* ╔══════════════════════════════════════════╗
+   ║          BOTTOM CARDS (Row 3)            ║
+   ╚══════════════════════════════════════════╝ */
+.bot-card {
+  padding: 18px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.bc-head   { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.bc-title  { font-size: 14px; font-weight: 700; margin: 0; }
+.bc-sub    { font-size: 11px; color: var(--c-txt-3); display: block; }
+.bc-macro  { font-size: 28px; font-weight: 900; color: var(--c-primary); letter-spacing: -1px; margin: 0; font-variant-numeric: tabular-nums; }
+
+/* Pie */
+.pie-wrap   { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.pie-legend { display: flex; flex-direction: column; gap: 7px; }
+.ple        { font-size: 11px; color: var(--c-txt-2); display: flex; align-items: center; gap: 5px; font-weight: 500; }
+.ple strong { margin-left: auto; color: var(--c-txt); font-weight: 700; }
+.pie-circle {
+  width: 74px; height: 74px; border-radius: 50%; flex-shrink: 0;
+  background: conic-gradient(
+    #10B981 0 33%,
+    #f8fafc 33% 34.5%,
+    #3B82F6 34.5% 79%,
+    #f8fafc 79% 80.5%,
+    #F59E0B 80.5% 100%
+  );
+  box-shadow: 0 2px 10px rgba(0,0,0,.06);
+}
+
+/* Gauge */
+.gauge-block { display: flex; flex-direction: column; gap: 5px; margin-top: 4px; }
+.gauge-meta  { display: flex; justify-content: space-between; font-size: 11px; color: var(--c-txt-3); font-weight: 600; }
+.gauge-meta strong { font-size: 14px; color: var(--c-txt); }
+.gauge-track { height: 8px; border-radius: var(--r-pill); background: var(--c-bg); overflow: hidden; }
+.gauge-fill  { height: 100%; border-radius: var(--r-pill); background: linear-gradient(90deg, #34d399, #059669); }
+.gauge-note  { font-size: 10px; color: var(--c-txt-3); margin: 0; border-top: 1px dashed var(--c-border); padding-top: 8px; line-height: 1.4; }
+
+/* Goal tracker */
+.goal-list { display: flex; flex-direction: column; gap: 8px; }
+.goal-yr   { font-size: 10px; font-weight: 700; color: rgba(15,23,42,.18); text-transform: uppercase; letter-spacing: .5px; }
+.mt12      { margin-top: 4px; }
+.goal-row  { display: flex; gap: 10px; align-items: flex-start; padding: 6px; border-radius: var(--r-md); transition: background var(--t-base); cursor: pointer; }
+.goal-row:hover { background: var(--c-bg); }
+.goal-icon { width: 36px; height: 36px; border-radius: var(--r-md); display: flex; align-items: center; justify-content: center; flex-shrink: 0; color: #fff; }
+.g-green   { background: var(--c-success); }
+.g-blue    { background: var(--c-info); }
+.goal-info { flex: 1; min-width: 0; }
+.gi-top    { display: flex; justify-content: space-between; font-size: 12px; font-weight: 600; margin-bottom: 5px; }
+.gi-top span { color: var(--c-txt-3); font-weight: 500; }
+.gi-bar    { height: 5px; background: var(--c-bg); border-radius: var(--r-pill); overflow: hidden; }
+.gi-fill   { height: 100%; border-radius: var(--r-pill); }
+.gi-note   { font-size: 10px; color: var(--c-txt-3); display: block; margin-top: 4px; }
+
+/* ╔══════════════════════════════════════════╗
+   ║          RIGHT PANEL CARDS               ║
+   ╚══════════════════════════════════════════╝ */
+.panel-card { overflow: hidden; }
+
+.panel-hd {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--c-border);
+}
+.panel-title { font-size: 14px; font-weight: 700; margin: 0; }
+.panel-sub   { font-size: 11px; color: var(--c-txt-3); display: block; margin-top: 1px; }
+
+/* Transaction list */
+.tx-list { display: flex; flex-direction: column; }
+.tx-row {
+  display: grid;
+  grid-template-columns: 32px 1fr auto;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 16px;
+  border-bottom: 1px solid var(--c-border-s);
+  transition: background var(--t-base);
+}
+.tx-row:hover { background: var(--c-bg); }
+.tx-row.last-row { border-bottom: none; }
+.tx-icon {
+  width: 32px; height: 32px; border-radius: var(--r-md);
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.i-green { background: var(--c-success-bg); color: var(--c-success); }
+.i-blue  { background: var(--c-info-bg); color: var(--c-info); }
+.i-slate { background: #f1f5f9; color: #64748b; }
+.i-amber { background: #fffbeb; color: var(--c-warning); }
+.tx-info { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.tx-info strong { font-size: 12px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tx-info span   { font-size: 10px; color: var(--c-txt-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tx-val { font-size: 12px; font-weight: 700; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.c-green { color: var(--c-success); }
+.c-red   { color: var(--c-danger); }
+.c-muted { color: var(--c-txt-3); }
+
+/* Leaderboard */
+.lb-hd { align-items: flex-start; }
+.lb-title-group { display: flex; align-items: center; gap: 8px; }
+.award-ic { color: var(--c-primary); flex-shrink: 0; }
+.month-chip {
+  background: var(--c-bg);
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-sm);
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 8px;
+  color: var(--c-txt-3);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.lb-list { display: flex; flex-direction: column; }
+.lb-row {
+  display: grid;
+  grid-template-columns: 34px 38px 1fr auto;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--c-border-s);
+  transition: background var(--t-base);
+}
+.lb-row:hover { background: var(--c-bg); }
+.lb-row.last-row { border-bottom: none; }
+.lb-rank {
+  width: 26px; height: 26px; border-radius: var(--r-pill);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 900; flex-shrink: 0;
+}
+.lb-rank.gold   { background: #fef3c7; color: #92400e; }
+.lb-rank.green  { background: #dcfce7; color: #166534; }
+.lb-rank.red    { background: #fee2e2; color: #991b1b; }
+.lb-av {
+  position: relative; width: 38px; height: 38px; border-radius: 8px; flex-shrink: 0;
+  border: 1px solid rgba(0,0,0,.12); box-shadow: 0 1px 4px rgba(0,0,0,.15);
+  overflow: hidden; background: white;
+}
+.av-logo { position:absolute; inset:0; width:100%; height:100%; object-fit:contain; object-position:center; padding:5px; box-sizing:border-box; z-index:2; background:white; display:block; }
+.av-init { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:14px; font-weight:800; color:white; letter-spacing:-.3px; }
+.lb-info { min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.lb-info strong { font-size: 12px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.lb-meta { display: flex; align-items: center; gap: 6px; }
+.lb-tag  { font-size: 10px; font-weight: 700; background: var(--c-bg); border: 1px solid var(--c-border); border-radius: var(--r-pill); padding: 2px 6px; color: var(--c-txt-3); flex-shrink: 0; }
+.lb-bar  { flex: 1; height: 5px; background: #e2e8f0; border-radius: var(--r-pill); overflow: hidden; min-width: 30px; }
+.lb-fill { height: 100%; border-radius: inherit; }
+.gold-fill  { background: linear-gradient(90deg, #fcd34d, #f59e0b); }
+.green-fill { background: linear-gradient(90deg, #6ee7b7, #10b981); }
+.red-fill   { background: linear-gradient(90deg, #fca5a5, #ef4444); }
+.lb-pct  { font-size: 10px; font-weight: 700; color: var(--c-txt-3); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.lb-right { display: flex; align-items: center; gap: 4px; justify-content: flex-end; }
+.lb-score { font-size: 12px; font-weight: 800; color: #064e3b; background: rgba(5,150,105,.06); padding: 3px 8px; border-radius: var(--r-pill); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.award-gold  { color: #b45309; }
+.award-green { color: var(--c-success); }
+.award-red   { color: var(--c-danger); }
+
+/* Admin card */
+.admin-panel .panel-hd { border-bottom: none; }
+.cm-mock {
+  margin: 0 14px 14px;
+  background: var(--c-bg);
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-md);
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+.cm-top-row  { display: flex; justify-content: space-between; align-items: center; font-size: 11px; }
+.cm-lbl      { color: var(--c-txt-2); font-weight: 500; }
+.cm-badge    { background: var(--c-primary); color: #fff; font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: var(--r-pill); }
+.cm-value    { font-size: 20px; font-weight: 800; color: var(--c-primary); letter-spacing: -.5px; font-variant-numeric: tabular-nums; }
+.cm-track    { height: 7px; background: #e2e8f0; border-radius: var(--r-pill); overflow: hidden; }
+.cm-fill     { height: 100%; background: linear-gradient(90deg, #34d399, #059669); border-radius: var(--r-pill); }
+.cm-note     { font-size: 10px; color: var(--c-txt-3); margin: 0; font-weight: 600; }
+.cm-bot-row  { display: flex; justify-content: space-between; align-items: center; font-size: 10px; }
+.cm-muted    { color: var(--c-txt-3); }
+.cm-active-badge { background: #fff; color: var(--c-success); font-weight: 700; border: 1px solid rgba(16,185,129,.2); padding: 2px 8px; border-radius: var(--r-pill); }
+
+.quick-actions {
+  display: flex;
+  justify-content: space-around;
+  padding: 0 14px 14px;
+  gap: 8px;
+}
+.qa-btn {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--c-txt-2);
+  transition: color var(--t-base);
+  background: none;
+  border: none;
+  padding: 0;
+}
+.qa-icon {
+  width: 40px; height: 40px; border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  transition: transform var(--t-base), box-shadow var(--t-base);
+}
+.qa-btn:hover .qa-icon { transform: translateY(-3px); }
+.qa-green .qa-icon { background: var(--c-success-bg); color: var(--c-success); border: 1px solid rgba(16,185,129,.12); }
+.qa-green:hover { color: var(--c-success); }
+.qa-green:hover .qa-icon { box-shadow: 0 6px 16px rgba(16,185,129,.2); }
+.qa-teal .qa-icon { background: #f0fdf9; color: var(--c-primary); border: 1px solid rgba(5,150,105,.12); }
+.qa-teal:hover { color: var(--c-primary); }
+.qa-teal:hover .qa-icon { box-shadow: 0 6px 16px rgba(5,150,105,.2); }
+
+/* ╔══════════════════════════════════════════╗
+   ║          MODAL                           ║
+   ╚══════════════════════════════════════════╝ */
+.modal-bg {
+  position: fixed; inset: 0; z-index: 9999;
+  background: rgba(15,23,42,.5);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  display: flex; align-items: center; justify-content: center; padding: 20px;
+  font-family: 'Inter', 'Be Vietnam Pro', ui-sans-serif, system-ui, sans-serif;
+}
+.modal-box {
+  width: min(500px, 100%);
+  background: #ffffff;
+  border-radius: 16px;
+  border: 1px solid rgba(15,23,42,.08);
+  box-shadow: 0 20px 60px rgba(15,23,42,.2), 0 4px 16px rgba(15,23,42,.08);
+  overflow: hidden;
+}
+.modal-hd {
+  padding: 16px 20px;
+  border-bottom: 1px solid rgba(15,23,42,.07);
+  display: flex; justify-content: space-between; align-items: flex-start; gap: 12px;
+  background: #fff;
+}
+.modal-agent-info { display: flex; flex-direction: column; gap: 3px; }
+.modal-agent-info strong { font-size: 15px; font-weight: 700; color: #0f172a; }
+.modal-agent-info span   { font-size: 12px; color: #94a3b8; }
+.modal-body  { padding: 18px 20px; display: flex; flex-direction: column; gap: 14px; background: #f8fafc; }
+.modal-stats { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; }
+.mstat { background: #ffffff; border-radius: 8px; padding: 10px 12px; border: 1px solid rgba(15,23,42,.06); }
+.mstat span   { display: block; font-size: 10px; color: #94a3b8; margin-bottom: 3px; font-weight: 600; text-transform: uppercase; letter-spacing: .3px; }
+.mstat strong { font-size: 14px; font-weight: 700; color: #0f172a; }
+.modal-note     { font-size: 12px; color: #475569; line-height: 1.55; margin: 0; }
+.modal-feedback { font-size: 12px; color: #059669; background: #f0fdf4; border: 1px solid rgba(16,185,129,.2); padding: 10px 12px; border-radius: 8px; font-weight: 600; }
+.modal-actions  { display: flex; gap: 10px; flex-wrap: wrap; }
+
+.modal-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 9px 18px; border-radius: 8px; border: none;
+  font-size: 13px; font-weight: 600; cursor: pointer;
+  font-family: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  transition: all .15s;
+}
+.modal-btn-close {
+  background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0;
+  padding: 6px 14px; font-size: 12px;
+}
+.modal-btn-close:hover { background: #e2e8f0; }
+.modal-btn-primary { background: #059669; color: #fff; }
+.modal-btn-primary:hover { background: #047857; transform: translateY(-1px); }
+.modal-btn-danger  { background: #ef4444; color: #fff; }
+.modal-btn-danger:hover  { background: #dc2626; }
+.danger-txt { color: #ef4444; }
+
+/* ╔══════════════════════════════════════════╗
+   ║          RESPONSIVE                      ║
+   ╚══════════════════════════════════════════╝ */
+@media (max-width: 1200px) {
+  .dv-grid { grid-template-columns: 1fr; }
+  .dv-right { flex-direction: row; flex-wrap: wrap; }
+  .panel-card { flex: 1 1 280px; }
+}
+@media (max-width: 900px) {
+  .dv-r1 { grid-template-columns: 1fr; }
+  .kpi-col { flex-direction: row; }
+  .dv-r2 { grid-template-columns: 1fr; }
+  .dv-r3 { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 600px) {
+  .dv-r3 { grid-template-columns: 1fr; }
+  .dv-right { flex-direction: column; }
+}
+</style>

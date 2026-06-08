@@ -1,0 +1,25 @@
+{
+  "name": "agent_management",
+  "version": "1.0.0",
+  "description": "> **SE104 - Nhập môn Công nghệ Phần mềm**",
+  "main": "index.js",
+  "scripts": {
+    "build": "cd client && npm run build && cd .. && rm -rf dist && cp -R client/dist dist",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/RkDinhChien/Agent_Management.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/RkDinhChien/Agent_Management/issues"
+  },
+  "homepage": "https://github.com/RkDinhChien/Agent_Management#readme",
+  "dependencies": {
+    "express": "^5.2.1"
+  }
+}
